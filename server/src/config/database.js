@@ -4,8 +4,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// URL encode the password
+const password = encodeURIComponent(process.env.DB_PASSWORD || '');
+const user = process.env.DB_USER || 'postgres';
+const host = process.env.DB_HOST || 'localhost';
+const port = process.env.DB_PORT || 5432;
+const database = process.env.DB_NAME || 'postgres';
+
+const connectionString = `postgresql://${user}:${password}@${host}:${port}/${database}?sslmode=require`;
+
+console.log('Connecting to database...');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: {
     rejectUnauthorized: false
   },

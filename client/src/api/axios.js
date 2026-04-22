@@ -1,53 +1,41 @@
 import axios from 'axios';
+
+// Use environment variable or fallback to production URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://ethiopos-backend.onrender.com/api';
+
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://ethiopos-backend.onrender.com/api',
+  baseURL: API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add a request interceptor to include token
+// Add console log to see what URL is being used
+console.log('API Base URL:', API_URL);
+
+// Request interceptor
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
-  (error) => {
-    console.error('Request Error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor
 API.interceptors.response.use(
-  (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error('API Error Details:', {
-      message: error.message,
-      code: error.code,
-      url: error.config?.url,
-      method: error.config?.method
-    });
-    
-    if (error.code === 'ECONNABORTED') {
-      console.error('Connection timeout - Backend might not be running');
-      alert('Cannot connect to server. Please make sure the backend is running on port 5000');
-    }
-    
+    console.error('API Error:', error.message);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    
     return Promise.reject(error);
   }
 );

@@ -4,20 +4,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// URL encode the password
-const password = encodeURIComponent(process.env.DB_PASSWORD || '');
-const user = process.env.DB_USER || 'postgres';
-const host = process.env.DB_HOST || 'localhost';
-const port = process.env.DB_PORT || 5432;
-const database = process.env.DB_NAME || 'postgres';
-
-// Use no-verify to bypass self-signed certificate issue
-const connectionString = `postgresql://${user}:${password}@${host}:${port}/${database}?sslmode=no-verify`;
-
-console.log('Connecting to database...');
-
 const pool = new Pool({
-  connectionString,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   ssl: {
     rejectUnauthorized: false
   },

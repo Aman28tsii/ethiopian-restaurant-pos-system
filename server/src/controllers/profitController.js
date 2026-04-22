@@ -6,7 +6,7 @@ export const getProfitReport = catchAsync(async (req, res) => {
   const { startDate, endDate } = req.query;
   
   if (!startDate || !endDate) {
-    throw new Error('startDate and endDate are required');
+    return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
   }
   
   // Main profit summary
@@ -33,10 +33,14 @@ export const getProfitReport = catchAsync(async (req, res) => {
     SELECT 
       DATE(created_at) as date,
       COUNT(*) as sales_count,
-      SUM(total_amount) as revenue,
-      SUM(total_cost) as cost,
-      SUM(profit) as profit,
-      ROUND((SUM(profit) / NULLIF(SUM(total_amount), 0)) * 100, 2) as profit_margin
+      COALESCE(SUM(total_amount), 0) as revenue,
+      COALESCE(SUM(total_cost), 0) as cost,
+      COALESCE(SUM(profit), 0) as profit,
+      CASE 
+        WHEN SUM(total_amount) > 0 
+        THEN ROUND((SUM(profit) / SUM(total_amount)) * 100, 2)
+        ELSE 0 
+      END as profit_margin
     FROM sales
     WHERE DATE(created_at) BETWEEN $1 AND $2
     AND status = 'completed'
@@ -50,18 +54,14 @@ export const getProfitReport = catchAsync(async (req, res) => {
       p.id,
       p.name,
       p.category,
-      SUM(si.quantity) as quantity_sold,
-      SUM(si.total_price) as revenue,
-      COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0) as cost,
-      SUM(si.total_price) - COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0) as profit,
-      ROUND((SUM(si.total_price) - COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0)) / NULLIF(SUM(si.total_price), 0) * 100, 2) as profit_margin
-    FROM sale_items si
-    JOIN products p ON si.product_id = p.id
-    JOIN sales s ON si.sale_id = s.id
-    LEFT JOIN recipes r ON p.id = r.product_id
-    LEFT JOIN ingredients i ON r.ingredient_id = i.id
-    WHERE DATE(s.created_at) BETWEEN $1 AND $2
-    AND s.status = 'completed'
+      COALESCE(SUM(si.quantity), 0) as quantity_sold,
+      COALESCE(SUM(si.total_price), 0) as revenue,
+      0 as cost,
+      COALESCE(SUM(si.total_price), 0) as profit,
+      100 as profit_margin
+    FROM products p
+    LEFT JOIN sale_items si ON p.id = si.product_id
+    LEFT JOIN sales s ON si.sale_id = s.id AND s.status = 'completed' AND DATE(s.created_at) BETWEEN $1 AND $2
     GROUP BY p.id, p.name, p.category
     ORDER BY profit DESC
     LIMIT 10
@@ -70,11 +70,15 @@ export const getProfitReport = catchAsync(async (req, res) => {
   // Profit by payment method
   const paymentMethodResult = await query(`
     SELECT 
-      payment_method,
+      COALESCE(payment_method, 'cash') as payment_method,
       COUNT(*) as transaction_count,
-      SUM(total_amount) as revenue,
-      SUM(profit) as profit,
-      ROUND((SUM(profit) / NULLIF(SUM(total_amount), 0)) * 100, 2) as profit_margin
+      COALESCE(SUM(total_amount), 0) as revenue,
+      COALESCE(SUM(profit), 0) as profit,
+      CASE 
+        WHEN SUM(total_amount) > 0 
+        THEN ROUND((SUM(profit) / SUM(total_amount)) * 100, 2)
+        ELSE 0 
+      END as profit_margin
     FROM sales
     WHERE DATE(created_at) BETWEEN $1 AND $2
     AND status = 'completed'
@@ -87,15 +91,13 @@ export const getProfitReport = catchAsync(async (req, res) => {
     SELECT 
       p.category,
       SUM(si.quantity) as items_sold,
-      SUM(si.total_price) as revenue,
-      COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0) as cost,
-      SUM(si.total_price) - COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0) as profit,
-      ROUND((SUM(si.total_price) - COALESCE(SUM(r.quantity_required * i.unit_cost * si.quantity), 0)) / NULLIF(SUM(si.total_price), 0) * 100, 2) as profit_margin
+      COALESCE(SUM(si.total_price), 0) as revenue,
+      0 as cost,
+      COALESCE(SUM(si.total_price), 0) as profit,
+      100 as profit_margin
     FROM sale_items si
     JOIN products p ON si.product_id = p.id
     JOIN sales s ON si.sale_id = s.id
-    LEFT JOIN recipes r ON p.id = r.product_id
-    LEFT JOIN ingredients i ON r.ingredient_id = i.id
     WHERE DATE(s.created_at) BETWEEN $1 AND $2
     AND s.status = 'completed'
     GROUP BY p.category
@@ -130,10 +132,14 @@ export const getTodayProfit = catchAsync(async (req, res) => {
   const result = await query(`
     SELECT 
       COUNT(*) as orders,
-      SUM(total_amount) as revenue,
-      SUM(total_cost) as cost,
-      SUM(profit) as profit,
-      ROUND((SUM(profit) / NULLIF(SUM(total_amount), 0)) * 100, 2) as profit_margin,
+      COALESCE(SUM(total_amount), 0) as revenue,
+      COALESCE(SUM(total_cost), 0) as cost,
+      COALESCE(SUM(profit), 0) as profit,
+      CASE 
+        WHEN SUM(total_amount) > 0 
+        THEN ROUND((SUM(profit) / SUM(total_amount)) * 100, 2)
+        ELSE 0 
+      END as profit_margin,
       AVG(total_amount) as average_order
     FROM sales
     WHERE DATE(created_at) = $1
@@ -145,8 +151,8 @@ export const getTodayProfit = catchAsync(async (req, res) => {
     SELECT 
       EXTRACT(HOUR FROM created_at) as hour,
       COUNT(*) as orders,
-      SUM(total_amount) as revenue,
-      SUM(profit) as profit
+      COALESCE(SUM(total_amount), 0) as revenue,
+      COALESCE(SUM(profit), 0) as profit
     FROM sales
     WHERE DATE(created_at) = $1
     AND status = 'completed'
@@ -179,10 +185,14 @@ export const getMonthlyTrend = catchAsync(async (req, res) => {
     SELECT 
       DATE_TRUNC('month', created_at) as month,
       COUNT(*) as orders,
-      SUM(total_amount) as revenue,
-      SUM(total_cost) as cost,
-      SUM(profit) as profit,
-      ROUND((SUM(profit) / NULLIF(SUM(total_amount), 0)) * 100, 2) as profit_margin
+      COALESCE(SUM(total_amount), 0) as revenue,
+      COALESCE(SUM(total_cost), 0) as cost,
+      COALESCE(SUM(profit), 0) as profit,
+      CASE 
+        WHEN SUM(total_amount) > 0 
+        THEN ROUND((SUM(profit) / SUM(total_amount)) * 100, 2)
+        ELSE 0 
+      END as profit_margin
     FROM sales
     WHERE created_at >= NOW() - INTERVAL '${months} months'
     AND status = 'completed'

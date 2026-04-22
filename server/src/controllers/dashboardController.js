@@ -45,7 +45,7 @@ export const getDashboardData = catchAsync(async (req, res) => {
     WHERE expense_date >= $1
   `, [monthAgo]);
   
-  // Net profit (profit - expenses)
+  // Net profit
   const netProfit = parseFloat(monthStats.rows[0].total_profit) - parseFloat(monthExpenses.rows[0].total_expenses);
   
   // Low stock ingredients
@@ -74,19 +74,18 @@ export const getDashboardData = catchAsync(async (req, res) => {
     SELECT 
       p.id,
       p.name,
-      SUM(si.quantity) as quantity_sold,
-      SUM(si.total_price) as revenue
-    FROM sale_items si
-    JOIN products p ON si.product_id = p.id
-    JOIN sales s ON si.sale_id = s.id
-    WHERE DATE(s.created_at) >= $1
-    AND s.status = 'completed'
+      COALESCE(SUM(si.quantity), 0) as quantity_sold,
+      COALESCE(SUM(si.total_price), 0) as revenue
+    FROM products p
+    LEFT JOIN sale_items si ON p.id = si.product_id
+    LEFT JOIN sales s ON si.sale_id = s.id AND s.status = 'completed'
+    WHERE s.created_at >= $1 OR s.created_at IS NULL
     GROUP BY p.id, p.name
     ORDER BY revenue DESC
     LIMIT 5
   `, [monthAgo]);
   
-  // Recent sales (last 10)
+  // Recent sales
   const recentSales = await query(`
     SELECT s.id, s.sale_number, s.total_amount, s.payment_method, s.created_at, u.name as cashier_name
     FROM sales s
@@ -95,20 +94,6 @@ export const getDashboardData = catchAsync(async (req, res) => {
     ORDER BY s.created_at DESC
     LIMIT 10
   `);
-  
-  // Daily sales for chart (last 7 days)
-  const dailySales = await query(`
-    SELECT 
-      DATE(created_at) as date,
-      COALESCE(SUM(total_amount), 0) as revenue,
-      COALESCE(SUM(profit), 0) as profit,
-      COUNT(*) as orders
-    FROM sales
-    WHERE DATE(created_at) >= $1
-    AND status = 'completed'
-    GROUP BY DATE(created_at)
-    ORDER BY date ASC
-  `, [weekAgo]);
   
   res.json({
     success: true,
@@ -129,7 +114,9 @@ export const getDashboardData = catchAsync(async (req, res) => {
         revenue: parseFloat(monthStats.rows[0].total_revenue),
         profit: parseFloat(monthStats.rows[0].total_profit),
         expenses: parseFloat(monthExpenses.rows[0].total_expenses),
-        net_profit: netProfit
+        net_profit: netProfit,
+        profit_margin: monthStats.rows[0].total_revenue > 0 ? 
+          (netProfit / parseFloat(monthStats.rows[0].total_revenue)) * 100 : 0
       },
       inventory: {
         low_stock: parseInt(lowStock.rows[0].count),
@@ -137,29 +124,21 @@ export const getDashboardData = catchAsync(async (req, res) => {
         total_products: parseInt(totalProducts.rows[0].count)
       },
       top_products: topProducts.rows,
-      recent_sales: recentSales.rows,
-      daily_sales: dailySales.rows
+      recent_sales: recentSales.rows
     }
   });
 });
 
-// Get chart data for dashboard (ONLY ONE COPY - KEEP THIS)
+// Get chart data
 export const getChartData = catchAsync(async (req, res) => {
   const { period = 'week' } = req.query;
   
   let days;
   switch(period) {
-    case 'week':
-      days = 7;
-      break;
-    case 'month':
-      days = 30;
-      break;
-    case 'year':
-      days = 365;
-      break;
-    default:
-      days = 7;
+    case 'week': days = 7; break;
+    case 'month': days = 30; break;
+    case 'year': days = 365; break;
+    default: days = 7;
   }
   
   // Daily sales data
@@ -180,13 +159,11 @@ export const getChartData = catchAsync(async (req, res) => {
   const topProducts = await query(`
     SELECT 
       p.name,
-      SUM(si.quantity) as total_sold,
-      SUM(si.total_price) as revenue
-    FROM sale_items si
-    JOIN products p ON si.product_id = p.id
-    JOIN sales s ON si.sale_id = s.id
-    WHERE s.created_at >= NOW() - INTERVAL '30 days'
-      AND s.status = 'completed'
+      COALESCE(SUM(si.quantity), 0) as total_sold,
+      COALESCE(SUM(si.total_price), 0) as revenue
+    FROM products p
+    LEFT JOIN sale_items si ON p.id = si.product_id
+    LEFT JOIN sales s ON si.sale_id = s.id AND s.status = 'completed' AND s.created_at >= NOW() - INTERVAL '30 days'
     GROUP BY p.id, p.name
     ORDER BY revenue DESC
     LIMIT 5
@@ -195,22 +172,21 @@ export const getChartData = catchAsync(async (req, res) => {
   // Payment methods breakdown
   const paymentMethods = await query(`
     SELECT 
-      payment_method,
+      COALESCE(payment_method, 'cash') as payment_method,
       COUNT(*) as count,
-      SUM(total_amount) as total
+      COALESCE(SUM(total_amount), 0) as total
     FROM sales
     WHERE created_at >= NOW() - INTERVAL '30 days'
       AND status = 'completed'
-      AND payment_method IS NOT NULL
     GROUP BY payment_method
   `);
   
-  // Hourly sales (last 7 days)
+  // Hourly sales
   const hourlyData = await query(`
     SELECT 
       EXTRACT(HOUR FROM created_at) as hour,
       COUNT(*) as orders,
-      SUM(total_amount) as revenue
+      COALESCE(SUM(total_amount), 0) as revenue
     FROM sales
     WHERE created_at >= NOW() - INTERVAL '7 days'
       AND status = 'completed'

@@ -11,7 +11,8 @@ const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || 5432;
 const database = process.env.DB_NAME || 'postgres';
 
-const connectionString = `postgresql://${user}:${password}@${host}:${port}/${database}?sslmode=require`;
+// Use no-verify to bypass self-signed certificate issue
+const connectionString = `postgresql://${user}:${password}@${host}:${port}/${database}?sslmode=no-verify`;
 
 console.log('Connecting to database...');
 

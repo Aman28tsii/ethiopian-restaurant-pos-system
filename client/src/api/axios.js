@@ -1,7 +1,6 @@
 import axios from 'axios';
-
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'https://ethiopos-backend.onrender.com/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

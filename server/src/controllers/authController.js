@@ -15,205 +15,169 @@ const generateToken = (user) => {
 };
 
 // Login user
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required' });
-    }
-    
-    const result = await query(
-      `SELECT id, name, email, password, role, status, is_active FROM users WHERE email = $1`,
-      [email.toLowerCase().trim()]
-    );
-    
-    const user = result.rows[0];
-    
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password' });
-    }
-    
-    if (user.status === 'pending') {
-      return res.status(403).json({ success: false, error: 'Account pending approval. Please wait.' });
-    }
-    
-    if (!user.is_active || user.status === 'inactive') {
-      return res.status(403).json({ success: false, error: 'Account deactivated. Contact admin.' });
-    }
-    
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password' });
-    }
-    
-    await query(`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1`, [user.id]);
-    
-    const token = generateToken(user);
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+export const login = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Email and password are required' });
   }
-};
+  
+  const result = await query(
+    `SELECT id, name, email, password, role, status, is_active FROM users WHERE email = $1`,
+    [email.toLowerCase().trim()]
+  );
+  
+  const user = result.rows[0];
+  
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'Invalid email or password' });
+  }
+  
+  if (user.status === 'pending') {
+    return res.status(403).json({ success: false, error: 'Account pending approval. Please wait.' });
+  }
+  
+  if (!user.is_active || user.status === 'inactive') {
+    return res.status(403).json({ success: false, error: 'Account deactivated. Contact admin.' });
+  }
+  
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  
+  if (!isPasswordValid) {
+    return res.status(401).json({ success: false, error: 'Invalid email or password' });
+  }
+  
+  await query(`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1`, [user.id]);
+  
+  const token = generateToken(user);
+  
+  res.json({
+    success: true,
+    message: 'Login successful',
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    }
+  });
+});
 
-// Signup - Creates account with pending status
-export const signup = async (req, res) => {
-  try {
-    const { name, email, password, phone } = req.body;
-    
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, error: 'Name, email and password are required' });
-    }
-    
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-    }
-    
-    // Check if email exists
-    const existingUser = await query('SELECT id, status FROM users WHERE email = $1', [email.toLowerCase().trim()]);
-    
-    if (existingUser.rows.length > 0) {
-      if (existingUser.rows[0].status === 'pending') {
-        return res.status(400).json({ success: false, error: 'Account already pending approval' });
-      }
-      return res.status(400).json({ success: false, error: 'Email already registered' });
-    }
-    
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
-    const result = await query(
-      `INSERT INTO users (business_id, name, email, password, role, phone, status, is_active)
-       VALUES (1, $1, $2, $3, 'staff', $4, 'pending', false)
-       RETURNING id, name, email, role, status, created_at`,
-      [name.trim(), email.toLowerCase().trim(), hashedPassword, phone || null]
-    );
-    
-    res.status(201).json({
-      success: true,
-      message: 'Account created! Waiting for admin approval.',
-      user: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ success: false, error: 'Server error: ' + error.message });
+// Signup
+export const signup = catchAsync(async (req, res) => {
+  const { name, email, password, phone } = req.body;
+  
+  if (!name || !email || !password) {
+    return res.status(400).json({ success: false, error: 'Name, email and password are required' });
   }
-};
+  
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+  }
+  
+  const existingUser = await query('SELECT id, status FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  
+  if (existingUser.rows.length > 0) {
+    if (existingUser.rows[0].status === 'pending') {
+      return res.status(400).json({ success: false, error: 'Account already pending approval' });
+    }
+    return res.status(400).json({ success: false, error: 'Email already registered' });
+  }
+  
+  const hashedPassword = await bcrypt.hash(password, 12);
+  
+  const result = await query(
+    `INSERT INTO users (business_id, name, email, password, role, phone, status, is_active)
+     VALUES (1, $1, $2, $3, 'staff', $4, 'pending', false)
+     RETURNING id, name, email, role, status, created_at`,
+    [name.trim(), email.toLowerCase().trim(), hashedPassword, phone || null]
+  );
+  
+  res.status(201).json({
+    success: true,
+    message: 'Account created! Waiting for admin approval.',
+    user: result.rows[0]
+  });
+});
 
-// Get pending users (Admin only)
-export const getPendingUsers = async (req, res) => {
-  try {
-    const result = await query(
-      `SELECT id, name, email, phone, status, created_at
-       FROM users WHERE status = 'pending'
-       ORDER BY created_at ASC`
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (error) {
-    console.error('Get pending users error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-};
+// Get pending users
+export const getPendingUsers = catchAsync(async (req, res) => {
+  const result = await query(
+    `SELECT id, name, email, phone, status, created_at
+     FROM users WHERE status = 'pending'
+     ORDER BY created_at ASC`
+  );
+  
+  res.json({ success: true, data: result.rows });
+});
 
-// Approve user (Admin only)
-export const approveUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { role = 'staff' } = req.body;
-    
-    const result = await query(
-      `UPDATE users 
-       SET status = 'active', role = $1, is_active = true
-       WHERE id = $2 AND status = 'pending'
-       RETURNING id, name, email, role, status`,
-      [role, id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'User not found or already approved' });
-    }
-    
-    res.json({
-      success: true,
-      message: 'User approved successfully',
-      user: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Approve user error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+// Approve user
+export const approveUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { role = 'staff' } = req.body;
+  
+  const result = await query(
+    `UPDATE users 
+     SET status = 'active', role = $1, is_active = true
+     WHERE id = $2 AND status = 'pending'
+     RETURNING id, name, email, role, status`,
+    [role, id]
+  );
+  
+  if (result.rows.length === 0) {
+    return res.status(404).json({ success: false, error: 'User not found or already approved' });
   }
-};
+  
+  res.json({
+    success: true,
+    message: 'User approved successfully',
+    user: result.rows[0]
+  });
+});
 
-// Reject user (Admin only)
-export const rejectUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const result = await query(
-      `DELETE FROM users WHERE id = $1 AND status = 'pending' RETURNING id`,
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-    
-    res.json({
-      success: true,
-      message: 'User rejected and removed'
-    });
-  } catch (error) {
-    console.error('Reject user error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
+// Reject user
+export const rejectUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  
+  const result = await query(
+    `DELETE FROM users WHERE id = $1 AND status = 'pending' RETURNING id`,
+    [id]
+  );
+  
+  if (result.rows.length === 0) {
+    return res.status(404).json({ success: false, error: 'User not found' });
   }
-};
+  
+  res.json({
+    success: true,
+    message: 'User rejected and removed'
+  });
+});
 
-// Get all users (Admin only)
-export const getAllUsers = async (req, res) => {
-  try {
-    const result = await query(
-      `SELECT id, name, email, role, phone, status, is_active, created_at, last_login
-       FROM users ORDER BY created_at DESC`
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (error) {
-    console.error('Get all users error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-};
+// Get all users
+export const getAllUsers = catchAsync(async (req, res) => {
+  const result = await query(
+    `SELECT id, name, email, role, phone, status, is_active, created_at, last_login
+     FROM users ORDER BY created_at DESC`
+  );
+  
+  res.json({ success: true, data: result.rows });
+});
 
 // Get current user
-export const getCurrentUser = async (req, res) => {
-  try {
-    const user = await query(
-      `SELECT id, name, email, role, phone, status, created_at FROM users WHERE id = $1`,
-      [req.user.id]
-    );
-    
-    res.json({ success: true, user: user.rows[0] });
-  } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-};
+export const getCurrentUser = catchAsync(async (req, res) => {
+  const result = await query(
+    `SELECT id, name, email, role, phone, status, created_at FROM users WHERE id = $1`,
+    [req.user.id]
+  );
+  
+  res.json({ success: true, user: result.rows[0] });
+});
 
 // Verify token
-export const verifyToken = async (req, res) => {
+export const verifyToken = catchAsync(async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
@@ -235,8 +199,14 @@ export const verifyToken = async (req, res) => {
   } catch (error) {
     res.json({ valid: false });
   }
-};
-// Get staff performance data (Owner/Manager only)
+});
+
+// Logout
+export const logout = catchAsync(async (req, res) => {
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Get staff performance data
 export const getStaffPerformance = catchAsync(async (req, res) => {
   const { period = 'month' } = req.query;
   
@@ -248,7 +218,6 @@ export const getStaffPerformance = catchAsync(async (req, res) => {
     default: days = 30;
   }
   
-  // Get sales by staff member
   const salesByStaff = await query(`
     SELECT 
       u.id,
@@ -263,12 +232,11 @@ export const getStaffPerformance = catchAsync(async (req, res) => {
     LEFT JOIN sales s ON u.id = s.user_id 
       AND s.created_at >= NOW() - INTERVAL '${days} days'
       AND s.status = 'completed'
-    WHERE u.role IN ('cashier', 'waiter', 'manager', 'owner')
+    WHERE u.role IN ('cashier', 'waiter', 'manager', 'owner', 'admin')
     GROUP BY u.id, u.name, u.role
     ORDER BY total_revenue DESC
   `);
   
-  // Get orders by waiter
   const ordersByWaiter = await query(`
     SELECT 
       u.id,
@@ -294,7 +262,3 @@ export const getStaffPerformance = catchAsync(async (req, res) => {
     }
   });
 });
-// Logout
-export const logout = async (req, res) => {
-  res.json({ success: true, message: 'Logged out successfully' });
-};

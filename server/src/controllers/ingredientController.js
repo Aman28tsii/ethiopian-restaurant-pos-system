@@ -108,7 +108,6 @@ export const updateIngredient = catchAsync(async (req, res) => {
 export const deleteIngredient = catchAsync(async (req, res) => {
   const { id } = req.params;
   
-  // Check if ingredient is used in recipes
   const recipeCheck = await query(
     'SELECT COUNT(*) FROM recipes WHERE ingredient_id = $1',
     [id]
@@ -140,6 +139,70 @@ export const getLowStock = catchAsync(async (req, res) => {
   );
   
   res.json({ success: true, data: result.rows });
+});
+
+// Get low stock alert (alias for getLowStock)
+export const getLowStockAlert = catchAsync(async (req, res) => {
+  const result = await query(`
+    SELECT 
+      id, 
+      name, 
+      unit, 
+      quantity, 
+      min_stock,
+      (min_stock - quantity) as needed,
+      category,
+      supplier
+    FROM ingredients
+    WHERE quantity <= min_stock
+    ORDER BY (quantity / NULLIF(min_stock, 0)) ASC
+  `);
+  
+  res.json({ 
+    success: true, 
+    data: result.rows,
+    count: result.rows.length
+  });
+});
+
+// Adjust stock
+export const adjustStock = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { amount } = req.body;
+  
+  const currentIngredient = await query(
+    'SELECT name, quantity FROM ingredients WHERE id = $1',
+    [id]
+  );
+  
+  if (currentIngredient.rows.length === 0) {
+    throw new AppError('Ingredient not found', 404);
+  }
+  
+  const currentQuantity = parseFloat(currentIngredient.rows[0].quantity);
+  const newQuantity = currentQuantity + parseFloat(amount);
+  
+  if (newQuantity < 0) {
+    throw new AppError('Cannot reduce stock below zero', 400);
+  }
+  
+  const result = await query(
+    `UPDATE ingredients 
+     SET quantity = $1,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $2
+     RETURNING *`,
+    [newQuantity, id]
+  );
+  
+  const action = amount > 0 ? 'added to' : 'removed from';
+  const absAmount = Math.abs(amount);
+  
+  res.json({
+    success: true,
+    message: `${absAmount} ${result.rows[0].unit} ${action} ${result.rows[0].name}`,
+    data: result.rows[0]
+  });
 });
 
 // Get ingredient categories

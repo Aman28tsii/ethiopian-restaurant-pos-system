@@ -5,25 +5,26 @@ import {
   createIngredient,
   updateIngredient,
   deleteIngredient,
+  adjustStock,
   getLowStock,
+  getLowStockAlert,
   getIngredientCategories
 } from '../controllers/ingredientController.js';
 import { protect, allowManager } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 
-// Manager and above can view ingredients
 router.get('/', allowManager, getAllIngredients);
 router.get('/low-stock', allowManager, getLowStock);
+router.get('/low-stock-alert', allowManager, getLowStockAlert);
 router.get('/categories', allowManager, getIngredientCategories);
 router.get('/:id', allowManager, getIngredientById);
 
-// Manager and above can modify ingredients
 router.post('/', allowManager, createIngredient);
 router.put('/:id', allowManager, updateIngredient);
 router.delete('/:id', allowManager, deleteIngredient);
+router.patch('/:id/stock', allowManager, adjustStock);
 
 export default router;

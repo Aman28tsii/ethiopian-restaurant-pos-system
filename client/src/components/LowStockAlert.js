@@ -15,7 +15,7 @@ const LowStockAlert = () => {
 
   const fetchLowStock = async () => {
     try {
-      const response = await API.get('/ingredients/low-stock-alert');
+      const response = await API.get('/ingredients/low-stock');
       setLowStockItems(response.data.data || []);
     } catch (err) {
       console.error('Fetch low stock error:', err);

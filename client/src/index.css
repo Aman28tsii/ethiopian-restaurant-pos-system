@@ -71,7 +71,7 @@ html {
   display: none;
 }
 
-/* Responsive grid helpers */
+/* Responsive grid helpers - SINGLE DEFINITION */
 .responsive-grid {
   display: grid;
   gap: 1rem;
@@ -93,5 +93,142 @@ html {
 @media (max-width: 768px) {
   .touch-card:active {
     transform: scale(0.98);
+  }
+}
+
+/* Responsive Table Wrapper */
+.responsive-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1rem 0;
+}
+
+.responsive-table-wrapper table {
+  min-width: 600px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .responsive-table-wrapper {
+    margin: 0 -1rem;
+    width: calc(100% + 2rem);
+    padding: 0 1rem;
+  }
+}
+
+/* Responsive Cards */
+.responsive-card {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .responsive-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Responsive Stats Cards */
+.stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Responsive Forms */
+.responsive-form {
+  width: 100%;
+}
+
+.responsive-form input,
+.responsive-form select,
+.responsive-form textarea {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-form input,
+  .responsive-form select,
+  .responsive-form textarea {
+    padding: 0.75rem;
+  }
+}
+
+/* POS Page - Product Grid */
+.pos-product-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 480px) {
+  .pos-product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .pos-product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pos-product-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* POS Cart Sidebar */
+@media (max-width: 768px) {
+  .pos-cart-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    max-height: 60vh;
+    overflow-y: auto;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* Responsive Charts */
+@media (max-width: 640px) {
+  .recharts-wrapper {
+    font-size: 10px;
+  }
+  .recharts-default-tooltip {
+    font-size: 10px !important;
+  }
+}
+
+/* Touch-friendly buttons */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Responsive text */
+@media (max-width: 640px) {
+  .text-responsive-sm {
+    font-size: 0.875rem;
+  }
+}
+
+/* Better spacing on mobile */
+@media (max-width: 640px) {
+  .p-responsive {
+    padding: 0.75rem !important;
+  }
+  .gap-responsive {
+    gap: 0.5rem !important;
   }
 }

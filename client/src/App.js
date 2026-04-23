@@ -22,6 +22,7 @@ import ProfitReports from './pages/ProfitReports';
 import Staff from './pages/Staff';
 import PendingApprovals from './pages/PendingApprovals';
 import Reports from './pages/Reports';
+import Settings from './pages/owner/Settings';
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {
@@ -111,7 +112,7 @@ function App() {
                 <Route path="staff" element={<Staff />} />
                 <Route path="pending-approvals" element={<PendingApprovals />} />
                 <Route path="inventory" element={<Inventory />} />
-                <Route path="settings" element={<div className="text-white p-6">Settings Page</div>} />
+                <Route path="settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/owner/dashboard" />} />
               </Routes>
             </OwnerLayout>

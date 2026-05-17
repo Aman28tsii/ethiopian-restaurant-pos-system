@@ -238,7 +238,7 @@ const QRMenu = () => {
         source: 'qr_menu'
       };
 
-      const response = await API.post('/waiter/orders', orderData);
+      const response = await API.post('/orders/qr-order', orderData);
       
       if (response.data.success) {
         setOrderNumber(response.data.data.order_number);

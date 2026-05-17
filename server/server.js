@@ -22,6 +22,7 @@ import waiterRoutes from './src/routes/waiter.js';
 import kitchenRoutes from './src/routes/kitchen.js';
 import customerRoutes from './src/routes/customers.js';
 // import customerRoutes from './src/routes/customers.js'; // REMOVED - file doesn't exist
+app.set('trust proxy', 1);  // Trust first proxy (Render)
 
 dotenv.config();
 
@@ -114,9 +115,26 @@ const startServer = async () => {
   app.use('/api/kitchen', kitchenRoutes);
   app.use('/api/customers', customerRoutes);
   // app.use('/api/customers', customerRoutes); // REMOVED
-
+app.set('trust proxy', 1);  // Trust first proxy (Render)
   app.use(notFound);
   app.use(errorHandler);
+
+  // Then your existing rate limiter setup:
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  message: { success: false, error: 'Too many requests, please slow down.' },
+  skipSuccessfulRequests: true,
+  trustProxy: true,  // Add this line
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success: false, error: 'Too many login attempts, please try again later.' },
+  skipSuccessfulRequests: true,
+  trustProxy: true,  // Add this line
+});
 
   server.listen(PORT, () => {
     console.log(`\n✅ Server running on http://localhost:${PORT}`);

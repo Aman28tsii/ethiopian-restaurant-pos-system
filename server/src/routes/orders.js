@@ -562,5 +562,109 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     client.release();
   }
 });
+// ==================== PUBLIC QR ORDER ROUTE ====================
+// Public endpoint for QR code orders (no authentication required)
+router.post('/qr-order', async (req, res) => {
+  try {
+    const { items, table_id, customer_name, customer_phone, notes } = req.body;
+    
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items in order' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Calculate total
+      let totalAmount = 0;
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
+      }
+      
+      // Generate order number
+      const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+      
+      // Insert order (no user_id since customer is not logged in)
+      const orderResult = await client.query(
+        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
+         VALUES ($1, $2, 'pending', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu')
+         RETURNING id, order_number`,
+        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null]
+      );
+      
+      const orderId = orderResult.rows[0].id;
+      
+      // Insert order items
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price, name FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+        
+        await client.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
+        );
+      }
+      
+      // Add to kitchen queue
+      await client.query(
+        `INSERT INTO kitchen_orders (order_id, status, notes)
+         VALUES ($1, 'pending', $2)`,
+        [orderId, notes || null]
+      );
+      
+      // Update table status if table_id provided
+      if (table_id) {
+        await client.query(
+          `UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2`,
+          [orderId, table_id]
+        );
+      }
+      
+      await client.query('COMMIT');
+      
+      // Emit socket event for new order
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_order', {
+          order_id: orderId,
+          order_number: orderNumber,
+          table_id: table_id,
+          source: 'qr_menu'
+        });
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: 'Order placed successfully',
+        data: { 
+          order_id: orderId, 
+          order_number: orderNumber, 
+          total_amount: totalAmount 
+        }
+      });
+      
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('QR order error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    } finally {
+      client.release();
+    }
+    
+  } catch (err) {
+    console.error('QR order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 export default router;

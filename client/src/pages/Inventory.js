@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { Package, Plus, Edit2, Trash2, AlertTriangle, Search, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Inventory = () => {
+  const { t } = useLanguage();
   const [ingredients, setIngredients] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +23,8 @@ const Inventory = () => {
   });
 
   useEffect(() => {
-  fetchData();
-}, [activeTab]);
+    fetchData();
+  }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -55,17 +57,17 @@ const Inventory = () => {
       fetchData();
     } catch (err) {
       console.error('Save error:', err);
-      alert(err.response?.data?.error || 'Failed to save');
+      alert(err.response?.data?.error || t('saveFailed'));
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+    if (window.confirm(t('deleteConfirm'))) {
       try {
         await API.delete(`/${activeTab}/${id}`);
         fetchData();
       } catch (err) {
-        alert(err.response?.data?.error || 'Failed to delete');
+        alert(err.response?.data?.error || t('deleteFailed'));
       }
     }
   };
@@ -85,31 +87,37 @@ const Inventory = () => {
   };
 
   const lowStockItems = ingredients.filter(i => i.quantity <= i.min_stock);
-
   const filteredIngredients = ingredients.filter(i =>
     i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Inventory Management</h1>
-          <p className="text-gray-400 mt-1">Manage products and ingredients</p>
+          <h1 className="text-2xl font-bold text-white">{t('inventoryManagement')}</h1>
+          <p className="text-gray-400 mt-1">{t('manageProductsAndIngredients')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
         >
           <Plus size={18} />
-          Add {activeTab === 'ingredients' ? 'Ingredient' : 'Product'}
+          {activeTab === 'ingredients' ? t('addIngredient') : t('addProduct')}
         </button>
       </div>
 
@@ -119,11 +127,10 @@ const Inventory = () => {
           <div className="flex items-center gap-3">
             <AlertTriangle size={20} className="text-yellow-400" />
             <div>
-              <p className="text-yellow-400 font-semibold">Low Stock Alert</p>
-              <p className="text-gray-400 text-sm">{lowStockItems.length} ingredients are below minimum stock level</p>
+              <p className="text-yellow-400 font-semibold">{t('lowStockAlert')}</p>
+              <p className="text-gray-400 text-sm">{lowStockItems.length} {t('ingredientsBelowMinStock')}</p>
             </div>
           </div>
-          <button className="text-yellow-400 text-sm hover:underline">View Details</button>
         </div>
       )}
 
@@ -137,7 +144,7 @@ const Inventory = () => {
               : 'text-gray-400 hover:text-gray-300'
           }`}
         >
-          Ingredients
+          {t('ingredients')}
         </button>
         <button
           onClick={() => setActiveTab('products')}
@@ -147,7 +154,7 @@ const Inventory = () => {
               : 'text-gray-400 hover:text-gray-300'
           }`}
         >
-          Products
+          {t('products')}
         </button>
       </div>
 
@@ -156,103 +163,93 @@ const Inventory = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
         <input
           type="text"
-          placeholder={`Search ${activeTab}...`}
+          placeholder={`${t('search')} ${activeTab}...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {searchTerm && (
-          <button
-            onClick={() => setSearchTerm('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-          >
-            <X size={18} />
+          <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <X size={18} className="text-gray-500 hover:text-gray-300" />
           </button>
         )}
       </div>
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        /* Ingredients Table */
-        activeTab === 'ingredients' && (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-700/50">
-                  <tr>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Name</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Unit</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Stock</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Min Stock</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Unit Cost</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Category</th>
-                    <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {filteredIngredients.map(ing => (
-                    <tr key={ing.id} className="hover:bg-gray-700/50 transition">
-                      <td className="px-6 py-4 text-white">{ing.name}</td>
-                      <td className="px-6 py-4 text-gray-300">{ing.unit}</td>
-                      <td className="px-6 py-4">
-                        <span className={`font-semibold ${ing.quantity <= ing.min_stock ? 'text-red-400' : 'text-green-400'}`}>
-                          {ing.quantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-300">{ing.min_stock}</td>
-                      <td className="px-6 py-4 text-gray-300">Br {parseFloat(ing.unit_cost).toFixed(2)}</td>
-                      <td className="px-6 py-4 text-gray-300">{ing.category || '-'}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingItem(ing);
-                              setFormData(ing);
-                              setShowModal(true);
-                            }}
-                            className="text-blue-400 hover:text-blue-300"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(ing.id)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {filteredIngredients.length === 0 && (
-              <div className="text-center py-12">
-                <Package size={48} className="mx-auto text-gray-600 mb-3" />
-                <p className="text-gray-500">No ingredients found</p>
-              </div>
-            )}
-          </div>
-        )
-      )}
-
-      {/* Products Table */}
-      {activeTab === 'products' && !loading && (
+      {/* Ingredients Table */}
+      {activeTab === 'ingredients' && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Name</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Price</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Category</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Status</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('name')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('unit')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('stock')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('minStock')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('unitCost')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('category')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {filteredIngredients.map(ing => (
+                  <tr key={ing.id} className="hover:bg-gray-700/50 transition">
+                    <td className="px-6 py-4 text-white">{ing.name}</td>
+                    <td className="px-6 py-4 text-gray-300">{ing.unit}</td>
+                    <td className="px-6 py-4">
+                      <span className={`font-semibold ${ing.quantity <= ing.min_stock ? 'text-red-400' : 'text-green-400'}`}>
+                        {ing.quantity}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">{ing.min_stock}</td>
+                    <td className="px-6 py-4 text-gray-300">Br {parseFloat(ing.unit_cost).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-300">{ing.category || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingItem(ing);
+                            setFormData(ing);
+                            setShowModal(true);
+                          }}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(ing.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredIngredients.length === 0 && (
+            <div className="text-center py-12">
+              <Package size={48} className="mx-auto text-gray-600 mb-3" />
+              <p className="text-gray-500">{t('noIngredientsFound')}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Products Table */}
+      {activeTab === 'products' && (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('name')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('price')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('category')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('status')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm font-semibold">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -263,7 +260,7 @@ const Inventory = () => {
                     <td className="px-6 py-4 text-gray-300">{product.category || '-'}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${product.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {product.is_available ? 'Available' : 'Unavailable'}
+                        {product.is_available ? t('available') : t('unavailable')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -284,7 +281,7 @@ const Inventory = () => {
           {filteredProducts.length === 0 && (
             <div className="text-center py-12">
               <Package size={48} className="mx-auto text-gray-600 mb-3" />
-              <p className="text-gray-500">No products found</p>
+              <p className="text-gray-500">{t('noProductsFound')}</p>
             </div>
           )}
         </div>
@@ -297,7 +294,7 @@ const Inventory = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-white">
-                  {editingItem ? `Edit ${activeTab === 'ingredients' ? 'Ingredient' : 'Product'}` : `Add New ${activeTab === 'ingredients' ? 'Ingredient' : 'Product'}`}
+                  {editingItem ? `${t('edit')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}` : `${t('addNew')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}`}
                 </h2>
                 <button onClick={resetModal} className="text-gray-400 hover:text-gray-300">
                   <X size={20} />
@@ -306,7 +303,7 @@ const Inventory = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('name')} *</label>
                   <input
                     type="text"
                     required
@@ -319,25 +316,25 @@ const Inventory = () => {
                 {activeTab === 'ingredients' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Unit *</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('unit')} *</label>
                       <select
                         required
                         value={formData.unit}
                         onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select unit</option>
-                        <option value="kg">Kilogram (kg)</option>
-                        <option value="g">Gram (g)</option>
-                        <option value="L">Liter (L)</option>
-                        <option value="ml">Milliliter (ml)</option>
-                        <option value="pcs">Pieces (pcs)</option>
+                        <option value="">{t('selectUnit')}</option>
+                        <option value="kg">{t('kilogram')}</option>
+                        <option value="g">{t('gram')}</option>
+                        <option value="L">{t('liter')}</option>
+                        <option value="ml">{t('milliliter')}</option>
+                        <option value="pcs">{t('pieces')}</option>
                       </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Quantity</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('quantity')}</label>
                         <input
                           type="number"
                           step="0.01"
@@ -347,7 +344,7 @@ const Inventory = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Min Stock</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('minStock')}</label>
                         <input
                           type="number"
                           step="0.01"
@@ -360,7 +357,7 @@ const Inventory = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Unit Cost</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('unitCost')}</label>
                         <input
                           type="number"
                           step="0.01"
@@ -370,19 +367,19 @@ const Inventory = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')}</label>
                         <input
                           type="text"
                           value={formData.category}
                           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                           className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Vegetables"
+                          placeholder={t('egVegetables')}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Supplier</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('supplier')}</label>
                       <input
                         type="text"
                         value={formData.supplier}
@@ -396,7 +393,7 @@ const Inventory = () => {
                 {activeTab === 'products' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Price *</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('price')} *</label>
                       <input
                         type="number"
                         step="0.01"
@@ -407,7 +404,7 @@ const Inventory = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')}</label>
                       <input
                         type="text"
                         value={formData.category}
@@ -416,7 +413,7 @@ const Inventory = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('description')}</label>
                       <textarea
                         rows="3"
                         value={formData.description}
@@ -429,10 +426,10 @@ const Inventory = () => {
 
                 <div className="flex gap-3 pt-4">
                   <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                    {editingItem ? 'Update' : 'Create'}
+                    {editingItem ? t('update') : t('create')}
                   </button>
                   <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition">
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </div>
               </form>

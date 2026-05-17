@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Bell, User, Search } from 'lucide-react';
+import { Bell, User, Search, Globe } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import RealTimeNotifications from './RealTimeNotifications';
 
 const Topbar = ({ user }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
-  const notifications = [
-    { id: 1, message: 'Low stock alert: Coffee beans', type: 'warning', time: '5 mins ago' },
-    { id: 2, message: 'New order #1234 completed', type: 'success', time: '10 mins ago' },
-    { id: 3, message: 'Daily sales report ready', type: 'info', time: '1 hour ago' },
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'am', name: 'አማርኛ', flag: '🇪🇹' }
   ];
 
   return (
@@ -15,8 +17,8 @@ const Topbar = ({ user }) => {
       <div className="flex justify-between items-center">
         {/* Page Title */}
         <div>
-          <h2 className="text-xl font-semibold text-white">Welcome back, {user?.name?.split(' ')[0] || 'Staff'}!</h2>
-          <p className="text-sm text-gray-400">Ready to serve customers</p>
+          <h2 className="text-xl font-semibold text-white">{t('welcome')}, {user?.name?.split(' ')[0] || 'Staff'}!</h2>
+          <p className="text-sm text-gray-400">{t('readyToServe')}</p>
         </div>
         
         {/* Right Section */}
@@ -26,37 +28,47 @@ const Topbar = ({ user }) => {
             <Search size={18} className="text-gray-400" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={t('search')}
               className="bg-transparent border-none text-white placeholder-gray-400 focus:outline-none px-2 w-64"
             />
           </div>
           
-          {/* Notifications */}
+          {/* Language Switcher */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors relative"
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              className="p-2 hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1"
             >
-              <Bell size={20} className="text-gray-400" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <Globe size={20} className="text-gray-400" />
+              <span className="text-gray-300 text-sm hidden sm:inline">
+                {language === 'en' ? 'EN' : 'አማ'}
+              </span>
             </button>
             
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50">
-                <div className="p-3 border-b border-gray-700">
-                  <h3 className="font-semibold text-white">Notifications</h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.map(notif => (
-                    <div key={notif.id} className="p-3 border-b border-gray-700 hover:bg-gray-700 transition">
-                      <p className="text-sm text-white">{notif.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
-                    </div>
-                  ))}
-                </div>
+            {showLanguageMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50">
+                {languages.map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-700 transition flex items-center gap-2 ${
+                      language === lang.code ? 'bg-gray-700 text-blue-400' : 'text-white'
+                    }`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.name}</span>
+                    {language === lang.code && <span className="ml-auto">✓</span>}
+                  </button>
+                ))}
               </div>
             )}
           </div>
+          
+          {/* Real-time Notifications */}
+          <RealTimeNotifications />
           
           {/* User Menu */}
           <div className="flex items-center gap-3 pl-4 border-l border-gray-700">
@@ -65,7 +77,7 @@ const Topbar = ({ user }) => {
             </div>
             <div className="hidden md:block">
               <p className="text-sm font-medium text-white">{user?.name || 'Staff'}</p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role || 'cashier'}</p>
+              <p className="text-xs text-gray-400 capitalize">{t(user?.role) || user?.role || 'cashier'}</p>
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ export const getProfitReport = catchAsync(async (req, res) => {
   const summaryResult = await query(`
     SELECT 
       COUNT(*) as total_sales,
-      COALESCE(SUM(total_amount), 0) as total_revenue,
+      ROUND(COALESCE(SUM(total_amount), 0)) as total_revenue,
       COALESCE(SUM(total_cost), 0) as total_cost,
       COALESCE(SUM(profit), 0) as total_profit,
       AVG(total_amount) as average_order_value,

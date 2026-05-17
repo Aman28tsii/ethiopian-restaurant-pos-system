@@ -4,10 +4,12 @@ import {
   ShoppingCart, Package, BarChart3, Users, LogOut, Store,
   ChevronLeft, ChevronRight, TrendingUp, Receipt, 
   ChefHat, Clock, LayoutDashboard, Settings, ClipboardList,
-  Table as TableIcon, History, Menu, X
+  Table as TableIcon, History, Menu, X, QrCode
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Sidebar = ({ user, onLogout }) => {
+  const { t } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -27,38 +29,41 @@ const Sidebar = ({ user, onLogout }) => {
 
   // Owner menu items
   const ownerMenu = [
-    { path: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/owner/reports', icon: TrendingUp, label: 'Profit Reports' },
-    { path: '/owner/expenses', icon: Receipt, label: 'Expenses' },
-    { path: '/owner/inventory', icon: Package, label: 'Inventory' },
-    { path: '/owner/staff', icon: Users, label: 'Staff' },
-    { path: '/owner/pending-approvals', icon: Clock, label: 'Pending Approvals' },
-    { path: '/owner/settings', icon: Settings, label: 'Settings' },
+    { path: '/owner/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+    { path: '/owner/reports', icon: TrendingUp, label: t('profitReports') },
+    { path: '/owner/expenses', icon: Receipt, label: t('expenses') },
+    { path: '/owner/inventory', icon: Package, label: t('inventoryManagement') },
+    { path: '/owner/staff', icon: Users, label: t('staffManagement') },
+    { path: '/owner/pending-approvals', icon: Clock, label: t('pendingApprovals') },
+    { path: '/owner/settings', icon: Settings, label: t('settings') },
+      { path: '/owner/customers', icon: Users, label: t('customers') },
+      { path: '/owner/print-qr', icon: QrCode, label: t('printQRCodes') },
+      
   ];
 
   // Manager menu items
   const managerMenu = [
-    { path: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/manager/inventory', icon: Package, label: 'Inventory' },
-    { path: '/manager/reports', icon: BarChart3, label: 'Sales Reports' },
-    { path: '/manager/profit', icon: TrendingUp, label: 'Profit' },
+    { path: '/manager/dashboard', icon: LayoutDashboard, label: t('dashboard') },
+    { path: '/manager/inventory', icon: Package, label: t('inventoryManagement') },
+    { path: '/manager/reports', icon: BarChart3, label: t('salesReports') },
+    { path: '/manager/profit', icon: TrendingUp, label: t('profit') },
   ];
 
   // Cashier menu items
   const cashierMenu = [
-    { path: '/cashier/pos', icon: ShoppingCart, label: 'POS Terminal' },
-    { path: '/cashier/history', icon: History, label: 'Sales History' },
+    { path: '/cashier/pos', icon: ShoppingCart, label: t('posTerminal') },
+    { path: '/cashier/history', icon: History, label: t('salesHistory') },
   ];
 
   // Waiter menu items
   const waiterMenu = [
-    { path: '/waiter/tables', icon: TableIcon, label: 'Tables' },
-    { path: '/waiter/orders', icon: ClipboardList, label: 'My Orders' },
+    { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
+    { path: '/waiter/orders', icon: ClipboardList, label: t('myOrders') },
   ];
 
   // Kitchen menu items
   const kitchenMenu = [
-    { path: '/kitchen/orders', icon: ChefHat, label: 'Orders' },
+    { path: '/kitchen/orders', icon: ChefHat, label: t('orders') },
   ];
 
   const getMenuItems = () => {
@@ -120,7 +125,7 @@ const Sidebar = ({ user, onLogout }) => {
             {(!isCollapsed || isMobile) && (
               <div>
                 <h1 className="text-xl font-bold text-white">EthioPOS</h1>
-                <p className="text-xs text-gray-400 capitalize">{userRole}</p>
+                <p className="text-xs text-gray-400 capitalize">{t(userRole)}</p>
               </div>
             )}
           </div>
@@ -163,18 +168,18 @@ const Sidebar = ({ user, onLogout }) => {
         <div className="p-4 border-t border-gray-700">
           {(!isCollapsed || isMobile) && (
             <div className="mb-3 px-4 py-2 bg-gray-700 rounded-xl">
-              <p className="text-sm text-gray-400">Logged in as</p>
-              <p className="text-white font-semibold truncate">{user?.name || 'Staff'}</p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role || 'cashier'}</p>
+              <p className="text-sm text-gray-400">{t('loggedInAs')}</p>
+              <p className="text-white font-semibold truncate">{user?.name || t('staff')}</p>
+              <p className="text-xs text-gray-400 capitalize">{t(user?.role || 'cashier')}</p>
             </div>
           )}
           <button
             onClick={onLogout}
             className={`w-full flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'justify-center gap-2'} px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 font-semibold`}
-            title={isCollapsed && !isMobile ? 'Logout' : ''}
+            title={isCollapsed && !isMobile ? t('logout') : ''}
           >
             <LogOut size={18} />
-            {(!isCollapsed || isMobile) && <span>Logout</span>}
+            {(!isCollapsed || isMobile) && <span>{t('logout')}</span>}
           </button>
         </div>
       </aside>

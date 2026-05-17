@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { AlertTriangle, Package, X, Bell } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const LowStockAlert = () => {
+  const { t } = useLanguage();
   const [lowStockItems, setLowStockItems] = useState([]);
   const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -35,13 +37,13 @@ const LowStockAlert = () => {
           <AlertTriangle className="text-yellow-500 mt-0.5" size={20} />
           <div>
             <h3 className="text-yellow-500 font-semibold flex items-center gap-2">
-              Low Stock Alert
+              {t('lowStockAlert')}
               <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded-full">
-                {lowStockItems.length} items
+                {lowStockItems.length} {t('items')}
               </span>
             </h3>
             <p className="text-gray-400 text-sm mt-1">
-              The following ingredients are below minimum stock level:
+              {t('lowStockDescription')}
             </p>
             <div className="mt-3 space-y-2">
               {lowStockItems.slice(0, 5).map(item => (
@@ -49,16 +51,16 @@ const LowStockAlert = () => {
                   <Package size={14} className="text-gray-500" />
                   <span className="text-white">{item.name}</span>
                   <span className="text-red-400">
-                    {item.quantity} {item.unit} left
+                    {item.quantity} {item.unit} {t('left')}
                   </span>
                   <span className="text-gray-500">
-                    (Min: {item.min_stock})
+                    ({t('min')}: {item.min_stock})
                   </span>
                 </div>
               ))}
               {lowStockItems.length > 5 && (
                 <p className="text-gray-500 text-xs mt-2">
-                  +{lowStockItems.length - 5} more items
+                  +{lowStockItems.length - 5} {t('moreItems')}
                 </p>
               )}
             </div>

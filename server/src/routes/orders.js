@@ -1,9 +1,16 @@
 import express from 'express';
 import { protect, allowWaiter, allowCashier, allowKitchen, allowManager } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
-import OrderService from '../services/orderService.js';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
+
+// Rate limiter for public tracking endpoint
+const trackLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute per IP
+  message: { success: false, error: 'Too many requests. Please wait.' }
+});
 
 // Generate unique sale number
 const generateSaleNumber = () => {
@@ -13,29 +20,289 @@ const generateSaleNumber = () => {
   return `SALE-${timestamp}${random}`;
 };
 
+// ==================== PUBLIC ROUTES ====================
+
+// Track order by order number (Public - no authentication needed)
+router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
+  const { orderNumber } = req.params;
+  
+  try {
+    const orderResult = await pool.query(
+      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, 
+              o.customer_name, o.customer_phone, o.table_id, o.order_type, o.notes,
+              o.created_at, o.updated_at,
+              t.table_number
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       WHERE o.order_number = $1`,
+      [orderNumber]
+    );
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    
+    const order = orderResult.rows[0];
+    
+    // Get order items
+    const itemsResult = await pool.query(
+      `SELECT oi.id, oi.product_id, oi.quantity, oi.unit_price, oi.total_price,
+              p.name as product_name
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id = $1`,
+      [order.id]
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        ...order,
+        items: itemsResult.rows
+      }
+    });
+    
+  } catch (err) {
+    console.error('Track order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ==================== WAITER ROUTES ====================
+
 // Waiter: Create order
 router.post('/', protect, allowWaiter, async (req, res) => {
   try {
-    const orderData = {
-      ...req.body,
-      created_by: req.user.id
-    };
-    const result = await OrderService.createOrder(orderData);
-    res.status(201).json(result);
+    const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
+    const userId = req.user.id;
+    
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Order must have at least one item' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      let totalAmount = 0;
+      
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
+      }
+      
+      const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+      
+      const orderResult = await client.query(
+        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes)
+         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8)
+         RETURNING id, order_number, total_amount`,
+        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null]
+      );
+      
+      const orderId = orderResult.rows[0].id;
+      
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+        
+        await client.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
+        );
+      }
+      
+      await client.query(
+        `INSERT INTO kitchen_orders (order_id, status, notes)
+         VALUES ($1, 'pending', $2)`,
+        [orderId, notes || null]
+      );
+      
+      if (table_id && order_type === 'dine_in') {
+        await client.query(
+          `UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2`,
+          [orderId, table_id]
+        );
+      }
+      
+      await client.query('COMMIT');
+      
+      // Emit socket event for new order
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_order', {
+          order_id: orderId,
+          order_number: orderNumber,
+          table_id: table_id,
+          source: source
+        });
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: 'Order created and sent to kitchen',
+        data: orderResult.rows[0]
+      });
+      
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Create order error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error('Create order error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// ==================== GET ACTIVE ORDER FOR TABLE ====================
+router.get('/table/:tableId/active-order', protect, allowWaiter, async (req, res) => {
+  const { tableId } = req.params;
+  
+  try {
+    const result = await pool.query(
+      `SELECT id, order_number, total_amount, status, payment_status, created_at
+       FROM orders 
+       WHERE table_id = $1 
+         AND status NOT IN ('completed', 'cancelled')
+         AND payment_status != 'paid'
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [tableId]
+    );
+    
+    res.json({ success: true, data: result.rows[0] || null });
+  } catch (err) {
+    console.error('Get active order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== ADD ITEMS TO EXISTING ORDER ====================
+router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
+  const { orderId } = req.params;
+  const { items } = req.body;
+  
+  if (!items || items.length === 0) {
+    return res.status(400).json({ success: false, error: 'No items to add' });
+  }
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const orderCheck = await client.query(
+      'SELECT status, payment_status, total_amount FROM orders WHERE id = $1',
+      [orderId]
+    );
+    
+    if (orderCheck.rows.length === 0) {
+      throw new Error('Order not found');
+    }
+    
+    const order = orderCheck.rows[0];
+    
+    if (order.payment_status === 'paid') {
+      throw new Error('Cannot add items to a paid order');
+    }
+    
+    if (order.status === 'completed') {
+      throw new Error('Order already completed');
+    }
+    
+    let additionalAmount = 0;
+    
+    for (const item of items) {
+      const productResult = await client.query(
+        'SELECT price, name FROM products WHERE id = $1',
+        [item.product_id]
+      );
+      
+      const unitPrice = parseFloat(productResult.rows[0].price);
+      const itemTotal = unitPrice * item.quantity;
+      additionalAmount += itemTotal;
+      
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [orderId, item.product_id, item.quantity, unitPrice, itemTotal]
+      );
+    }
+    
+    const newTotal = parseFloat(order.total_amount) + additionalAmount;
+    
+    await client.query(
+      `UPDATE orders 
+       SET total_amount = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [newTotal, orderId]
+    );
+    
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: 'Items added to order',
+      additional_amount: additionalAmount,
+      new_total: newTotal
+    });
+    
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Add items error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ==================== KITCHEN ROUTES ====================
+
 // Kitchen: Get orders
 router.get('/kitchen', protect, allowKitchen, async (req, res) => {
   try {
-    const orders = await OrderService.getKitchenOrders();
-    res.json({ success: true, data: orders });
+    const result = await pool.query(`
+      SELECT 
+        ko.id, ko.order_id, ko.status, ko.created_at,
+        o.order_number, o.customer_name, o.table_id,
+        t.table_number,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'name', p.name,
+              'quantity', oi.quantity
+            )
+          ) FILTER (WHERE p.id IS NOT NULL), 
+          '[]'
+        ) as items
+      FROM kitchen_orders ko
+      JOIN orders o ON ko.order_id = o.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      LEFT JOIN tables t ON o.table_id = t.id
+      WHERE ko.status IN ('pending', 'preparing')
+      GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number
+      ORDER BY 
+        CASE ko.status
+          WHEN 'pending' THEN 1
+          WHEN 'preparing' THEN 2
+        END,
+        ko.created_at ASC
+    `);
+    res.json({ success: true, data: result.rows });
   } catch (err) {
+    console.error('Kitchen orders error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -46,26 +313,59 @@ router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) =
   const { status } = req.body;
   
   try {
-    const result = await OrderService.updateKitchenStatus(orderId, status);
-    res.json({ success: true, data: result, message: `Order status updated to ${status}` });
+    const result = await pool.query(
+      `UPDATE kitchen_orders 
+       SET status = $1,
+           started_at = CASE WHEN $1 = 'preparing' AND status = 'pending' THEN NOW() ELSE started_at END,
+           completed_at = CASE WHEN $1 = 'ready' THEN NOW() ELSE completed_at END,
+           updated_at = NOW()
+       WHERE order_id = $2
+       RETURNING *`,
+      [status, orderId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    
+    if (status === 'ready') {
+      await pool.query(
+        `UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1`,
+        [orderId]
+      );
+    }
+    
+    // Emit socket event for status update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_status_updated', {
+        order_id: orderId,
+        status: status,
+        message: `Order #${orderId} is now ${status}`
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      data: result.rows[0]
+    });
+    
   } catch (err) {
+    console.error('Update kitchen order error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ==================== CASHIER ROUTES ====================
+
 // Cashier: Get ready orders for payment
 router.get('/ready', protect, allowCashier, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        o.id,
-        o.order_number,
-        o.total_amount,
-        o.customer_name,
-        o.table_id,
-        t.table_number,
-        o.created_at,
+        o.id, o.order_number, o.total_amount, o.customer_name, o.table_id,
+        t.table_number, o.created_at,
         ko.status as kitchen_status
       FROM orders o
       LEFT JOIN tables t ON o.table_id = t.id
@@ -92,7 +392,6 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // Get order details
     const orderResult = await client.query(
       `SELECT o.*, ko.status as kitchen_status 
        FROM orders o
@@ -115,68 +414,35 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
       throw new Error('Order already paid');
     }
     
-    // Update order - set as paid and completed
     await client.query(
       `UPDATE orders 
-       SET payment_status = 'paid',
-           payment_method = $1,
-           status = 'completed',
-           updated_at = CURRENT_TIMESTAMP
+       SET payment_status = 'paid', payment_method = $1, status = 'completed', updated_at = NOW()
        WHERE id = $2`,
       [payment_method, orderId]
     );
     
-    // UPDATE TABLE STATUS TO AVAILABLE (for dine-in orders)
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
-         SET status = 'available', 
-             current_order_id = NULL,
-             updated_at = CURRENT_TIMESTAMP
+         SET status = 'available', current_order_id = NULL, updated_at = NOW()
          WHERE id = $1`,
         [order.table_id]
       );
-      console.log(`Table ${order.table_id} marked as available`);
     }
     
-    // Create sale record with sale_number
     const saleNumber = generateSaleNumber();
-    const saleResult = await client.query(
+    await client.query(
       `INSERT INTO sales (sale_number, order_id, total_amount, payment_method, status, created_at)
-       VALUES ($1, $2, $3, $4, 'completed', NOW())
-       RETURNING id`,
+       VALUES ($1, $2, $3, $4, 'completed', NOW())`,
       [saleNumber, orderId, order.total_amount, payment_method]
     );
-    
-    // Add sale items
-    const itemsResult = await client.query(
-      `SELECT product_id, quantity, unit_price, total_price 
-       FROM order_items 
-       WHERE order_id = $1`,
-      [orderId]
-    );
-    
-    for (const item of itemsResult.rows) {
-      await client.query(
-        `INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [saleResult.rows[0].id, item.product_id, item.quantity, item.unit_price, item.total_price]
-      );
-    }
     
     await client.query('COMMIT');
     
     res.json({ 
       success: true, 
       message: 'Payment processed successfully',
-      data: { 
-        sale_number: saleNumber,
-        order_id: orderId, 
-        total_amount: order.total_amount, 
-        payment_method,
-        table_freed: order.table_id ? true : false,
-        table_id: order.table_id
-      }
+      data: { sale_number: saleNumber, order_id: orderId, total_amount: order.total_amount }
     });
     
   } catch (err) {
@@ -189,33 +455,62 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
 });
 
 // ==================== MANAGER ROUTES ====================
-// Get order details (Manager only)
+
+// Get order details
 router.get('/:orderId', protect, allowManager, async (req, res) => {
   try {
-    const order = await OrderService.getOrderDetails(req.params.orderId);
-    res.json({ success: true, data: order });
+    const orderResult = await pool.query(
+      `SELECT o.*, t.table_number, u.name as waiter_name
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       LEFT JOIN users u ON o.created_by = u.id
+       WHERE o.id = $1`,
+      [req.params.orderId]
+    );
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    
+    const itemsResult = await pool.query(
+      `SELECT oi.*, p.name as product_name
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id = $1`,
+      [req.params.orderId]
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        ...orderResult.rows[0],
+        items: itemsResult.rows
+      }
+    });
   } catch (err) {
-    res.status(404).json({ success: false, error: err.message });
+    console.error('Get order error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
-// Cancel order (Waiter or Manager)
+
+// Cancel order
 router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
   const { orderId } = req.params;
   const { reason } = req.body;
+  const userId = req.user.id;
   
   const client = await pool.connect();
   
   try {
     await client.query('BEGIN');
     
-    // Check if order can be cancelled
     const orderCheck = await client.query(
-      'SELECT status, payment_status, table_id FROM orders WHERE id = $1',
-      [orderId]
+      'SELECT status, payment_status, table_id FROM orders WHERE id = $1 AND created_by = $2',
+      [orderId, userId]
     );
     
     if (orderCheck.rows.length === 0) {
-      throw new Error('Order not found');
+      throw new Error('Order not found or does not belong to you');
     }
     
     const order = orderCheck.rows[0];
@@ -228,32 +523,24 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
       throw new Error('Order already completed');
     }
     
-    // Update order status with cancellation_reason
     await client.query(
       `UPDATE orders 
-       SET status = 'cancelled', 
-           updated_at = CURRENT_TIMESTAMP,
-           cancellation_reason = $1
+       SET status = 'cancelled', updated_at = NOW(), cancellation_reason = $1
        WHERE id = $2`,
       [reason || 'Cancelled by staff', orderId]
     );
     
-    // Update kitchen orders
     await client.query(
       `UPDATE kitchen_orders 
-       SET status = 'cancelled', 
-           updated_at = CURRENT_TIMESTAMP
+       SET status = 'cancelled', updated_at = NOW()
        WHERE order_id = $1`,
       [orderId]
     );
     
-    // Free the table if occupied
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
-         SET status = 'available', 
-             current_order_id = NULL,
-             updated_at = CURRENT_TIMESTAMP
+         SET status = 'available', current_order_id = NULL, updated_at = NOW()
          WHERE id = $1`,
         [order.table_id]
       );
@@ -275,4 +562,5 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     client.release();
   }
 });
+
 export default router;

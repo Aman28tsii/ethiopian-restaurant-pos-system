@@ -128,7 +128,25 @@ CREATE TABLE IF NOT EXISTS sale_items (
     total_price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Customers table
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    loyalty_points INTEGER DEFAULT 0,
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    visit_count INTEGER DEFAULT 0,
+    notes TEXT,
+    last_visit TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
 -- Expenses table
 CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,

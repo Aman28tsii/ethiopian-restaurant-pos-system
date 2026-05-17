@@ -6,17 +6,16 @@ export const getDashboardData = catchAsync(async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  
-  // Today's stats
-  const todayStats = await query(`
-    SELECT 
-      COUNT(*) as total_orders,
-      COALESCE(SUM(total_amount), 0) as total_revenue,
-      COALESCE(SUM(profit), 0) as total_profit,
-      COALESCE(AVG(total_amount), 0) as average_order
-    FROM sales
-    WHERE DATE(created_at) = $1 AND status = 'completed'
-  `, [today]);
+
+  // Today's stats (simplified - no profit column)
+const todayStats = await query(`
+  SELECT 
+    COUNT(*) as total_orders,
+    COALESCE(SUM(total_amount), 0) as total_revenue,
+    COALESCE(AVG(total_amount), 0) as average_order
+  FROM sales
+  WHERE DATE(created_at) = $1 AND status = 'completed'
+`, [today]);
   
   // Week stats
   const weekStats = await query(`

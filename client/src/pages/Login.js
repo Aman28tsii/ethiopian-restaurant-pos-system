@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import API from '../api/axios';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = ({ onLogin }) => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,13 +18,12 @@ const Login = ({ onLogin }) => {
     setError('');
 
     if (!email.trim() || !password.trim()) {
-      setError('Email and password are required');
+      setError(t('emailPasswordRequired'));
       setLoading(false);
       return;
     }
 
     try {
-      // Real API call to backend
       const response = await API.post('/auth/login', { 
         email: email.trim(), 
         password: password 
@@ -33,7 +34,7 @@ const Login = ({ onLogin }) => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || t('loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ const Login = ({ onLogin }) => {
             <Store className="text-white" size={40} />
           </div>
           <h1 className="text-3xl font-bold text-white">EthioPOS</h1>
-          <p className="text-gray-400 mt-2">Restaurant Management System</p>
+          <p className="text-gray-400 mt-2">{t('restaurantManagementSystem')}</p>
         </div>
 
         <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 shadow-xl">
@@ -59,7 +60,7 @@ const Login = ({ onLogin }) => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('emailAddress')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                 <input
@@ -74,7 +75,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                 <input
@@ -103,27 +104,29 @@ const Login = ({ onLogin }) => {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  Logging in...
+                  {t('loggingIn')}
                 </>
               ) : (
-                'Sign In'
+                t('signIn')
               )}
             </button>
           </form>
-<div className="mt-6 text-center">
-  <p className="text-gray-400 text-sm">
-    Don't have an account?{' '}
-    <Link to="/signup" className="text-blue-400 hover:text-blue-300">
-      Sign Up
-    </Link>
-  </p>
-</div>
+
           <div className="mt-6 text-center">
-            <p className="text-gray-500 text-sm">Demo Accounts:</p>
+            <p className="text-gray-400 text-sm">
+              {t('noAccount')}{' '}
+              <Link to="/signup" className="text-blue-400 hover:text-blue-300">
+                {t('signUp')}
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-500 text-sm">{t('demoAccounts')}:</p>
             <p className="text-gray-400 text-xs mt-1">
-              admin@example.com / admin123 (Admin)<br />
-              cashier@example.com / cashier123 (Cashier)<br />
-              kitchen@example.com / kitchen123 (Kitchen)
+              admin@example.com / admin123 ({t('admin')})<br />
+              cashier@example.com / admin123 ({t('cashier')})<br />
+              kitchen@example.com / admin123 ({t('kitchen')})
             </p>
           </div>
         </div>

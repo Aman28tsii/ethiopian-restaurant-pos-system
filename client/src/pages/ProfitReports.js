@@ -5,8 +5,10 @@ import {
   Loader2, BarChart3 
 } from 'lucide-react';
 import ExportButtons from '../components/ExportButtons';
+import { useLanguage } from '../context/LanguageContext';
 
 const ProfitReports = () => {
+  const { t } = useLanguage();
   const [reportData, setReportData] = useState(null);
   const [todayData, setTodayData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,19 +37,19 @@ const ProfitReports = () => {
     }
   };
 
-  const formatCurrency = (value) => {
-    return `Br ${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
+const formatCurrency = (value) => {
+  const num = parseFloat(value || 0);
+  return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
   const getExportData = () => {
     if (!reportData || !reportData.daily_breakdown) return [];
     return reportData.daily_breakdown.map(day => ({
-      'Date': new Date(day.date).toLocaleDateString(),
-      'Orders': day.sales_count,
-      'Revenue': day.revenue,
-      'Cost': day.cost,
-      'Profit': day.profit,
-      'Margin (%)': day.profit_margin
+      [t('date')]: new Date(day.date).toLocaleDateString(),
+      [t('orders')]: day.sales_count,
+      [t('revenue')]: day.revenue,
+      [t('cost')]: day.cost,
+      [t('profit')]: day.profit,
+      [t('margin')]: `${day.profit_margin}%`
     }));
   };
 
@@ -63,8 +65,8 @@ const ProfitReports = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Profit Reports</h1>
-          <p className="text-gray-400 mt-1">Track your business profitability</p>
+          <h1 className="text-2xl font-bold text-white">{t('profitReports')}</h1>
+          <p className="text-gray-400 mt-1">{t('trackYourBusinessProfitability')}</p>
         </div>
         
         {reportData && reportData.daily_breakdown && reportData.daily_breakdown.length > 0 && (
@@ -83,7 +85,7 @@ const ProfitReports = () => {
             onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
             className="bg-gray-700 text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span className="text-gray-400">to</span>
+          <span className="text-gray-400">{t('to')}</span>
           <input
             type="date"
             value={dateRange.endDate}
@@ -101,33 +103,33 @@ const ProfitReports = () => {
             }}
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition"
           >
-            This Month
+            {t('thisMonth')}
           </button>
         </div>
       </div>
 
       {todayData && (
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white">
-          <h3 className="text-lg font-semibold mb-4">Today's Performance</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('todayPerformance')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
-              <p className="text-blue-200 text-sm">Orders</p>
+              <p className="text-blue-200 text-sm">{t('orders')}</p>
               <p className="text-2xl font-bold">{todayData.summary.orders || 0}</p>
             </div>
             <div>
-              <p className="text-blue-200 text-sm">Revenue</p>
+              <p className="text-blue-200 text-sm">{t('revenue')}</p>
               <p className="text-2xl font-bold">{formatCurrency(todayData.summary.revenue)}</p>
             </div>
             <div>
-              <p className="text-blue-200 text-sm">Cost</p>
+              <p className="text-blue-200 text-sm">{t('cost')}</p>
               <p className="text-2xl font-bold">{formatCurrency(todayData.summary.cost)}</p>
             </div>
             <div>
-              <p className="text-blue-200 text-sm">Profit</p>
+              <p className="text-blue-200 text-sm">{t('profit')}</p>
               <p className="text-2xl font-bold">{formatCurrency(todayData.summary.profit)}</p>
             </div>
             <div>
-              <p className="text-blue-200 text-sm">Margin</p>
+              <p className="text-blue-200 text-sm">{t('profitMargin')}</p>
               <p className="text-2xl font-bold">{todayData.summary.profit_margin || 0}%</p>
             </div>
           </div>
@@ -143,7 +145,7 @@ const ProfitReports = () => {
               </div>
               <TrendingUp size={16} className="text-green-400" />
             </div>
-            <p className="text-gray-400 text-sm">Total Revenue</p>
+            <p className="text-gray-400 text-sm">{t('totalRevenue')}</p>
             <p className="text-2xl font-bold text-white">{formatCurrency(reportData.summary.total_revenue)}</p>
           </div>
           
@@ -154,7 +156,7 @@ const ProfitReports = () => {
               </div>
               <TrendingDown size={16} className="text-red-400" />
             </div>
-            <p className="text-gray-400 text-sm">Total Cost</p>
+            <p className="text-gray-400 text-sm">{t('totalCost')}</p>
             <p className="text-2xl font-bold text-white">{formatCurrency(reportData.summary.total_cost)}</p>
           </div>
           
@@ -165,7 +167,7 @@ const ProfitReports = () => {
               </div>
               <TrendingUp size={16} className="text-green-400" />
             </div>
-            <p className="text-gray-400 text-sm">Total Profit</p>
+            <p className="text-gray-400 text-sm">{t('totalProfit')}</p>
             <p className="text-2xl font-bold text-green-400">{formatCurrency(reportData.summary.total_profit)}</p>
           </div>
           
@@ -175,7 +177,7 @@ const ProfitReports = () => {
                 <BarChart3 size={20} className="text-purple-400" />
               </div>
             </div>
-            <p className="text-gray-400 text-sm">Profit Margin</p>
+            <p className="text-gray-400 text-sm">{t('profitMargin')}</p>
             <p className="text-2xl font-bold text-white">{reportData.summary.profit_margin || 0}%</p>
           </div>
         </div>
@@ -184,19 +186,19 @@ const ProfitReports = () => {
       {reportData && reportData.top_products && reportData.top_products.length > 0 && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-700">
-            <h3 className="text-white font-semibold">Top Performing Products</h3>
-            <p className="text-gray-400 text-sm">By profit contribution</p>
+            <h3 className="text-white font-semibold">{t('topProducts')}</h3>
+            <p className="text-gray-400 text-sm">{t('byProfitContribution')}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Product</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Sold</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Revenue</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Cost</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Profit</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Margin</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('product')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('sold')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('revenue')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('cost')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('profit')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('margin')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -226,19 +228,19 @@ const ProfitReports = () => {
       {reportData && reportData.daily_breakdown && reportData.daily_breakdown.length > 0 && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-700">
-            <h3 className="text-white font-semibold">Daily Breakdown</h3>
-            <p className="text-gray-400 text-sm">Performance by day</p>
+            <h3 className="text-white font-semibold">{t('dailyBreakdown')}</h3>
+            <p className="text-gray-400 text-sm">{t('performanceByDay')}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Date</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Orders</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Revenue</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Cost</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Profit</th>
-                  <th className="px-6 py-3 text-gray-400 text-sm">Margin</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('date')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('orders')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('revenue')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('cost')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('profit')}</th>
+                  <th className="px-6 py-3 text-gray-400 text-sm">{t('margin')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -265,7 +267,7 @@ const ProfitReports = () => {
       {reportData && reportData.summary.total_sales === 0 && (
         <div className="text-center py-12 bg-gray-800 rounded-xl">
           <BarChart3 size={48} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-500">No sales data for selected period</p>
+          <p className="text-gray-500">{t('noSalesDataForPeriod')}</p>
         </div>
       )}
     </div>

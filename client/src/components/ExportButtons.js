@@ -3,49 +3,47 @@ import { FileText, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useLanguage } from '../context/LanguageContext';
 
 const ExportButtons = ({ data, filename, type = 'both' }) => {
+  const { t } = useLanguage();
   
   // Export to Excel
   const exportToExcel = () => {
     if (!data || data.length === 0) {
-      alert('No data to export');
+      alert(t('noDataToExport'));
       return;
     }
     
     try {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Report');
+      XLSX.utils.book_append_sheet(wb, ws, t('report'));
       XLSX.writeFile(wb, `${filename}.xlsx`);
     } catch (error) {
       console.error('Excel export error:', error);
-      alert('Failed to export Excel');
+      alert(t('exportFailed'));
     }
   };
 
   // Export to PDF
   const exportToPDF = () => {
     if (!data || data.length === 0) {
-      alert('No data to export');
+      alert(t('noDataToExport'));
       return;
     }
     
     try {
-      // Create PDF in landscape mode
       const doc = new jsPDF('l', 'mm', 'a4');
       
-      // Add Title
       doc.setFontSize(16);
       doc.text(filename, 14, 15);
       doc.setFontSize(9);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 25);
+      doc.text(`${t('generated')}: ${new Date().toLocaleString()}`, 14, 25);
       
-      // Prepare table data
       const tableColumn = Object.keys(data[0]);
       const tableRows = data.map(item => Object.values(item));
       
-      // Generate table using autoTable
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
@@ -65,12 +63,11 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
         }
       });
       
-      // Save PDF
       doc.save(`${filename}.pdf`);
       
     } catch (error) {
       console.error('PDF export error:', error);
-      alert(`PDF Export Error: ${error.message}`);
+      alert(`${t('pdfExportError')}: ${error.message}`);
     }
   };
 
@@ -82,7 +79,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileSpreadsheet size={16} />
-          Export Excel
+          {t('exportExcel')}
         </button>
       )}
       {(type === 'pdf' || type === 'both') && (
@@ -91,7 +88,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileText size={16} />
-          Export PDF
+          {t('exportPDF')}
         </button>
       )}
     </div>

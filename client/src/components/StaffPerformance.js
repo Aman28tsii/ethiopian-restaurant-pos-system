@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import API from '../api/axios';
 import { Award, Loader2, Medal, Crown } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const StaffPerformance = () => {
+  const { t } = useLanguage();
   const [performance, setPerformance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
@@ -27,12 +29,10 @@ const StaffPerformance = () => {
     }
   }, [period]);
 
-  // Initial fetch
   useEffect(() => {
     isMounted.current = true;
     fetchPerformance();
     
-    // Refresh every 60 seconds only (not constantly)
     intervalRef.current = setInterval(() => {
       if (isMounted.current) {
         fetchPerformance();
@@ -53,10 +53,10 @@ const StaffPerformance = () => {
 
   const getPeriodText = () => {
     switch(period) {
-      case 'week': return 'Last 7 Days';
-      case 'month': return 'Last 30 Days';
-      case 'year': return 'Last 365 Days';
-      default: return 'Last 30 Days';
+      case 'week': return t('last7Days');
+      case 'month': return t('last30Days');
+      case 'year': return t('last365Days');
+      default: return t('last30Days');
     }
   };
 
@@ -84,7 +84,7 @@ const StaffPerformance = () => {
         <div>
           <h3 className="text-white font-semibold flex items-center gap-2">
             <Award size={20} className="text-yellow-400" />
-            Staff Performance
+            {t('staffPerformance')}
           </h3>
           <p className="text-gray-400 text-sm">{getPeriodText()}</p>
         </div>
@@ -93,50 +93,48 @@ const StaffPerformance = () => {
             onClick={() => setPeriod('week')}
             className={`px-3 py-1 rounded-lg text-sm transition ${period === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
           >
-            Week
+            {t('week')}
           </button>
           <button
             onClick={() => setPeriod('month')}
             className={`px-3 py-1 rounded-lg text-sm transition ${period === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
           >
-            Month
+            {t('month')}
           </button>
           <button
             onClick={() => setPeriod('year')}
             className={`px-3 py-1 rounded-lg text-sm transition ${period === 'year' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
           >
-            Year
+            {t('year')}
           </button>
         </div>
       </div>
 
-      {/* Top Performer Highlight */}
       {topPerformer && (
         <div className="m-4 p-4 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 rounded-xl border border-yellow-500/30">
           <div className="flex items-center gap-3">
             <Crown size={28} className="text-yellow-400" />
             <div>
-              <p className="text-yellow-400 text-xs font-semibold">🏆 TOP PERFORMER</p>
+              <p className="text-yellow-400 text-xs font-semibold">{t('topPerformer')}</p>
               <p className="text-white font-bold text-lg">{topPerformer.name}</p>
-              <p className="text-gray-400 text-sm">{topPerformer.role} • {formatCurrency(topPerformer.total_revenue)} revenue</p>
+              <p className="text-gray-400 text-sm">{topPerformer.role} • {formatCurrency(topPerformer.total_revenue)} {t('revenue')}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Sales by Staff Table */}
       {performance.sales_by_staff && performance.sales_by_staff.length > 0 ? (
         <div className="p-4 overflow-x-auto">
-          <h4 className="text-white font-medium mb-3">Sales Performance</h4>
+          <h4 className="text-white font-medium mb-3">{t('salesPerformance')}</h4>
           <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-700/50">
               <tr>
-                <th className="px-4 py-2 text-left text-gray-400">Staff</th>
-                <th className="px-4 py-2 text-left text-gray-400">Role</th>
-                <th className="px-4 py-2 text-right text-gray-400">Sales</th>
-                <th className="px-4 py-2 text-right text-gray-400">Revenue</th>
-                <th className="px-4 py-2 text-right text-gray-400">Profit</th>
-                <th className="px-4 py-2 text-right text-gray-400">Avg Order</th>
+                <th className="px-4 py-2 text-left text-gray-400">{t('staff')}</th>
+                <th className="px-4 py-2 text-left text-gray-400">{t('role')}</th>
+                <th className="px-4 py-2 text-right text-gray-400">{t('sales')}</th>
+                <th className="px-4 py-2 text-right text-gray-400">{t('revenue')}</th>
+                <th className="px-4 py-2 text-right text-gray-400">{t('profit')}</th>
+                <th className="px-4 py-2 text-right text-gray-400">{t('avgOrder')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -146,7 +144,7 @@ const StaffPerformance = () => {
                     {idx === 0 && <Medal size={14} className="inline text-yellow-400 mr-1" />}
                     {staff.name}
                    </td>
-                  <td className="px-4 py-3 text-gray-300 capitalize">{staff.role}</td>
+                  <td className="px-4 py-3 text-gray-300 capitalize">{t(staff.role)}</td>
                   <td className="px-4 py-3 text-right text-gray-300">{staff.total_sales || 0}</td>
                   <td className="px-4 py-3 text-right text-green-400">{formatCurrency(staff.total_revenue)}</td>
                   <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(staff.total_profit)}</td>
@@ -157,13 +155,13 @@ const StaffPerformance = () => {
           </table>
           {performance.sales_by_staff.length > 5 && (
             <p className="text-gray-500 text-xs text-center mt-3">
-              +{performance.sales_by_staff.length - 5} more staff members
+              +{performance.sales_by_staff.length - 5} {t('moreStaff')}
             </p>
           )}
         </div>
       ) : (
         <div className="p-8 text-center text-gray-500">
-          <p>No sales data available for this period</p>
+          <p>{t('noSalesData')}</p>
         </div>
       )}
     </div>

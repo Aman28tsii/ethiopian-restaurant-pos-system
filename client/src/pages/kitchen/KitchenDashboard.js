@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import socket from '../../socket';
 import { ChefHat, Clock, CheckCircle, Loader2, Bell, Utensils } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const KitchenDashboard = () => {
+  const { t } = useLanguage();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState('');
@@ -45,7 +47,7 @@ const KitchenDashboard = () => {
       fetchOrders();
     } catch (err) {
       console.error('Update error:', err);
-      alert('Failed to update order status');
+      alert(t('failedToUpdateOrderStatus'));
     }
   };
 
@@ -56,7 +58,7 @@ const KitchenDashboard = () => {
       console.log('🔔 New order:', data);
       playSound();
       fetchOrders();
-      setNotification(`🔔 New order #${data.order_number || data.order_id}!`);
+      setNotification(`🔔 ${t('newOrderReceived')} #${data.order_number || data.order_id}!`);
       setTimeout(() => setNotification(''), 5000);
     });
     
@@ -88,6 +90,37 @@ const KitchenDashboard = () => {
     }
   };
 
+  const getStatusButton = (status, orderId) => {
+    if (status === 'pending') {
+      return (
+        <button
+          onClick={() => updateStatus(orderId, 'preparing')}
+          className="w-full py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm sm:text-base font-bold transition-all active:scale-95"
+        >
+          🍳 {t('startCooking')}
+        </button>
+      );
+    }
+    if (status === 'preparing') {
+      return (
+        <button
+          onClick={() => updateStatus(orderId, 'ready')}
+          className="w-full py-3 sm:py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm sm:text-base font-bold transition-all active:scale-95"
+        >
+          ✅ {t('markReady')}
+        </button>
+      );
+    }
+    if (status === 'ready') {
+      return (
+        <div className="w-full py-3 sm:py-4 bg-gray-700 text-green-400 rounded-xl text-sm sm:text-base font-bold text-center">
+          🍽️ {t('readyForPickup')}
+        </div>
+      );
+    }
+    return null;
+  };
+
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const readyOrders = orders.filter(o => o.status === 'ready');
@@ -105,22 +138,22 @@ const KitchenDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Kitchen Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-1">Manage food preparation</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">{t('kitchenDashboard')}</h1>
+          <p className="text-sm text-gray-400 mt-1">{t('manageFoodPreparation')}</p>
         </div>
         
         {/* Stats Cards */}
         <div className="flex items-center gap-3 sm:gap-4 bg-gray-800 rounded-xl px-3 sm:px-4 py-2 w-full sm:w-auto justify-between">
           <div className="text-center">
-            <p className="text-xs text-gray-400">Pending</p>
+            <p className="text-xs text-gray-400">{t('pending')}</p>
             <p className="text-lg sm:text-xl font-bold text-yellow-400">{pendingOrders.length}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-gray-400">Cooking</p>
+            <p className="text-xs text-gray-400">{t('preparing')}</p>
             <p className="text-lg sm:text-xl font-bold text-blue-400">{preparingOrders.length}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-gray-400">Ready</p>
+            <p className="text-xs text-gray-400">{t('ready')}</p>
             <p className="text-lg sm:text-xl font-bold text-green-400">{readyOrders.length}</p>
           </div>
         </div>
@@ -133,7 +166,7 @@ const KitchenDashboard = () => {
         </div>
       )}
 
-      {/* Tabs - Scrollable on mobile */}
+      {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-700 overflow-x-auto pb-1 no-scrollbar">
         <button
           onClick={() => setActiveTab('active')}
@@ -143,7 +176,7 @@ const KitchenDashboard = () => {
               : 'text-gray-400 hover:text-gray-300'
           }`}
         >
-          Active ({pendingOrders.length + preparingOrders.length})
+          {t('active')} ({pendingOrders.length + preparingOrders.length})
         </button>
         <button
           onClick={() => setActiveTab('ready')}
@@ -153,7 +186,7 @@ const KitchenDashboard = () => {
               : 'text-gray-400 hover:text-gray-300'
           }`}
         >
-          Ready ({readyOrders.length})
+          {t('ready')} ({readyOrders.length})
         </button>
       </div>
 
@@ -161,8 +194,8 @@ const KitchenDashboard = () => {
       {(activeTab === 'active' ? [...pendingOrders, ...preparingOrders] : readyOrders).length === 0 ? (
         <div className="text-center py-12 sm:py-16 bg-gray-800 rounded-2xl">
           <ChefHat size={isMobile ? 48 : 64} className="mx-auto text-gray-600 mb-3 sm:mb-4" />
-          <p className="text-gray-500 text-base sm:text-lg">No orders to display</p>
-          <p className="text-gray-600 text-xs sm:text-sm mt-1">Orders will appear here when created</p>
+          <p className="text-gray-500 text-base sm:text-lg">{t('noOrdersToDisplay')}</p>
+          <p className="text-gray-600 text-xs sm:text-sm mt-1">{t('ordersWillAppearHere')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -173,28 +206,28 @@ const KitchenDashboard = () => {
                 <div className="flex justify-between items-start flex-wrap gap-2">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-white text-sm sm:text-base md:text-lg truncate">
-                      Order #{order.order_number}
+                      {t('order')} #{order.order_number}
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(order.created_at).toLocaleTimeString()}
                     </p>
                     {order.table_number && (
-                      <p className="text-xs text-gray-400 mt-1">Table: {order.table_number}</p>
+                      <p className="text-xs text-gray-400 mt-1">{t('table')}: {order.table_number}</p>
                     )}
                   </div>
                   <div className={`flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
                     {getStatusIcon(order.status)}
-                    <span className="capitalize hidden xs:inline">{order.status}</span>
+                    <span className="capitalize hidden xs:inline">{t(order.status)}</span>
                   </div>
                 </div>
                 {order.customer_name && (
-                  <p className="text-xs text-gray-300 mt-2 truncate">Customer: {order.customer_name}</p>
+                  <p className="text-xs text-gray-300 mt-2 truncate">{t('customer')}: {order.customer_name}</p>
                 )}
               </div>
 
               {/* Order Items */}
               <div className="p-3 sm:p-4">
-                <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Items:</p>
+                <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{t('items')}:</p>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {order.items?.slice(0, isMobile ? 3 : 4).map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center text-xs sm:text-sm">
@@ -204,34 +237,14 @@ const KitchenDashboard = () => {
                     </div>
                   ))}
                   {order.items?.length > (isMobile ? 3 : 4) && (
-                    <p className="text-xs text-gray-500">+{order.items.length - (isMobile ? 3 : 4)} more</p>
+                    <p className="text-xs text-gray-500">+{order.items.length - (isMobile ? 3 : 4)} {t('more')}</p>
                   )}
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="p-3 sm:p-4 border-t border-gray-700">
-                {order.status === 'pending' && (
-                  <button
-                    onClick={() => updateStatus(order.order_id, 'preparing')}
-                    className="w-full py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm sm:text-base font-bold transition-all active:scale-95"
-                  >
-                    🍳 Start Cooking
-                  </button>
-                )}
-                {order.status === 'preparing' && (
-                  <button
-                    onClick={() => updateStatus(order.order_id, 'ready')}
-                    className="w-full py-3 sm:py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm sm:text-base font-bold transition-all active:scale-95"
-                  >
-                    ✅ Mark Ready
-                  </button>
-                )}
-                {order.status === 'ready' && (
-                  <div className="w-full py-3 sm:py-4 bg-gray-700 text-green-400 rounded-xl text-sm sm:text-base font-bold text-center">
-                    🍽️ Ready for Pickup
-                  </div>
-                )}
+                {getStatusButton(order.status, order.order_id)}
               </div>
             </div>
           ))}

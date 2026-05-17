@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import API from '../../api/axios';
 import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Settings = () => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [settings, setSettings] = useState({
@@ -25,7 +26,6 @@ const Settings = () => {
     setLoading(true);
     setSaved(false);
     
-    // Simulate save to localStorage (or API if you have a settings endpoint)
     setTimeout(() => {
       localStorage.setItem('restaurantSettings', JSON.stringify(settings));
       setLoading(false);
@@ -46,12 +46,12 @@ const Settings = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Settings</h1>
-          <p className="text-gray-400 mt-1">Configure your restaurant preferences</p>
+          <h1 className="text-2xl font-bold text-white">{t('settings')}</h1>
+          <p className="text-gray-400 mt-1">{t('configureRestaurantPreferences')}</p>
         </div>
         {saved && (
           <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-xl text-sm">
-            Settings saved successfully!
+            {t('settingsSavedSuccessfully')}
           </div>
         )}
       </div>
@@ -63,11 +63,11 @@ const Settings = () => {
           <div>
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Building size={20} className="text-blue-400" />
-              Restaurant Information
+              {t('restaurantInformation')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Restaurant Name</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('restaurantName')}</label>
                 <input
                   type="text"
                   name="restaurantName"
@@ -77,7 +77,7 @@ const Settings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('address')}</label>
                 <input
                   type="text"
                   name="address"
@@ -88,7 +88,7 @@ const Settings = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
-                  <Phone size={14} /> Phone
+                  <Phone size={14} /> {t('phone')}
                 </label>
                 <input
                   type="text"
@@ -100,7 +100,7 @@ const Settings = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
-                  <Mail size={14} /> Email
+                  <Mail size={14} /> {t('email')}
                 </label>
                 <input
                   type="email"
@@ -117,11 +117,11 @@ const Settings = () => {
           <div className="border-t border-gray-700 pt-6">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Percent size={20} className="text-green-400" />
-              Business Settings
+              {t('businessSettings')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Tax Rate (%)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('taxRate')} (%)</label>
                 <input
                   type="number"
                   name="taxRate"
@@ -133,7 +133,7 @@ const Settings = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
-                  <Clock size={14} /> Working Hours
+                  <Clock size={14} /> {t('workingHours')}
                 </label>
                 <input
                   type="text"
@@ -151,17 +151,17 @@ const Settings = () => {
           <div className="border-t border-gray-700 pt-6">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Printer size={20} className="text-purple-400" />
-              Receipt Settings
+              {t('receiptSettings')}
             </h2>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Receipt Footer Message</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('receiptFooter')}</label>
               <textarea
                 name="receiptFooter"
                 value={settings.receiptFooter}
                 onChange={handleChange}
                 rows="2"
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Thank you for dining with us!"
+                placeholder={t('thankYouForDining')}
               />
             </div>
           </div>
@@ -174,7 +174,7 @@ const Settings = () => {
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center gap-2 disabled:opacity-50"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              Save Settings
+              {t('saveSettings')}
             </button>
           </div>
         </div>
@@ -183,7 +183,7 @@ const Settings = () => {
       {/* Info Card */}
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
         <p className="text-blue-400 text-sm">
-          💡 Settings are saved to your browser. In a production environment, these would be saved to the database.
+          💡 {t('settingsSaveInfo')}
         </p>
       </div>
     </div>

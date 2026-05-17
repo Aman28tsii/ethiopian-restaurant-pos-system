@@ -3,13 +3,14 @@ import API from '../api/axios';
 import { 
   Receipt, Plus, Edit2, Trash2, Search, X, 
   Calendar, DollarSign, TrendingUp, TrendingDown,
-  PieChart, Download, Loader2
+  PieChart, Loader2
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Expenses = () => {
+  const { t } = useLanguage();
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -26,9 +27,9 @@ const Expenses = () => {
   });
 
   const expenseCategories = [
-    'Rent', 'Utilities', 'Salaries', 'Marketing', 
-    'Maintenance', 'Supplies', 'Transport', 'Insurance', 
-    'Taxes', 'Other'
+    t('rent'), t('utilities'), t('salaries'), t('marketing'), 
+    t('maintenance'), t('supplies'), t('transport'), t('insurance'), 
+    t('taxes'), t('other')
   ];
 
   useEffect(() => {
@@ -38,14 +39,12 @@ const Expenses = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [expensesRes, summaryRes, categoriesRes] = await Promise.all([
+      const [expensesRes, summaryRes] = await Promise.all([
         API.get('/expenses', { params: dateRange }),
-        API.get('/expenses/summary', { params: dateRange }),
-        API.get('/expenses/categories')
+        API.get('/expenses/summary', { params: dateRange })
       ]);
       setExpenses(expensesRes.data.data || []);
       setSummary(summaryRes.data.data);
-      setCategories(categoriesRes.data.data || []);
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -65,17 +64,17 @@ const Expenses = () => {
       fetchData();
     } catch (err) {
       console.error('Save error:', err);
-      alert(err.response?.data?.error || 'Failed to save expense');
+      alert(err.response?.data?.error || t('saveFailed'));
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
+    if (window.confirm(t('deleteConfirm'))) {
       try {
         await API.delete(`/expenses/${id}`);
         fetchData();
       } catch (err) {
-        alert(err.response?.data?.error || 'Failed to delete');
+        alert(err.response?.data?.error || t('deleteFailed'));
       }
     }
   };
@@ -91,8 +90,11 @@ const Expenses = () => {
     });
   };
 
+  // Fixed: Proper rounding to 2 decimal places
   const formatCurrency = (value) => {
-    return `Br ${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const num = parseFloat(value || 0);
+    const rounded = Math.round(num * 100) / 100;
+    return `Br ${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const filteredExpenses = expenses.filter(e =>
@@ -110,27 +112,25 @@ const Expenses = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Expense Tracking</h1>
-          <p className="text-gray-400 mt-1">Track business operational costs</p>
+          <h1 className="text-2xl font-bold text-white">{t('expenseTracking')}</h1>
+          <p className="text-gray-400 mt-1">{t('trackBusinessOperationalCosts')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
         >
           <Plus size={18} />
-          Add Expense
+          {t('addExpense')}
         </button>
       </div>
 
-      {/* Date Range Filter */}
       <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-gray-400" />
-            <span className="text-gray-300">From:</span>
+            <span className="text-gray-300">{t('from')}:</span>
             <input
               type="date"
               value={dateRange.startDate}
@@ -139,7 +139,7 @@ const Expenses = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-300">To:</span>
+            <span className="text-gray-300">{t('to')}:</span>
             <input
               type="date"
               value={dateRange.endDate}
@@ -158,7 +158,7 @@ const Expenses = () => {
             }}
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition"
           >
-            This Month
+            {t('thisMonth')}
           </button>
           <button
             onClick={() => {
@@ -171,12 +171,11 @@ const Expenses = () => {
             }}
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition"
           >
-            This Year
+            {t('thisYear')}
           </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -184,10 +183,10 @@ const Expenses = () => {
               <div className="p-2 bg-red-500/20 rounded-lg">
                 <Receipt size={20} className="text-red-400" />
               </div>
-              <p className="text-gray-400">Total Expenses</p>
+              <p className="text-gray-400">{t('totalExpenses')}</p>
             </div>
             <p className="text-2xl font-bold text-white">{formatCurrency(summary.summary.total_amount)}</p>
-            <p className="text-sm text-gray-500 mt-1">{summary.summary.total_count} transactions</p>
+            <p className="text-sm text-gray-500 mt-1">{summary.summary.total_count} {t('transactions')}</p>
           </div>
           
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -195,12 +194,10 @@ const Expenses = () => {
               <div className="p-2 bg-orange-500/20 rounded-lg">
                 <TrendingUp size={20} className="text-orange-400" />
               </div>
-              <p className="text-gray-400">Average Daily</p>
+              <p className="text-gray-400">{t('averageDaily')}</p>
             </div>
-            <p className="text-2xl font-bold text-white">
-              {formatCurrency(summary.summary.total_amount / 30)}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">Per day (avg)</p>
+            <p className="text-2xl font-bold text-white">{formatCurrency(summary.summary.total_amount / 30)}</p>
+            <p className="text-sm text-gray-500 mt-1">{t('perDay')}</p>
           </div>
           
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -208,19 +205,18 @@ const Expenses = () => {
               <div className="p-2 bg-purple-500/20 rounded-lg">
                 <PieChart size={20} className="text-purple-400" />
               </div>
-              <p className="text-gray-400">Categories</p>
+              <p className="text-gray-400">{t('categories')}</p>
             </div>
             <p className="text-2xl font-bold text-white">{summary.by_category.length}</p>
-            <p className="text-sm text-gray-500 mt-1">Different expense types</p>
+            <p className="text-sm text-gray-500 mt-1">{t('differentExpenseTypes')}</p>
           </div>
         </div>
       )}
 
-      {/* Category Breakdown */}
       {summary && summary.by_category && summary.by_category.length > 0 && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-700">
-            <h3 className="text-white font-semibold">Expense by Category</h3>
+            <h3 className="text-white font-semibold">{t('expenseByCategory')}</h3>
           </div>
           <div className="p-4">
             <div className="space-y-3">
@@ -235,10 +231,10 @@ const Expenses = () => {
                     <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-red-500 rounded-full"
-                        style={{ width: `${percentage}%` }}
+                        style={{ width: `${percentage.toFixed(2)}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{cat.count} transactions</p>
+                    <p className="text-xs text-gray-500 mt-1">{cat.count} {t('transactions')}</p>
                   </div>
                 );
               })}
@@ -247,12 +243,11 @@ const Expenses = () => {
         </div>
       )}
 
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
         <input
           type="text"
-          placeholder="Search expenses..."
+          placeholder={t('searchExpenses')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
@@ -264,18 +259,17 @@ const Expenses = () => {
         )}
       </div>
 
-      {/* Expenses Table */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-700/50">
               <tr>
-                <th className="px-6 py-3 text-gray-400 text-sm">Date</th>
-                <th className="px-6 py-3 text-gray-400 text-sm">Category</th>
-                <th className="px-6 py-3 text-gray-400 text-sm">Description</th>
-                <th className="px-6 py-3 text-gray-400 text-sm text-right">Amount</th>
-                <th className="px-6 py-3 text-gray-400 text-sm">Recorded By</th>
-                <th className="px-6 py-3 text-gray-400 text-sm">Actions</th>
+                <th className="px-6 py-3 text-gray-400 text-sm">{t('date')}</th>
+                <th className="px-6 py-3 text-gray-400 text-sm">{t('category')}</th>
+                <th className="px-6 py-3 text-gray-400 text-sm">{t('description')}</th>
+                <th className="px-6 py-3 text-gray-400 text-sm text-right">{t('amount')}</th>
+                <th className="px-6 py-3 text-gray-400 text-sm">{t('recordedBy')}</th>
+                <th className="px-6 py-3 text-gray-400 text-sm">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -296,7 +290,7 @@ const Expenses = () => {
                     {formatCurrency(expense.amount)}
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-sm">
-                    {expense.created_by_name || 'System'}
+                    {expense.created_by_name || t('system')}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
@@ -323,7 +317,7 @@ const Expenses = () => {
                       </button>
                     </div>
                   </td>
-                 </tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -332,19 +326,18 @@ const Expenses = () => {
         {filteredExpenses.length === 0 && (
           <div className="text-center py-12">
             <Receipt size={48} className="mx-auto text-gray-600 mb-3" />
-            <p className="text-gray-500">No expenses found</p>
+            <p className="text-gray-500">{t('noExpensesFound')}</p>
           </div>
         )}
       </div>
 
-      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-700">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-white">
-                  {editingExpense ? 'Edit Expense' : 'Add Expense'}
+                  {editingExpense ? t('editExpense') : t('addExpense')}
                 </h2>
                 <button onClick={resetModal} className="text-gray-400 hover:text-gray-300">
                   <X size={20} />
@@ -353,14 +346,14 @@ const Expenses = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')} *</label>
                   <select
                     required
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select category</option>
+                    <option value="">{t('selectCategory')}</option>
                     {expenseCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -368,7 +361,7 @@ const Expenses = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Amount *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('amount')} *</label>
                   <div className="relative">
                     <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
@@ -384,7 +377,7 @@ const Expenses = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Date *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('expenseDate')} *</label>
                   <input
                     type="date"
                     required
@@ -395,22 +388,22 @@ const Expenses = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('description')}</label>
                   <textarea
                     rows="3"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Optional description..."
+                    placeholder={t('optionalDescription')}
                   />
                 </div>
 
                 <div className="flex gap-3 pt-4">
                   <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                    {editingExpense ? 'Update' : 'Save'}
+                    {editingExpense ? t('update') : t('save')}
                   </button>
                   <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition">
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </div>
               </form>

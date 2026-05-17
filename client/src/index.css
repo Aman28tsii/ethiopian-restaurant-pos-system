@@ -2,24 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Responsive Styles */
+/* ============================================
+   GLOBAL RESET & BASE STYLES
+   ============================================ */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Better touch targets for mobile */
-button, 
-a, 
-[role="button"],
-input[type="submit"],
-input[type="button"] {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-/* Responsive text sizes */
+/* Base font size for responsive text */
 html {
   font-size: 16px;
 }
@@ -29,6 +22,67 @@ html {
     font-size: 14px;
   }
 }
+
+/* Prevent white flash on dark mode */
+body {
+  background-color: #111827;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================
+   TOUCH TARGETS & INTERACTIVITY
+   ============================================ */
+
+/* Ensure all interactive elements have minimum touch target size */
+button, 
+a, 
+[role="button"],
+input[type="submit"],
+input[type="button"],
+.clickable {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Better touch feedback on mobile */
+@media (max-width: 768px) {
+  button:active {
+    transform: scale(0.97);
+    transition: transform 0.05s ease;
+  }
+  
+  /* Prevent text size adjustment on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  /* Improve scrolling on mobile */
+  .overflow-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch-friendly cards */
+.touch-card {
+  transition: transform 0.2s;
+}
+
+@media (max-width: 768px) {
+  .touch-card:active {
+    transform: scale(0.98);
+  }
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ============================================
+   CUSTOM SCROLLBARS
+   ============================================ */
 
 /* Custom scrollbar for tables */
 .overflow-x-auto::-webkit-scrollbar {
@@ -44,6 +98,20 @@ html {
   background: #4b5563;
   border-radius: 10px;
 }
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
 
 /* Modal fullscreen on mobile */
 @media (max-width: 640px) {
@@ -61,17 +129,11 @@ html {
   }
 }
 
-/* Hide scrollbar but keep functionality */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* ============================================
+   RESPONSIVE GRID SYSTEMS
+   ============================================ */
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Responsive grid helpers - SINGLE DEFINITION */
+/* Responsive grid helpers */
 .responsive-grid {
   display: grid;
   gap: 1rem;
@@ -85,16 +147,22 @@ html {
   }
 }
 
-/* Touch-friendly cards */
-.touch-card {
-  transition: transform 0.2s;
+/* Responsive Stats Cards */
+.stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
 }
 
-@media (max-width: 768px) {
-  .touch-card:active {
-    transform: scale(0.98);
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* ============================================
+   RESPONSIVE TABLES
+   ============================================ */
 
 /* Responsive Table Wrapper */
 .responsive-table-wrapper {
@@ -117,6 +185,10 @@ html {
   }
 }
 
+/* ============================================
+   RESPONSIVE CARDS & FORMS
+   ============================================ */
+
 /* Responsive Cards */
 .responsive-card {
   padding: 1rem;
@@ -125,19 +197,6 @@ html {
 @media (min-width: 768px) {
   .responsive-card {
     padding: 1.5rem;
-  }
-}
-
-/* Responsive Stats Cards */
-.stats-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(2, 1fr);
-}
-
-@media (min-width: 640px) {
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -160,6 +219,17 @@ html {
     padding: 0.75rem;
   }
 }
+
+/* Prevent zoom on iOS for form inputs */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ============================================
+   POS PRODUCT GRID
+   ============================================ */
 
 /* POS Page - Product Grid */
 .pos-product-grid {
@@ -186,7 +256,7 @@ html {
   }
 }
 
-/* POS Cart Sidebar */
+/* POS Cart Sidebar on mobile */
 @media (max-width: 768px) {
   .pos-cart-sidebar {
     position: fixed;
@@ -200,7 +270,10 @@ html {
   }
 }
 
-/* Responsive Charts */
+/* ============================================
+   RESPONSIVE CHARTS
+   ============================================ */
+
 @media (max-width: 640px) {
   .recharts-wrapper {
     font-size: 10px;
@@ -210,11 +283,9 @@ html {
   }
 }
 
-/* Touch-friendly buttons */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
+/* ============================================
+   RESPONSIVE TEXT & SPACING
+   ============================================ */
 
 /* Responsive text */
 @media (max-width: 640px) {
@@ -231,4 +302,112 @@ html {
   .gap-responsive {
     gap: 0.5rem !important;
   }
+}
+
+/* ============================================
+   DASHBOARD STATS CARDS (Mobile Fixes)
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Dashboard stats cards */
+  .stats-card {
+    padding: 0.75rem !important;
+  }
+  
+  .stats-card .stat-value {
+    font-size: 1.25rem !important;
+  }
+  
+  .stats-card .stat-label {
+    font-size: 0.7rem !important;
+  }
+}
+
+/* Fix for very small screens */
+@media (max-width: 480px) {
+  .stats-card .stat-value {
+    font-size: 1rem !important;
+  }
+  
+  .stats-grid {
+    gap: 0.5rem !important;
+  }
+}
+
+/* ============================================
+   TABLE OVERLAP FIXES
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Expense table - prevent overlap */
+  .expense-table td,
+  .expense-table th {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Profit report tables */
+  .profit-table td,
+  .profit-table th {
+    padding: 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+  
+  /* Profit reports - make numbers smaller */
+  .profit-numbers {
+    font-size: 0.9rem !important;
+    word-break: break-word !important;
+  }
+  
+  /* Make tables scroll horizontally on small screens */
+  .responsive-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .responsive-table-wrapper table {
+    min-width: 500px;
+  }
+  
+  /* Fix number columns */
+  .text-right {
+    white-space: nowrap;
+  }
+  
+  /* Make currency values wrap properly */
+  .currency-value {
+    white-space: nowrap;
+    overflow-x: auto;
+    max-width: 80px;
+    display: inline-block;
+  }
+}
+
+/* ============================================
+   PWA & STANDALONE MODE
+   ============================================ */
+
+/* Prevent pull-to-refresh on overscroll when in standalone mode */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Add any additional utility classes here */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

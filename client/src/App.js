@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Role-based layouts
 import OwnerLayout from './layouts/OwnerLayout';
@@ -23,6 +24,10 @@ import Staff from './pages/Staff';
 import PendingApprovals from './pages/PendingApprovals';
 import Reports from './pages/Reports';
 import Settings from './pages/owner/Settings';
+import QRMenu from './pages/QRMenu';
+import TrackOrder from './pages/TrackOrder';
+import Customers from './pages/Customers';
+import PrintQRCodes from './pages/owner/PrintQRCodes';
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {
@@ -99,6 +104,7 @@ function App() {
   const userRole = user?.role || 'cashier';
 
   return (
+     <LanguageProvider>
     <Router>
       <Routes>
         {/* Owner Routes */}
@@ -114,6 +120,10 @@ function App() {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/owner/dashboard" />} />
+                <Route path="/qr-menu" element={<QRMenu />} />
+                <Route path="/track-order" element={<TrackOrder />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="print-qr" element={<PrintQRCodes />} />
               </Routes>
             </OwnerLayout>
           </RoleRoute>
@@ -177,6 +187,7 @@ function App() {
         <Route path="*" element={<Navigate to={getDefaultRoute(userRole)} replace />} />
       </Routes>
     </Router>
+    </LanguageProvider>
   );
 }
 

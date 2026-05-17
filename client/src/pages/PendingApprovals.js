@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { Users, CheckCircle, XCircle, Loader2, Clock, RefreshCw, UserCheck, UserX } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const PendingApprovals = () => {
+  const { t } = useLanguage();
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
@@ -19,18 +21,14 @@ const PendingApprovals = () => {
     setError('');
     try {
       const response = await API.get('/auth/users/pending');
-      console.log('Pending users response:', response.data);
       const users = response.data?.data || response.data || [];
       setPendingUsers(users);
-      if (users.length === 0) {
-        console.log('No pending users found');
-      }
     } catch (err) {
       console.error('Fetch error:', err);
       if (err.response?.status === 403) {
-        setError('Access denied. Only owners and admins can view pending approvals.');
+        setError(t('accessDeniedOnlyOwnersAndAdmins'));
       } else {
-        setError(err.response?.data?.error || 'Failed to load pending users');
+        setError(err.response?.data?.error || t('failedToLoadPendingUsers'));
       }
     } finally {
       setLoading(false);
@@ -48,28 +46,28 @@ const PendingApprovals = () => {
     setError('');
     try {
       await API.put(`/auth/users/${id}/approve`, { role: selectedRole });
-      alert('User approved successfully! They can now login.');
+      alert(t('userApprovedSuccessfully'));
       fetchPendingUsers();
     } catch (err) {
       console.error('Approve error:', err);
-      setError(err.response?.data?.error || 'Failed to approve user');
+      setError(err.response?.data?.error || t('failedToApproveUser'));
     } finally {
       setProcessing(null);
     }
   };
 
   const rejectUser = async (id) => {
-    if (!window.confirm('Are you sure you want to reject this user? They will be removed from the system.')) return;
+    if (!window.confirm(t('rejectUserConfirm'))) return;
     
     setProcessing(id);
     setError('');
     try {
       await API.delete(`/auth/users/${id}/reject`);
-      alert('User rejected and removed.');
+      alert(t('userRejectedAndRemoved'));
       fetchPendingUsers();
     } catch (err) {
       console.error('Reject error:', err);
-      setError(err.response?.data?.error || 'Failed to reject user');
+      setError(err.response?.data?.error || t('failedToRejectUser'));
     } finally {
       setProcessing(null);
     }
@@ -105,8 +103,8 @@ const PendingApprovals = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Pending Approvals</h1>
-          <p className="text-gray-400 mt-1">Review and approve new staff account requests</p>
+          <h1 className="text-2xl font-bold text-white">{t('pendingApprovals')}</h1>
+          <p className="text-gray-400 mt-1">{t('reviewAndApproveStaffAccounts')}</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -114,7 +112,7 @@ const PendingApprovals = () => {
           className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
         >
           <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-          Refresh
+          {t('refresh')}
         </button>
       </div>
 
@@ -130,23 +128,23 @@ const PendingApprovals = () => {
           <div className="flex items-center gap-3">
             <Clock size={28} className="text-yellow-400" />
             <div>
-              <p className="text-yellow-400 font-semibold">Pending Approvals</p>
-              <p className="text-2xl font-bold text-white">{pendingUsers.length} user{pendingUsers.length !== 1 ? 's' : ''} waiting</p>
+              <p className="text-yellow-400 font-semibold">{t('pendingApprovals')}</p>
+              <p className="text-2xl font-bold text-white">{pendingUsers.length} {t('usersWaiting')}</p>
             </div>
           </div>
           {pendingUsers.length > 0 && (
             <div className="flex items-center gap-3">
-              <label className="text-gray-300 text-sm">Default Role:</label>
+              <label className="text-gray-300 text-sm">{t('defaultRole')}:</label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
                 className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="staff">Staff</option>
-                <option value="cashier">Cashier</option>
-                <option value="waiter">Waiter</option>
-                <option value="kitchen">Kitchen</option>
-                <option value="manager">Manager</option>
+                <option value="staff">{t('staff')}</option>
+                <option value="cashier">{t('cashier')}</option>
+                <option value="waiter">{t('waiter')}</option>
+                <option value="kitchen">{t('kitchen')}</option>
+                <option value="manager">{t('manager')}</option>
               </select>
             </div>
           )}
@@ -156,9 +154,9 @@ const PendingApprovals = () => {
       {pendingUsers.length === 0 ? (
         <div className="bg-gray-800 rounded-xl p-12 text-center border border-gray-700">
           <UserCheck size={48} className="mx-auto text-green-500 mb-3" />
-          <p className="text-gray-500 text-lg">No pending approvals</p>
-          <p className="text-gray-600 text-sm mt-1">All staff accounts have been approved</p>
-          <p className="text-gray-600 text-xs mt-2">When new staff sign up, they will appear here</p>
+          <p className="text-gray-500 text-lg">{t('noPendingApprovals')}</p>
+          <p className="text-gray-600 text-sm mt-1">{t('allStaffAccountsApproved')}</p>
+          <p className="text-gray-600 text-xs mt-2">{t('newStaffWillAppearHere')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -176,33 +174,33 @@ const PendingApprovals = () => {
                     </div>
                   </div>
                   <div className="px-2 py-1 bg-yellow-500/20 rounded-lg">
-                    <span className="text-yellow-400 text-xs font-semibold">Pending</span>
+                    <span className="text-yellow-400 text-xs font-semibold">{t('pending')}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Phone:</span>
-                    <span className="text-gray-300">{user.phone || 'Not provided'}</span>
+                    <span className="text-gray-500">{t('phone')}:</span>
+                    <span className="text-gray-300">{user.phone || t('notProvided')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Requested:</span>
+                    <span className="text-gray-500">{t('requested')}:</span>
                     <span className="text-gray-300 text-xs">{formatDate(user.created_at)}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-700 pt-4">
-                  <label className="block text-xs text-gray-400 mb-2">Assign Role:</label>
+                  <label className="block text-xs text-gray-400 mb-2">{t('assignRole')}:</label>
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
                   >
-                    <option value="staff">Staff (Basic)</option>
-                    <option value="cashier">Cashier (Payment)</option>
-                    <option value="waiter">Waiter (Orders)</option>
-                    <option value="kitchen">Kitchen (Food Prep)</option>
-                    <option value="manager">Manager (Operations)</option>
+                    <option value="staff">{t('staff')} ({t('basicAccess')})</option>
+                    <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
+                    <option value="waiter">{t('waiter')} ({t('orderTaking')})</option>
+                    <option value="kitchen">{t('kitchen')} ({t('foodPrepOnly')})</option>
+                    <option value="manager">{t('manager')} ({t('operations')})</option>
                   </select>
                   
                   <div className="flex gap-3">
@@ -212,7 +210,7 @@ const PendingApprovals = () => {
                       className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {processing === user.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                      Approve
+                      {t('approve')}
                     </button>
                     <button
                       onClick={() => rejectUser(user.id)}
@@ -220,7 +218,7 @@ const PendingApprovals = () => {
                       className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <XCircle size={14} />
-                      Reject
+                      {t('reject')}
                     </button>
                   </div>
                 </div>
@@ -234,7 +232,7 @@ const PendingApprovals = () => {
       {pendingUsers.length > 0 && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
           <p className="text-blue-400 text-xs text-center">
-            💡 Tip: Approved users will receive an email notification (if configured) and can immediately login with their credentials.
+            💡 {t('tipApprovedUsersWillReceiveEmail')}
           </p>
         </div>
       )}

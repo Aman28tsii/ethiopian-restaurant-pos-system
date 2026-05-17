@@ -4,8 +4,10 @@ import {
   UtensilsCrossed, Plus, Trash2, Edit2, Search, X, 
   DollarSign, TrendingUp, AlertCircle, CheckCircle 
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Recipes = () => {
+  const { t } = useLanguage();
   const [recipes, setRecipes] = useState([]);
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
@@ -48,13 +50,13 @@ const Recipes = () => {
       setShowModal(true);
     } catch (err) {
       console.error('View recipe error:', err);
-      alert(err.response?.data?.error || 'Failed to load recipe');
+      alert(err.response?.data?.error || t('failedToLoadRecipe'));
     }
   };
 
   const addIngredientToRecipe = () => {
     if (!selectedIngredient.ingredient_id || !selectedIngredient.quantity_required) {
-      alert('Please select an ingredient and enter quantity');
+      alert(t('pleaseSelectIngredientAndQuantity'));
       return;
     }
     
@@ -79,7 +81,7 @@ const Recipes = () => {
 
   const saveRecipe = async () => {
     if (recipeIngredients.length === 0) {
-      alert('Please add at least one ingredient');
+      alert(t('pleaseAddAtLeastOneIngredient'));
       return;
     }
     
@@ -92,12 +94,12 @@ const Recipes = () => {
       };
       
       await API.post(`/recipes/product/${selectedProduct.product_id}`, payload);
-      alert('Recipe saved successfully!');
+      alert(t('recipeSavedSuccessfully'));
       setShowModal(false);
       fetchData();
     } catch (err) {
       console.error('Save recipe error:', err);
-      alert(err.response?.data?.error || 'Failed to save recipe');
+      alert(err.response?.data?.error || t('failedToSaveRecipe'));
     }
   };
 
@@ -105,14 +107,14 @@ const Recipes = () => {
     try {
       const response = await API.get(`/recipes/cost/${productId}`);
       alert(`
-Product: ${response.data.data.product_name}
-Selling Price: Br ${response.data.data.selling_price}
-Ingredient Cost: Br ${response.data.data.ingredient_cost}
-Profit: Br ${response.data.data.profit}
-Profit Margin: ${response.data.data.profit_margin}%
+${t('product')}: ${response.data.data.product_name}
+${t('sellingPrice')}: Br ${response.data.data.selling_price}
+${t('ingredientCost')}: Br ${response.data.data.ingredient_cost}
+${t('profit')}: Br ${response.data.data.profit}
+${t('profitMargin')}: ${response.data.data.profit_margin}%
       `);
     } catch (err) {
-      alert('No recipe found for this product');
+      alert(t('noRecipeFoundForProduct'));
     }
   };
 
@@ -136,8 +138,8 @@ Profit Margin: ${response.data.data.profit_margin}%
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Recipe Management</h1>
-        <p className="text-gray-400 mt-1">Define product recipes for automatic stock deduction</p>
+        <h1 className="text-2xl font-bold text-white">{t('recipeManagement')}</h1>
+        <p className="text-gray-400 mt-1">{t('defineProductRecipes')}</p>
       </div>
 
       {/* Info Card */}
@@ -145,11 +147,9 @@ Profit Margin: ${response.data.data.profit_margin}%
         <div className="flex items-start gap-3">
           <UtensilsCrossed size={20} className="text-blue-400 mt-0.5" />
           <div>
-            <p className="text-blue-400 font-semibold">How Recipes Work</p>
+            <p className="text-blue-400 font-semibold">{t('howRecipesWork')}</p>
             <p className="text-gray-400 text-sm mt-1">
-              Each product needs a recipe that lists all ingredients and quantities.
-              When a product is sold, the system automatically deducts the required ingredients from stock.
-              This ensures accurate inventory tracking and profit calculation.
+              {t('recipeDescription')}
             </p>
           </div>
         </div>
@@ -160,7 +160,7 @@ Profit Margin: ${response.data.data.profit_margin}%
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder={`${t('search')} ${t('products')}...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
@@ -182,7 +182,7 @@ Profit Margin: ${response.data.data.profit_margin}%
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-semibold text-white">{product.name}</h3>
-                  <p className="text-sm text-gray-400">{product.category || 'Uncategorized'}</p>
+                  <p className="text-sm text-gray-400">{product.category || t('uncategorized')}</p>
                   <p className="text-blue-400 font-bold mt-1">Br {parseFloat(product.price).toFixed(2)}</p>
                 </div>
                 {hasRecipeFlag ? (
@@ -197,12 +197,12 @@ Profit Margin: ${response.data.data.profit_margin}%
                   onClick={() => viewRecipe(product.id)}
                   className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
                 >
-                  {hasRecipeFlag ? 'View Recipe' : 'Setup Recipe'}
+                  {hasRecipeFlag ? t('viewRecipe') : t('setupRecipe')}
                 </button>
                 <button
                   onClick={() => calculateCost(product.id)}
                   className="py-2 px-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
-                  title="Calculate Cost"
+                  title={t('calculateCost')}
                 >
                   <DollarSign size={16} />
                 </button>
@@ -210,7 +210,7 @@ Profit Margin: ${response.data.data.profit_margin}%
               
               {hasRecipeFlag && (
                 <div className="mt-3 pt-3 border-t border-gray-700">
-                  <p className="text-xs text-gray-500">✓ Recipe configured</p>
+                  <p className="text-xs text-gray-500">✓ {t('recipeExists')}</p>
                 </div>
               )}
             </div>
@@ -221,7 +221,7 @@ Profit Margin: ${response.data.data.profit_margin}%
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
           <UtensilsCrossed size={48} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-500">No products found</p>
+          <p className="text-gray-500">{t('noProductsFound')}</p>
         </div>
       )}
 
@@ -232,9 +232,9 @@ Profit Margin: ${response.data.data.profit_margin}%
             <div className="sticky top-0 bg-gray-800 p-6 border-b border-gray-700">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-xl font-bold text-white">Recipe: {selectedProduct.product_name}</h2>
+                  <h2 className="text-xl font-bold text-white">{t('recipe')}: {selectedProduct.product_name}</h2>
                   <p className="text-gray-400 text-sm mt-1">
-                    Selling Price: Br {selectedProduct.selling_price}
+                    {t('sellingPrice')}: Br {selectedProduct.selling_price}
                   </p>
                 </div>
                 <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-300">
@@ -247,24 +247,24 @@ Profit Margin: ${response.data.data.profit_margin}%
               {/* Profit Summary */}
               {costData && (
                 <div className="bg-gray-700 rounded-xl p-4">
-                  <h3 className="font-semibold text-white mb-3">Profit Summary</h3>
+                  <h3 className="font-semibold text-white mb-3">{t('profitSummary')}</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Selling Price</p>
+                      <p className="text-gray-400 text-sm">{t('sellingPrice')}</p>
                       <p className="text-white font-bold">Br {costData.selling_price}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Ingredient Cost</p>
+                      <p className="text-gray-400 text-sm">{t('ingredientCost')}</p>
                       <p className="text-red-400 font-bold">Br {costData.total_ingredient_cost}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Profit</p>
+                      <p className="text-gray-400 text-sm">{t('profit')}</p>
                       <p className="text-green-400 font-bold">Br {costData.profit}</p>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-600">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Profit Margin</span>
+                      <span className="text-gray-400 text-sm">{t('profitMargin')}</span>
                       <span className="text-green-400 font-bold">{costData.profit_margin}%</span>
                     </div>
                   </div>
@@ -273,7 +273,7 @@ Profit Margin: ${response.data.data.profit_margin}%
 
               {/* Ingredients List */}
               <div>
-                <h3 className="font-semibold text-white mb-3">Ingredients</h3>
+                <h3 className="font-semibold text-white mb-3">{t('ingredientsNeeded')}</h3>
                 <div className="space-y-2">
                   {recipeIngredients.map((ing, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-gray-700 rounded-lg p-3">
@@ -294,7 +294,7 @@ Profit Margin: ${response.data.data.profit_margin}%
                   
                   {recipeIngredients.length === 0 && (
                     <div className="text-center py-6 text-gray-500">
-                      No ingredients added yet
+                      {t('noIngredientsAddedYet')}
                     </div>
                   )}
                 </div>
@@ -302,24 +302,24 @@ Profit Margin: ${response.data.data.profit_margin}%
 
               {/* Add Ingredient Form */}
               <div className="border-t border-gray-700 pt-4">
-                <h3 className="font-semibold text-white mb-3">Add Ingredient</h3>
+                <h3 className="font-semibold text-white mb-3">{t('addIngredient')}</h3>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <select
                     value={selectedIngredient.ingredient_id}
                     onChange={(e) => setSelectedIngredient({ ...selectedIngredient, ingredient_id: e.target.value })}
                     className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select Ingredient</option>
+                    <option value="">{t('selectIngredient')}</option>
                     {ingredients.map(ing => (
                       <option key={ing.id} value={ing.id}>
-                        {ing.name} ({ing.unit}) - Stock: {ing.quantity}
+                        {ing.name} ({ing.unit}) - {t('stock')}: {ing.quantity}
                       </option>
                     ))}
                   </select>
                   <input
                     type="number"
                     step="0.01"
-                    placeholder="Quantity Required"
+                    placeholder={t('quantityRequired')}
                     value={selectedIngredient.quantity_required}
                     onChange={(e) => setSelectedIngredient({ ...selectedIngredient, quantity_required: e.target.value })}
                     className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -330,7 +330,7 @@ Profit Margin: ${response.data.data.profit_margin}%
                   className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
                 >
                   <Plus size={16} />
-                  Add Ingredient
+                  {t('addIngredient')}
                 </button>
               </div>
 
@@ -340,13 +340,13 @@ Profit Margin: ${response.data.data.profit_margin}%
                   onClick={saveRecipe}
                   className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition"
                 >
-                  Save Recipe
+                  {t('saveRecipe')}
                 </button>
                 <button
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               </div>
             </div>

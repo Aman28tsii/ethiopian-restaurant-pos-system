@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import { Loader2, DollarSign, CreditCard, Smartphone, Printer } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CashierPOS = () => {
+  const { t } = useLanguage();
   const [readyOrders, setReadyOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,13 +38,13 @@ const CashierPOS = () => {
       });
       
       if (response.data.success) {
-        alert(`Payment successful! Order ${selectedOrder.order_number} completed.`);
+        alert(`${t('paymentSuccessful')} ${selectedOrder.order_number} ${t('completed')}.`);
         setSelectedOrder(null);
         fetchReadyOrders();
       }
     } catch (err) {
       console.error('Payment error:', err);
-      alert(err.response?.data?.error || 'Payment failed');
+      alert(err.response?.data?.error || t('paymentFailed'));
     } finally {
       setProcessing(false);
     }
@@ -64,12 +66,12 @@ const CashierPOS = () => {
     <div className="h-full flex gap-6">
       {/* Orders List */}
       <div className="flex-1">
-        <h1 className="text-2xl font-bold text-white mb-4">Ready for Payment</h1>
+        <h1 className="text-2xl font-bold text-white mb-4">{t('readyForPayment')}</h1>
         
         {readyOrders.length === 0 ? (
           <div className="bg-gray-800 rounded-2xl p-12 text-center">
-            <p className="text-gray-500 text-lg">No orders ready for payment</p>
-            <p className="text-gray-600 mt-2">Orders from kitchen will appear here</p>
+            <p className="text-gray-500 text-lg">{t('noOrdersReady')}</p>
+            <p className="text-gray-600 mt-2">{t('ordersFromKitchenWillAppear')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -86,13 +88,13 @@ const CashierPOS = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="text-white font-bold text-lg">{order.order_number}</p>
-                    <p className="text-gray-400 text-sm">Table: {order.table_number || 'Takeaway'}</p>
+                    <p className="text-gray-400 text-sm">{t('table')}: {order.table_number || t('takeaway')}</p>
                   </div>
                   <p className="text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
                 </div>
-                <p className="text-gray-300 text-sm">Customer: {order.customer_name || 'Walk-in'}</p>
+                <p className="text-gray-300 text-sm">{t('customer')}: {order.customer_name || t('walkIn')}</p>
                 <p className="text-gray-500 text-xs mt-2">
-                  Ready since: {new Date(order.created_at).toLocaleTimeString()}
+                  {t('readySince')}: {new Date(order.created_at).toLocaleTimeString()}
                 </p>
               </button>
             ))}
@@ -104,19 +106,19 @@ const CashierPOS = () => {
       {selectedOrder && (
         <div className="w-96 bg-gray-800 rounded-2xl border border-gray-700 p-6 flex flex-col">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-white">Payment</h2>
-            <p className="text-gray-400 text-sm">Order: {selectedOrder.order_number}</p>
+            <h2 className="text-xl font-bold text-white">{t('payment')}</h2>
+            <p className="text-gray-400 text-sm">{t('order')}: {selectedOrder.order_number}</p>
           </div>
 
           <div className="bg-gray-700 rounded-xl p-4 mb-6">
             <div className="flex justify-between mb-2">
-              <span className="text-gray-400">Order Total</span>
+              <span className="text-gray-400">{t('orderTotal')}</span>
               <span className="text-2xl font-bold text-white">{formatCurrency(selectedOrder.total_amount)}</span>
             </div>
           </div>
 
           <div className="mb-6">
-            <p className="text-gray-400 text-sm mb-3">Payment Method</p>
+            <p className="text-gray-400 text-sm mb-3">{t('paymentMethod')}</p>
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setPaymentMethod('cash')}
@@ -127,7 +129,7 @@ const CashierPOS = () => {
                 }`}
               >
                 <DollarSign size={18} />
-                Cash
+                {t('cash')}
               </button>
               <button
                 onClick={() => setPaymentMethod('card')}
@@ -138,7 +140,7 @@ const CashierPOS = () => {
                 }`}
               >
                 <CreditCard size={18} />
-                Card
+                {t('card')}
               </button>
               <button
                 onClick={() => setPaymentMethod('mobile')}
@@ -149,7 +151,7 @@ const CashierPOS = () => {
                 }`}
               >
                 <Smartphone size={18} />
-                Mobile
+                {t('mobile')}
               </button>
             </div>
           </div>
@@ -159,7 +161,7 @@ const CashierPOS = () => {
               onClick={() => setSelectedOrder(null)}
               className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={processPayment}
@@ -167,7 +169,7 @@ const CashierPOS = () => {
               className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {processing ? <Loader2 className="animate-spin" size={20} /> : <Printer size={18} />}
-              Complete
+              {t('complete')}
             </button>
           </div>
         </div>

@@ -1,10 +1,14 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
-const ResponsiveTable = ({ headers, data, renderRow, emptyMessage = "No data available" }) => {
+const ResponsiveTable = ({ headers, data, renderRow, emptyMessage }) => {
+  const { t } = useLanguage();
+  const defaultEmptyMessage = emptyMessage || t('noData');
+  
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-800 rounded-xl">
-        <p className="text-gray-500">{emptyMessage}</p>
+        <p className="text-gray-500">{defaultEmptyMessage}</p>
       </div>
     );
   }

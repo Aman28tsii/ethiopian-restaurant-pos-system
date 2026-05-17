@@ -58,16 +58,17 @@ export const createOrder = catchAsync(async (req, res) => {
     
     const orderNumber = generateOrderNumber();
     
+    // FIXED: Removed items_count column - matching your database schema
     const orderResult = await client.query(`
       INSERT INTO orders (
-        order_number, total_amount, items_count, created_by, status, 
+        order_number, total_amount, created_by, status, 
         payment_status, customer_name, customer_phone, table_id, 
         order_type, notes, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, 'pending', 'pending', $5, $6, $7, $8, $9, NOW(), NOW())
+      VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id, order_number, total_amount, status
     `, [
-      orderNumber, totalAmount, orderItems.length, userId, 
+      orderNumber, totalAmount, userId, 
       customer_name || null, customer_phone || null, 
       table_id || null, order_type, notes || null
     ]);
@@ -130,7 +131,7 @@ export const getMyOrders = catchAsync(async (req, res) => {
       o.table_id,
       t.table_number,
       o.created_at,
-      COALESCE((SELECT COUNT(*) FROM order_items WHERE order_id = o.id), 0) as item_count
+      (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     WHERE o.created_by = $1
@@ -188,7 +189,7 @@ export const addOrderItems = catchAsync(async (req, res) => {
     await client.query('BEGIN');
     
     const orderCheck = await client.query(
-      'SELECT status, payment_status FROM orders WHERE id = $1',
+      'SELECT status, payment_status, total_amount FROM orders WHERE id = $1',
       [orderId]
     );
     
@@ -201,17 +202,23 @@ export const addOrderItems = catchAsync(async (req, res) => {
       throw new Error('Cannot add items to order that is already being prepared');
     }
     
+    if (order.payment_status === 'paid') {
+      throw new Error('Cannot add items to a paid order');
+    }
+    
     let additionalAmount = 0;
+    let addedItemsCount = 0;
     
     for (const item of items) {
       const productResult = await client.query(
-        'SELECT price FROM products WHERE id = $1',
+        'SELECT price, name FROM products WHERE id = $1',
         [item.product_id]
       );
       
       const unitPrice = parseFloat(productResult.rows[0].price);
       const itemTotal = unitPrice * item.quantity;
       additionalAmount += itemTotal;
+      addedItemsCount += item.quantity;
       
       await client.query(`
         INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
@@ -219,20 +226,23 @@ export const addOrderItems = catchAsync(async (req, res) => {
       `, [orderId, item.product_id, item.quantity, unitPrice, itemTotal]);
     }
     
+    const newTotal = parseFloat(order.total_amount) + additionalAmount;
+    
     await client.query(`
       UPDATE orders 
-      SET total_amount = total_amount + $1,
-          items_count = items_count + $2,
+      SET total_amount = $1,
           updated_at = NOW()
-      WHERE id = $3
-    `, [additionalAmount, items.length, orderId]);
+      WHERE id = $2
+    `, [newTotal, orderId]);
     
     await client.query('COMMIT');
     
     res.json({
       success: true,
       message: 'Items added to order',
-      additional_amount: additionalAmount
+      additional_amount: additionalAmount,
+      new_total: newTotal,
+      items_added: addedItemsCount
     });
     
   } catch (error) {

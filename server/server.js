@@ -20,6 +20,7 @@ import orderRoutes from './src/routes/orders.js';
 import tableRoutes from './src/routes/tables.js';
 import waiterRoutes from './src/routes/waiter.js';
 import kitchenRoutes from './src/routes/kitchen.js';
+import customerRoutes from './src/routes/customers.js';
 // import customerRoutes from './src/routes/customers.js'; // REMOVED - file doesn't exist
 
 dotenv.config();
@@ -111,6 +112,7 @@ const startServer = async () => {
   app.use('/api/tables', tableRoutes);
   app.use('/api/waiter', waiterRoutes);
   app.use('/api/kitchen', kitchenRoutes);
+  app.use('/api/customers', customerRoutes);
   // app.use('/api/customers', customerRoutes); // REMOVED
 
   app.use(notFound);

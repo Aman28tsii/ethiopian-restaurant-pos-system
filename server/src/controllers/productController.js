@@ -4,7 +4,7 @@ import { AppError, catchAsync } from '../middleware/errorHandler.js';
 export const getAllProducts = catchAsync(async (req, res) => {
   const { limit = 100, offset = 0 } = req.pagination || {};
   const result = await query(
-    'SELECT id, name, price, category FROM products WHERE is_available = true ORDER BY name LIMIT $1 OFFSET $2',
+    'SELECT id, name, price, category, is_available FROM products WHERE is_available = true ORDER BY name LIMIT $1 OFFSET $2',
     [limit, offset]
   );
   res.json({ success: true, data: result.rows });

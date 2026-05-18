@@ -137,6 +137,7 @@ function App() {
                   <Route path="customers" element={<Customers />} />
                   <Route path="print-qr" element={<PrintQRCodes />} />
                   <Route path="*" element={<Navigate to="/owner/dashboard" />} />
+                  <Route path="manage-tables" element={<ManageTables />} />
                 </Routes>
               </OwnerLayout>
             </RoleRoute>

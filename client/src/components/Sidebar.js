@@ -35,9 +35,11 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/owner/staff', icon: Users, label: t('staffManagement') },
     { path: '/owner/customers', icon: Users, label: t('customers') },
+    { path: '/owner/manage-tables', icon: Table, label: 'Manage Tables' },
     { path: '/owner/print-qr', icon: QrCode, label: 'Print QR Codes' },
     { path: '/owner/pending-approvals', icon: Clock, label: t('pendingApprovals') },
     { path: '/owner/settings', icon: Settings, label: t('settings') },
+    
   ];
 
   // Manager menu items

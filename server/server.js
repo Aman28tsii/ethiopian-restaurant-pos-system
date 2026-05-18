@@ -10,7 +10,7 @@ import { testConnection } from './src/config/database.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
 import productRoutes from './src/routes/products.js';
 import saleRoutes from './src/routes/sales.js';
-import ingredientRoutes from './src/routes/ingredients.js';
+import ingredientRoutes from './src/routes/ingredients.js';      // ← SINGULAR (ingredientRoutes)
 import recipeRoutes from './src/routes/recipes.js';
 import profitRoutes from './src/routes/profit.js';
 import expenseRoutes from './src/routes/expenses.js';
@@ -110,7 +110,7 @@ const startServer = async () => {
   
   app.use('/api/products', productRoutes);
   app.use('/api/sales', saleRoutes);
-  app.use('/api/ingredients', ingredientRoutes);
+  app.use('/api/ingredients', ingredientRoutes);     // ✅ FIXED - using 'ingredientRoutes' (singular)
   app.use('/api/recipes', recipeRoutes);
   app.use('/api/profit', profitRoutes);
   app.use('/api/expenses', expenseRoutes);

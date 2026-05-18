@@ -411,3 +411,264 @@ input[type="button"],
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* ============================================
+   CUSTOMER FACING PAGES - MODERN RESTAURANT STYLE
+   ============================================ */
+
+/* QR Menu Page Styles */
+.qr-menu-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.qr-menu-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.qr-menu-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.qr-menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
+}
+
+.qr-menu-card:active {
+  transform: translateY(0);
+}
+
+/* Category Tabs */
+.category-tab {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.category-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.category-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 3px;
+  background: white;
+  border-radius: 3px;
+}
+
+/* Cart Sidebar Animation */
+.cart-sidebar-enter {
+  transform: translateX(100%);
+}
+
+.cart-sidebar-enter-active {
+  transform: translateX(0);
+  transition: transform 300ms ease;
+}
+
+.cart-sidebar-exit {
+  transform: translateX(0);
+}
+
+.cart-sidebar-exit-active {
+  transform: translateX(100%);
+  transition: transform 300ms ease;
+}
+
+/* Floating Cart Button */
+.floating-cart-btn {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Order Tracking Timeline */
+.timeline-step {
+  position: relative;
+  cursor: pointer;
+}
+
+.timeline-step.completed .timeline-dot {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+  animation: pulse-completed 2s infinite;
+}
+
+.timeline-step.current .timeline-dot {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  animation: pulse-current 1.5s infinite;
+}
+
+@keyframes pulse-completed {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-current {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* Timer Animation */
+.timer-animation {
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Order Success Animation */
+.order-success {
+  animation: success-pop 0.5s ease-out;
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  80% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Loading Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Custom Scrollbar for Cart */
+.cart-items-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cart-items-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.cart-items-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+}
+
+/* Price Highlight Animation */
+.price-update {
+  animation: price-flash 0.3s ease-out;
+}
+
+@keyframes price-flash {
+  0% { color: #10b981; transform: scale(1.05); }
+  100% { color: inherit; transform: scale(1); }
+}
+
+/* Quantity Button Hover Effects */
+.qty-btn {
+  transition: all 0.2s ease;
+}
+
+.qty-btn:hover {
+  transform: scale(1.05);
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
+}
+
+/* Restaurant Info Cards */
+.restaurant-info-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Improvements for Customer Pages */
+@media (max-width: 640px) {
+  .qr-menu-card {
+    margin-bottom: 12px;
+  }
+  
+  .category-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .cart-sidebar {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .timeline-step .timeline-label {
+    font-size: 10px;
+  }
+  
+  .floating-cart-btn {
+    bottom: 16px;
+    right: 16px;
+    padding: 14px;
+  }
+}
+
+/* Glass Morphism Effects */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Hover Lift Effect */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Skeleton Loader for Menu Items */
+.skeleton-card {
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 12px;
+  height: 120px;
+}
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}

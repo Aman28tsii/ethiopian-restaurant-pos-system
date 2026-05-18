@@ -22,6 +22,7 @@ const QRMenu = () => {
   const [trackingOrder, setTrackingOrder] = useState(null);
   const [timer, setTimer] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(20);
+  const [priceUpdate, setPriceUpdate] = useState(null);
   const [restaurantInfo, setRestaurantInfo] = useState({
     name: 'EthioPOS Restaurant',
     address: 'Addis Ababa, Ethiopia',
@@ -125,11 +126,11 @@ const QRMenu = () => {
 
   const getStatusIcon = (status) => {
     switch(status) {
-      case 'pending': return <Clock className="text-yellow-500" size={24} />;
+      case 'pending': return <ClockIcon className="text-yellow-500" size={24} />;
       case 'preparing': return <ChefHat className="text-blue-500" size={24} />;
       case 'ready': return <CheckCircle className="text-green-500" size={24} />;
       case 'completed': return <Truck className="text-purple-500" size={24} />;
-      default: return <Clock className="text-gray-500" size={24} />;
+      default: return <ClockIcon className="text-gray-500" size={24} />;
     }
   };
 
@@ -140,16 +141,6 @@ const QRMenu = () => {
       case 'ready': return 'Ready for Pickup';
       case 'completed': return 'Completed';
       default: return status;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'preparing': return 'bg-blue-500';
-      case 'ready': return 'bg-green-500';
-      case 'completed': return 'bg-purple-500';
-      default: return 'bg-gray-500';
     }
   };
 
@@ -167,23 +158,26 @@ const QRMenu = () => {
     return `Br ${parseFloat(value || 0).toFixed(2)}`;
   };
 
+  const animatePriceUpdate = (itemId) => {
+    setPriceUpdate(itemId);
+    setTimeout(() => setPriceUpdate(null), 300);
+  };
+
   const addToCart = (product) => {
-    if (!product.is_available) {
-      alert('This item is currently unavailable');
-      return;
-    }
-    
     const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
     
     setCart(prevCart => {
       const existing = prevCart.find(item => item.id === product.id);
       if (existing) {
-        return prevCart.map(item =>
+        const newCart = prevCart.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price }
             : item
         );
+        animatePriceUpdate(product.id);
+        return newCart;
       }
+      animatePriceUpdate(product.id);
       return [...prevCart, {
         id: product.id,
         name: product.name,
@@ -205,6 +199,7 @@ const QRMenu = () => {
         return prevCart.filter(i => i.id !== productId);
       }
       
+      animatePriceUpdate(productId);
       return prevCart.map(i =>
         i.id === productId
           ? { ...i, quantity: newQuantity, total: newQuantity * i.price }
@@ -252,35 +247,6 @@ const QRMenu = () => {
       setLoading(false);
     }
   };
-// Add this function to QRMenu.js
-const saveCustomerToDatabase = async (name, phone) => {
-  if (!name && !phone) return;
-  
-  try {
-    // Check if customer exists
-    const existing = await API.get(`/customers/lookup?phone=${phone}&name=${name}`);
-    if (existing.data.data) {
-      // Update visit count
-      await API.put(`/customers/${existing.data.data.id}/visit`, {
-        total_spent: parseFloat(total)
-      });
-    } else if (name) {
-      // Create new customer
-      await API.post('/customers', {
-        name: name,
-        phone: phone || null,
-        total_spent: parseFloat(total),
-        visit_count: 1
-      });
-    }
-  } catch (err) {
-    console.log('Customer save error:', err);
-  }
-};
-
-// Call this function after successful order placement
-// Add inside the placeOrder function after order is created:
-// await saveCustomerToDatabase(customerName, customerPhone);
 
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const tax = subtotal * 0.15;
@@ -294,24 +260,26 @@ const saveCustomerToDatabase = async (name, phone) => {
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="order-success bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
             <CheckCircle size={40} className="text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Order Placed! 🎉</h2>
           <p className="text-gray-600 mb-4">Your order has been sent to the kitchen.</p>
           
-          <div className="bg-gray-100 rounded-lg p-4 mb-4">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 mb-4">
             <p className="text-sm text-gray-500">Order Number</p>
-            <p className="text-2xl font-bold text-blue-600">{orderNumber}</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              {orderNumber}
+            </p>
           </div>
           
           {/* Tracking Link */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-6">
             <p className="text-sm text-gray-600 mb-2">Track your order status:</p>
             <a 
               href={`/track-order?order=${orderNumber}`}
-              className="text-blue-600 font-semibold underline break-all text-sm"
+              className="text-indigo-600 font-semibold underline break-all text-sm hover:text-indigo-800 transition"
             >
               {window.location.origin}/track-order?order={orderNumber}
             </a>
@@ -320,7 +288,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                 navigator.clipboard.writeText(`${window.location.origin}/track-order?order=${orderNumber}`);
                 alert('Tracking link copied!');
               }}
-              className="mt-2 text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-lg inline-block"
+              className="mt-2 text-sm bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-600 px-3 py-1 rounded-lg hover:from-indigo-200 hover:to-purple-200 transition"
             >
               Copy Link
             </button>
@@ -331,13 +299,13 @@ const saveCustomerToDatabase = async (name, phone) => {
           <div className="flex gap-3">
             <button
               onClick={() => window.location.reload()}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition"
+              className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition transform hover:scale-105"
             >
               New Order
             </button>
             <button
               onClick={() => trackOrder(orderNumber)}
-              className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition"
+              className="flex-1 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition transform hover:scale-105"
             >
               Track Order
             </button>
@@ -354,14 +322,14 @@ const saveCustomerToDatabase = async (name, phone) => {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <button
             onClick={() => setShowOrderTracking(false)}
-            className="mb-4 text-gray-400 hover:text-white flex items-center gap-2"
+            className="mb-4 text-gray-400 hover:text-white flex items-center gap-2 transition-colors"
           >
             ← Back to Menu
           </button>
 
           <div className="space-y-6">
             {/* Order Header */}
-            <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                   <p className="text-gray-400 text-sm">Order Number</p>
@@ -374,10 +342,10 @@ const saveCustomerToDatabase = async (name, phone) => {
               </div>
 
               {/* Timer */}
-              <div className="bg-gray-700/50 rounded-xl p-4 mb-6">
+              <div className="bg-white/5 rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-3">
-                    <ClockIcon className="text-blue-400" size={24} />
+                    <ClockIcon className="text-blue-400 timer-animation" size={24} />
                     <div>
                       <p className="text-gray-400 text-sm">Time Elapsed</p>
                       <p className="text-2xl font-bold text-white">{timer} min</p>
@@ -385,7 +353,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                   </div>
                   {estimatedTime > 0 && trackingOrder.status !== 'completed' && trackingOrder.status !== 'ready' && (
                     <div className="flex items-center gap-3">
-                      <ChefHat className="text-orange-400" size={24} />
+                      <ChefHat className="text-orange-400 timer-animation" size={24} />
                       <div>
                         <p className="text-gray-400 text-sm">Estimated Remaining</p>
                         <p className="text-2xl font-bold text-orange-400">{estimatedTime} min</p>
@@ -393,7 +361,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                     </div>
                   )}
                   {trackingOrder.status === 'ready' && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 animate-pulse">
                       <CheckCircle className="text-green-400" size={24} />
                       <div>
                         <p className="text-gray-400 text-sm">Status</p>
@@ -410,7 +378,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                 <div className="relative">
                   <div className="absolute top-5 left-0 right-0 h-1 bg-gray-700 rounded-full">
                     <div 
-                      className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
                       style={{ 
                         width: `${
                           trackingOrder.status === 'pending' ? '25%' :
@@ -423,10 +391,10 @@ const saveCustomerToDatabase = async (name, phone) => {
                   </div>
                   
                   <div className="relative flex justify-between">
-                    <div className="text-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative ${
-                        getStepStatus('pending', trackingOrder.status) === 'completed' ? 'bg-green-500' :
-                        getStepStatus('pending', trackingOrder.status) === 'current' ? 'bg-blue-500 animate-pulse' :
+                    <div className="text-center timeline-step">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                        getStepStatus('pending', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                        getStepStatus('pending', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
                         'bg-gray-700'
                       }`}>
                         <CheckCircle size={16} className="text-white" />
@@ -434,10 +402,10 @@ const saveCustomerToDatabase = async (name, phone) => {
                       <p className="text-xs text-gray-400">Order Placed</p>
                     </div>
                     
-                    <div className="text-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative ${
-                        getStepStatus('preparing', trackingOrder.status) === 'completed' ? 'bg-green-500' :
-                        getStepStatus('preparing', trackingOrder.status) === 'current' ? 'bg-blue-500 animate-pulse' :
+                    <div className="text-center timeline-step">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                        getStepStatus('preparing', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                        getStepStatus('preparing', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
                         'bg-gray-700'
                       }`}>
                         <ChefHat size={16} className="text-white" />
@@ -445,10 +413,10 @@ const saveCustomerToDatabase = async (name, phone) => {
                       <p className="text-xs text-gray-400">Preparing</p>
                     </div>
                     
-                    <div className="text-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative ${
-                        getStepStatus('ready', trackingOrder.status) === 'completed' ? 'bg-green-500' :
-                        getStepStatus('ready', trackingOrder.status) === 'current' ? 'bg-blue-500 animate-pulse' :
+                    <div className="text-center timeline-step">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                        getStepStatus('ready', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                        getStepStatus('ready', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
                         'bg-gray-700'
                       }`}>
                         <Coffee size={16} className="text-white" />
@@ -456,10 +424,10 @@ const saveCustomerToDatabase = async (name, phone) => {
                       <p className="text-xs text-gray-400">Ready</p>
                     </div>
                     
-                    <div className="text-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative ${
-                        getStepStatus('completed', trackingOrder.status) === 'completed' ? 'bg-green-500' :
-                        getStepStatus('completed', trackingOrder.status) === 'current' ? 'bg-blue-500 animate-pulse' :
+                    <div className="text-center timeline-step">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                        getStepStatus('completed', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                        getStepStatus('completed', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
                         'bg-gray-700'
                       }`}>
                         <Truck size={16} className="text-white" />
@@ -471,7 +439,7 @@ const saveCustomerToDatabase = async (name, phone) => {
               </div>
 
               {/* Order Items */}
-              <div className="border-t border-gray-700 pt-4">
+              <div className="border-t border-white/10 pt-4">
                 <h3 className="text-white font-semibold mb-3">Order Items</h3>
                 <div className="space-y-2">
                   {trackingOrder.items && trackingOrder.items.map((item, idx) => (
@@ -481,7 +449,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-700 flex justify-between font-bold">
+                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between font-bold">
                   <span className="text-white">Total</span>
                   <span className="text-green-400">{formatCurrency(trackingOrder.total_amount)}</span>
                 </div>
@@ -495,9 +463,9 @@ const saveCustomerToDatabase = async (name, phone) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading menu...</p>
         </div>
       </div>
@@ -506,14 +474,14 @@ const saveCustomerToDatabase = async (name, phone) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Unable to Load Menu</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={fetchProducts}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition"
+            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold transition transform hover:scale-105"
           >
             Try Again
           </button>
@@ -524,7 +492,7 @@ const saveCustomerToDatabase = async (name, phone) => {
 
   if (products.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
           <Utensils size={48} className="text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Menu Empty</h2>
@@ -535,19 +503,21 @@ const saveCustomerToDatabase = async (name, phone) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white sticky top-0 z-30 shadow-lg">
+      <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white sticky top-0 z-30 shadow-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold">{restaurantInfo.name}</h1>
-              <p className="text-xs text-blue-100">Table {tableNumber || 'Guest'}</p>
+              <h1 className="text-xl font-bold bg-white/20 backdrop-blur-sm inline-block px-3 py-1 rounded-full">
+                {restaurantInfo.name}
+              </h1>
+              <p className="text-xs text-white/90 mt-1">Table {tableNumber || 'Guest'}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowQRGuide(true)}
-                className="bg-white/20 backdrop-blur-sm rounded-full p-2 hover:bg-white/30 transition"
+                className="bg-white/20 backdrop-blur-sm rounded-full p-2 hover:bg-white/30 transition transform hover:scale-110"
                 title="How to use QR ordering"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -556,11 +526,11 @@ const saveCustomerToDatabase = async (name, phone) => {
               </button>
               <button
                 onClick={() => setShowCart(true)}
-                className="relative bg-white/20 backdrop-blur-sm rounded-full p-2 hover:bg-white/30 transition"
+                className="relative bg-white/20 backdrop-blur-sm rounded-full p-2 hover:bg-white/30 transition transform hover:scale-110"
               >
                 <ShoppingCart size={24} />
                 {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 )}
@@ -573,11 +543,11 @@ const saveCustomerToDatabase = async (name, phone) => {
       {/* QR Guide Modal */}
       {showQRGuide && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowQRGuide(false)} />
+          <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setShowQRGuide(false)} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center transform transition-all animate-bounce">
+              <div className="w-20 h-20 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
               </div>
@@ -590,7 +560,7 @@ const saveCustomerToDatabase = async (name, phone) => {
               </p>
               <button
                 onClick={() => setShowQRGuide(false)}
-                className="w-full py-2 bg-blue-600 text-white rounded-lg font-semibold"
+                className="w-full py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition"
               >
                 Got it
               </button>
@@ -600,33 +570,33 @@ const saveCustomerToDatabase = async (name, phone) => {
       )}
 
       {/* Restaurant Info Bar */}
-      <div className="bg-white border-b border-gray-200 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600 sticky top-[72px] z-20">
         <div className="flex items-center gap-1 whitespace-nowrap">
-          <MapPin size={14} />
+          <MapPin size={14} className="text-indigo-500" />
           <span>{restaurantInfo.address}</span>
         </div>
         <div className="flex items-center gap-1 whitespace-nowrap">
-          <Phone size={14} />
+          <Phone size={14} className="text-indigo-500" />
           <span>{restaurantInfo.phone}</span>
         </div>
         <div className="flex items-center gap-1 whitespace-nowrap">
-          <Clock size={14} />
+          <Clock size={14} className="text-indigo-500" />
           <span>{restaurantInfo.hours}</span>
         </div>
       </div>
 
       {/* Categories */}
-      <div className="bg-white border-b border-gray-200 sticky top-[72px] z-20">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-[108px] z-20">
         <div className="container mx-auto px-4">
           <div className="flex overflow-x-auto gap-2 py-3 no-scrollbar">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition ${
+                className={`category-tab px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-300 ${
                   selectedCategory === cat
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                 }`}
               >
                 {cat === 'all' ? 'All Items' : cat}
@@ -636,36 +606,41 @@ const saveCustomerToDatabase = async (name, phone) => {
         </div>
       </div>
 
-      {/* Menu Grid - Data from Database */}
+      {/* Menu Grid */}
       <div className="container mx-auto px-4 py-6 pb-32">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProducts.map(product => (
             <div 
               key={product.id} 
-              className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition ${
+              className={`qr-menu-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 ${
                 !product.is_available ? 'opacity-60' : ''
               }`}
             >
-              <div className="p-4">
+              <div className="p-5">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-800">{product.name}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
+                      <h3 className="font-bold text-gray-800 text-lg">{product.name}</h3>
                       {!product.is_available && (
                         <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Unavailable</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{product.description || 'Delicious Ethiopian dish'}</p>
-                    <p className="text-blue-600 font-bold mt-2">Br {parseFloat(product.price).toFixed(2)}</p>
+                    <p className="text-sm text-gray-500 mt-1 leading-relaxed">{product.description || 'Delicious Ethiopian dish'}</p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Br {parseFloat(product.price).toFixed(2)}
+                      </p>
+                      {product.is_available !== false && (
+                        <button
+                          onClick={() => addToCart(product)}
+                          className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 hover:rotate-12 shadow-md"
+                        >
+                          <Plus size={20} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {product.is_available && (
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="ml-3 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition transform hover:scale-105"
-                    >
-                      <Plus size={20} />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -677,11 +652,11 @@ const saveCustomerToDatabase = async (name, phone) => {
       {cart.length > 0 && !showCart && (
         <button
           onClick={() => setShowCart(true)}
-          className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40"
+          className="floating-cart-btn fixed bottom-6 right-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 transform hover:scale-110 z-40 group"
         >
           <div className="relative">
-            <ShoppingCart size={24} />
-            <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            <ShoppingCart size={28} />
+            <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
               {cart.reduce((sum, item) => sum + item.quantity, 0)}
             </span>
           </div>
@@ -691,55 +666,59 @@ const saveCustomerToDatabase = async (name, phone) => {
       {/* Cart Sidebar */}
       {showCart && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowCart(false)} />
-          <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-all" onClick={() => setShowCart(false)} />
+          <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 animate-slide-in">
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
               <h2 className="text-xl font-bold">Your Order</h2>
-              <button onClick={() => setShowCart(false)} className="text-white hover:opacity-80">
+              <button onClick={() => setShowCart(false)} className="text-white hover:opacity-80 transition transform hover:rotate-90">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-5 cart-items-container">
               {cart.length === 0 ? (
                 <div className="text-center py-12">
-                  <ShoppingCart size={48} className="mx-auto text-gray-400 mb-3" />
-                  <p className="text-gray-500">Your cart is empty</p>
-                  <p className="text-gray-400 text-sm">Tap on items to add</p>
+                  <ShoppingCart size={64} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-lg">Your cart is empty</p>
+                  <p className="text-gray-400 text-sm mt-2">Tap on items to add</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {cart.map(item => (
-                    <div key={item.id} className="bg-gray-50 rounded-lg p-3">
-                      <div className="flex justify-between items-start">
+                    <div key={item.id} className="bg-gray-50 rounded-xl p-4 transition-all hover:shadow-md">
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="font-medium text-gray-800">{item.name}</p>
-                          <p className="text-blue-600 text-sm">Br {item.price.toFixed(2)}</p>
+                          <h3 className="font-semibold text-gray-800 text-lg">{item.name}</h3>
+                          <p className={`text-indigo-600 font-bold mt-1 ${priceUpdate === item.id ? 'price-update' : ''}`}>
+                            Br {item.price.toFixed(2)}
+                          </p>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-red-400 hover:text-red-600"
+                          className="text-red-400 hover:text-red-600 transition transform hover:scale-110"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
-                      <div className="flex justify-between items-center mt-2">
+                      <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition"
+                            className="qty-btn w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition transform hover:scale-110"
                           >
-                            -
+                            <span className="text-gray-600 font-bold text-lg">-</span>
                           </button>
-                          <span className="font-semibold w-6 text-center">{item.quantity}</span>
+                          <span className="font-semibold text-gray-800 text-lg w-8 text-center">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition"
+                            className="qty-btn w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition transform hover:scale-110"
                           >
-                            +
+                            <span className="text-gray-600 font-bold text-lg">+</span>
                           </button>
                         </div>
-                        <span className="font-bold">Br {item.total.toFixed(2)}</span>
+                        <span className={`font-bold text-gray-800 text-lg ${priceUpdate === item.id ? 'price-update' : ''}`}>
+                          Br {item.total.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -747,19 +726,21 @@ const saveCustomerToDatabase = async (name, phone) => {
               )}
             </div>
 
-            <div className="border-t border-gray-200 p-4">
-              <div className="space-y-2 mb-4">
+            <div className="border-t border-gray-100 p-5 bg-gray-50">
+              <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>Br {subtotal.toFixed(2)}</span>
+                  <span className={`font-medium ${subtotal > 0 ? 'price-update' : ''}`}>Br {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>VAT (15%)</span>
                   <span>Br {tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-800 font-bold text-lg pt-2 border-t border-gray-200">
+                <div className="flex justify-between text-gray-800 font-bold text-xl pt-3 border-t border-gray-200">
                   <span>Total</span>
-                  <span className="text-blue-600">Br {total.toFixed(2)}</span>
+                  <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Br {total.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
@@ -768,7 +749,7 @@ const saveCustomerToDatabase = async (name, phone) => {
                 placeholder="Your name (optional)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
               />
               
               <input
@@ -776,23 +757,30 @@ const saveCustomerToDatabase = async (name, phone) => {
                 placeholder="Your phone (optional)"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
               />
 
               <textarea
                 placeholder="Special instructions (allergies, preferences...)"
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 rows={2}
               />
 
               <button
                 onClick={placeOrder}
                 disabled={cart.length === 0 || loading}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
               >
-                {loading ? 'Placing Order...' : 'Place Order'}
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Placing Order...
+                  </div>
+                ) : (
+                  'Place Order'
+                )}
               </button>
             </div>
           </div>

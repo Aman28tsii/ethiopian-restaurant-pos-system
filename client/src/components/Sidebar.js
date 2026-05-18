@@ -4,7 +4,7 @@ import {
   ShoppingCart, Package, BarChart3, Users, LogOut, Store,
   ChevronLeft, ChevronRight, TrendingUp, Receipt, 
   ChefHat, Clock, LayoutDashboard, Settings, ClipboardList,
-  Table as TableIcon, History, Menu, X, QrCode
+  Table as TableIcon, History, Menu, X, QrCode, Table
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 

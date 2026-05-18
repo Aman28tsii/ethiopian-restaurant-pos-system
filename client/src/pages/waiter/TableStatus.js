@@ -3,7 +3,7 @@ import API from '../../api/axios';
 import { 
   Table, RefreshCw, Loader2, CheckCircle, XCircle, 
   Clock, Coffee, Sparkles, AlertCircle, Bell, 
-  Users, Utensils, Wifi, WifiOff, Eye
+  Users, Utensils, Eye, UserCheck, UserX
 } from 'lucide-react';
 import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
@@ -18,6 +18,8 @@ const TableStatus = () => {
   const [waiters, setWaiters] = useState([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTableForAssign, setSelectedTableForAssign] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
   // Status options with colors and icons
   const statusOptions = [
@@ -41,7 +43,6 @@ const TableStatus = () => {
     // Listen for order ready notifications
     socket.on('order_ready_for_waiter', (data) => {
       setNotification(`🍽️ ${data.message}`);
-      // Play sound
       const audio = new Audio('/notification.mp3');
       audio.play().catch(e => console.log('Audio not supported'));
       setTimeout(() => setNotification(''), 5000);
@@ -71,6 +72,16 @@ const TableStatus = () => {
       setWaiters(response.data.data || []);
     } catch (err) {
       console.error('Fetch waiters error:', err);
+    }
+  };
+
+  const fetchOrderDetails = async (orderId) => {
+    try {
+      const response = await API.get(`/orders/${orderId}`);
+      setSelectedOrderDetails(response.data.data);
+      setShowOrderModal(true);
+    } catch (err) {
+      console.error('Fetch order details error:', err);
     }
   };
 
@@ -106,6 +117,10 @@ const TableStatus = () => {
 
   const getStatusCount = (statusValue) => {
     return tables.filter(t => t.status === statusValue).length;
+  };
+
+  const formatCurrency = (value) => {
+    return `Br ${parseFloat(value || 0).toFixed(2)}`;
   };
 
   if (loading) {
@@ -208,7 +223,7 @@ const TableStatus = () => {
 
               {/* Table Body */}
               <div className="p-4 space-y-3">
-                {/* Waiter Assignment */}
+                {/* Assigned Waiter */}
                 <div>
                   <p className="text-gray-400 text-xs mb-1">Assigned Waiter</p>
                   <div className="flex items-center justify-between">
@@ -224,8 +239,9 @@ const TableStatus = () => {
                         setSelectedWaiter(table.waiter_id || '');
                         setShowAssignModal(true);
                       }}
-                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition"
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition flex items-center gap-1"
                     >
+                      <UserCheck size={12} />
                       Change
                     </button>
                   </div>
@@ -234,8 +250,27 @@ const TableStatus = () => {
                 {/* Current Order (if occupied) */}
                 {table.status === 'occupied' && table.current_order_number && (
                   <div className="bg-gray-700/50 rounded-lg p-2">
-                    <p className="text-gray-400 text-xs mb-1">Current Order</p>
-                    <p className="text-white text-sm font-mono">{table.current_order_number}</p>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-400 text-xs mb-1">Current Order</p>
+                        <p className="text-white text-sm font-mono">{table.current_order_number}</p>
+                      </div>
+                      <button
+                        onClick={() => fetchOrderDetails(table.current_order_id)}
+                        className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1"
+                      >
+                        <Eye size={12} />
+                        View
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending Order (if any) */}
+                {table.pending_order_id && (
+                  <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/30">
+                    <p className="text-yellow-400 text-xs mb-1">Pending Order</p>
+                    <p className="text-yellow-400 text-xs">Customer waiting for confirmation</p>
                   </div>
                 )}
 
@@ -329,6 +364,46 @@ const TableStatus = () => {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Details Modal */}
+      {showOrderModal && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-700">
+            <div className="sticky top-0 bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Order Details</h2>
+              <button onClick={() => setShowOrderModal(false)} className="text-gray-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <p className="text-gray-400 text-xs">Order Number</p>
+                <p className="text-white font-bold text-lg">{selectedOrderDetails.order_number}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs">Customer</p>
+                <p className="text-white">{selectedOrderDetails.customer_name || 'Walk-in Customer'}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs">Status</p>
+                <span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400">
+                  {selectedOrderDetails.status}
+                </span>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs">Total Amount</p>
+                <p className="text-green-400 font-bold">{formatCurrency(selectedOrderDetails.total_amount)}</p>
+              </div>
+              {selectedOrderDetails.notes && (
+                <div className="bg-yellow-500/10 rounded-lg p-3">
+                  <p className="text-yellow-400 text-xs">Special Instructions</p>
+                  <p className="text-gray-300 text-sm">{selectedOrderDetails.notes}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

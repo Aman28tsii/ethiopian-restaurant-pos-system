@@ -4,14 +4,14 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { LanguageProvider } from './context/LanguageContext';
 
-// Role-based layouts
+// Layouts
 import OwnerLayout from './layouts/OwnerLayout';
 import ManagerLayout from './layouts/ManagerLayout';
 import CashierLayout from './layouts/CashierLayout';
 import WaiterLayout from './layouts/WaiterLayout';
 import KitchenLayout from './layouts/KitchenLayout';
 
-// Role-specific pages
+// Pages
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import CashierPOS from './pages/cashier/CashierPOS';
@@ -28,10 +28,10 @@ import QRMenu from './pages/QRMenu';
 import TrackOrder from './pages/TrackOrder';
 import Customers from './pages/Customers';
 import PrintQRCodes from './pages/owner/PrintQRCodes';
-import PendingConfirmations from './pages/waiter/PendingConfirmations';
-import AssignWaiters from './pages/owner/AssignWaiters';
 import MyOrders from './pages/waiter/MyOrders';
 import TableStatus from './pages/waiter/TableStatus';
+import PendingConfirmations from './pages/waiter/PendingConfirmations';
+
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {

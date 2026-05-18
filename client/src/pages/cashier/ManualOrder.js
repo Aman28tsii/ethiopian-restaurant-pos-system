@@ -217,31 +217,79 @@ const ManualOrder = () => {
           <p className="text-gray-400 mt-1">Create orders for phone calls or walk-in customers</p>
         </div>
 
-        {/* Order Type Selector */}
-        <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">
-          <div className="flex gap-4 mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" value="dine_in" checked={orderType === 'dine_in'} onChange={(e) => setOrderType(e.target.value)} className="w-4 h-4 text-blue-600" />
-              <span className="text-white">Dine In</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" value="takeaway" checked={orderType === 'takeaway'} onChange={(e) => setOrderType(e.target.value)} className="w-4 h-4 text-blue-600" />
-              <span className="text-white">Takeaway</span>
-            </label>
-          </div>
+       // Order Type Selector - Improved version
+<div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">
+  <div className="flex gap-4 mb-4">
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="radio"
+        value="dine_in"
+        checked={orderType === 'dine_in'}
+        onChange={(e) => {
+          setOrderType(e.target.value);
+          // Clear table selection when switching to takeaway
+          if (e.target.value === 'takeaway') {
+            setSelectedTableId('');
+          }
+        }}
+        className="w-4 h-4 text-blue-600"
+      />
+      <span className="text-white">Dine In</span>
+    </label>
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="radio"
+        value="takeaway"
+        checked={orderType === 'takeaway'}
+        onChange={(e) => {
+          setOrderType(e.target.value);
+          // Clear table selection when switching to takeaway
+          if (e.target.value === 'takeaway') {
+            setSelectedTableId('');
+          }
+        }}
+        className="w-4 h-4 text-blue-600"
+      />
+      <span className="text-white">Takeaway</span>
+    </label>
+  </div>
 
-          {orderType === 'dine_in' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Select Table</label>
-              <select value={selectedTableId} onChange={(e) => setSelectedTableId(e.target.value)} className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                <option value="">-- Select Table --</option>
-                {tables.filter(t => t.status === 'available').map(table => (
-                  <option key={table.id} value={table.id}>Table {table.table_number} (Capacity: {table.capacity})</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+  {orderType === 'dine_in' && (
+    <div>
+      <label className="block text-sm font-medium text-gray-300 mb-2">Select Table *</label>
+      <select
+        value={selectedTableId}
+        onChange={(e) => setSelectedTableId(e.target.value)}
+        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">-- Select Table --</option>
+        {tables.filter(t => t.status === 'available').map(table => (
+          <option key={table.id} value={table.id}>
+            Table {table.table_number} (Capacity: {table.capacity}) - Available
+          </option>
+        ))}
+        {tables.filter(t => t.status !== 'available' && t.status !== 'occupied').map(table => (
+          <option key={table.id} value={table.id} disabled className="text-gray-500">
+            Table {table.table_number} ({table.status}) - Not Available
+          </option>
+        ))}
+      </select>
+      {tables.filter(t => t.status === 'available').length === 0 && (
+        <p className="text-yellow-400 text-xs mt-2">
+          ⚠️ No available tables. Please free up a table or use Takeaway option.
+        </p>
+      )}
+    </div>
+  )}
+
+  {orderType === 'takeaway' && (
+    <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/30">
+      <p className="text-blue-400 text-sm flex items-center gap-2">
+        <span>📦</span> Takeaway order - No table selection needed
+      </p>
+    </div>
+  )}
+</div>
 
         {/* Search and Categories */}
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">

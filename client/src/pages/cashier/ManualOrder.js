@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import { 
-  ShoppingCart, Plus, Minus, X, Utensils, Trash2, 
-  CheckCircle, AlertCircle, Search, Users, Phone, 
-  MapPin, CreditCard, Smartphone, DollarSign
+  ShoppingCart, Trash2, CheckCircle, Search,
+  CreditCard, Smartphone, DollarSign
 } from 'lucide-react';
 
 const ManualOrder = () => {
@@ -23,7 +22,6 @@ const ManualOrder = () => {
   const [orderNumber, setOrderNumber] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -39,7 +37,7 @@ const ManualOrder = () => {
       const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
       setCategories(uniqueCategories);
     } catch (err) {
-      setError('Unable to load products');
+      console.error('Fetch products error:', err);
     } finally {
       setLoading(false);
     }
@@ -217,89 +215,98 @@ const ManualOrder = () => {
           <p className="text-gray-400 mt-1">Create orders for phone calls or walk-in customers</p>
         </div>
 
-       // Order Type Selector - Improved version
-<div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">
-  <div className="flex gap-4 mb-4">
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="radio"
-        value="dine_in"
-        checked={orderType === 'dine_in'}
-        onChange={(e) => {
-          setOrderType(e.target.value);
-          // Clear table selection when switching to takeaway
-          if (e.target.value === 'takeaway') {
-            setSelectedTableId('');
-          }
-        }}
-        className="w-4 h-4 text-blue-600"
-      />
-      <span className="text-white">Dine In</span>
-    </label>
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="radio"
-        value="takeaway"
-        checked={orderType === 'takeaway'}
-        onChange={(e) => {
-          setOrderType(e.target.value);
-          // Clear table selection when switching to takeaway
-          if (e.target.value === 'takeaway') {
-            setSelectedTableId('');
-          }
-        }}
-        className="w-4 h-4 text-blue-600"
-      />
-      <span className="text-white">Takeaway</span>
-    </label>
-  </div>
+        {/* Order Type Selector */}
+        <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">
+          <div className="flex gap-4 mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                value="dine_in"
+                checked={orderType === 'dine_in'}
+                onChange={(e) => {
+                  setOrderType(e.target.value);
+                  if (e.target.value === 'takeaway') {
+                    setSelectedTableId('');
+                  }
+                }}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span className="text-white">Dine In</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                value="takeaway"
+                checked={orderType === 'takeaway'}
+                onChange={(e) => {
+                  setOrderType(e.target.value);
+                  if (e.target.value === 'takeaway') {
+                    setSelectedTableId('');
+                  }
+                }}
+                className="w-4 h-4 text-blue-600"
+              />
+              <span className="text-white">Takeaway</span>
+            </label>
+          </div>
 
-  {orderType === 'dine_in' && (
-    <div>
-      <label className="block text-sm font-medium text-gray-300 mb-2">Select Table *</label>
-      <select
-        value={selectedTableId}
-        onChange={(e) => setSelectedTableId(e.target.value)}
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="">-- Select Table --</option>
-        {tables.filter(t => t.status === 'available').map(table => (
-          <option key={table.id} value={table.id}>
-            Table {table.table_number} (Capacity: {table.capacity}) - Available
-          </option>
-        ))}
-        {tables.filter(t => t.status !== 'available' && t.status !== 'occupied').map(table => (
-          <option key={table.id} value={table.id} disabled className="text-gray-500">
-            Table {table.table_number} ({table.status}) - Not Available
-          </option>
-        ))}
-      </select>
-      {tables.filter(t => t.status === 'available').length === 0 && (
-        <p className="text-yellow-400 text-xs mt-2">
-          ⚠️ No available tables. Please free up a table or use Takeaway option.
-        </p>
-      )}
-    </div>
-  )}
+          {orderType === 'dine_in' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Table <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={selectedTableId}
+                onChange={(e) => setSelectedTableId(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Table --</option>
+                {tables.filter(t => t.status === 'available').map(table => (
+                  <option key={table.id} value={table.id}>
+                    Table {table.table_number} (Capacity: {table.capacity}) - Available
+                  </option>
+                ))}
+              </select>
+              {tables.filter(t => t.status === 'available').length === 0 && (
+                <p className="text-yellow-400 text-xs mt-2">
+                  ⚠️ No available tables. Please use Takeaway option or free up a table.
+                </p>
+              )}
+            </div>
+          )}
 
-  {orderType === 'takeaway' && (
-    <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/30">
-      <p className="text-blue-400 text-sm flex items-center gap-2">
-        <span>📦</span> Takeaway order - No table selection needed
-      </p>
-    </div>
-  )}
-</div>
+          {orderType === 'takeaway' && (
+            <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/30">
+              <p className="text-blue-400 text-sm flex items-center gap-2">
+                <span>📦</span> Takeaway order - No table selection needed
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Search and Categories */}
         <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 mb-4">
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-            <input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-3 pl-10 bg-gray-700 border border-gray-600 rounded-xl text-white" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 pl-10 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400"
+            />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-semibold transition ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap ${
+                  selectedCategory === cat
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
                 {cat === 'all' ? 'All Items' : cat}
               </button>
             ))}
@@ -307,17 +314,26 @@ const ManualOrder = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="h-[calc(100vh-380px)] overflow-y-auto">
+        <div className="h-[calc(100vh-500px)] overflow-y-auto">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {filteredProducts.map(product => (
-              <button key={product.id} onClick={() => addToCart(product)} className="bg-gray-800 border border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition">
+              <button
+                key={product.id}
+                onClick={() => addToCart(product)}
+                className="bg-gray-800 border border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:bg-gray-700"
+              >
                 <div className="text-2xl mb-1">🍽️</div>
-                <h3 className="font-semibold text-white text-sm mb-1">{product.name}</h3>
+                <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
                 <p className="text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
                 <span className="text-xs text-green-400 mt-1 inline-block">+ Add</span>
               </button>
             ))}
           </div>
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No products found</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -329,7 +345,11 @@ const ManualOrder = () => {
               <ShoppingCart size={24} className="text-blue-400" />
               <h2 className="text-xl font-bold text-white">Current Order</h2>
             </div>
-            {cart.length > 0 && <button onClick={clearCart} className="text-red-400 text-sm">Clear All</button>}
+            {cart.length > 0 && (
+              <button onClick={clearCart} className="text-red-400 text-sm hover:text-red-300">
+                Clear All
+              </button>
+            )}
           </div>
         </div>
 
@@ -338,19 +358,35 @@ const ManualOrder = () => {
             <div className="text-center py-12">
               <ShoppingCart size={48} className="mx-auto text-gray-600 mb-3" />
               <p className="text-gray-500">Cart is empty</p>
+              <p className="text-gray-400 text-sm">Tap on products to add</p>
             </div>
           ) : (
             cart.map(item => (
               <div key={item.id} className="bg-gray-700 rounded-xl p-3">
                 <div className="flex justify-between items-start mb-2">
-                  <div><h3 className="font-semibold text-white">{item.name}</h3><p className="text-blue-400 text-sm">{formatCurrency(item.price)}</p></div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-red-400"><Trash2 size={16} /></button>
+                  <div>
+                    <h3 className="font-semibold text-white">{item.name}</h3>
+                    <p className="text-blue-400 text-sm">{formatCurrency(item.price)}</p>
+                  </div>
+                  <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-300">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-3">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">-</button>
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-500 transition"
+                    >
+                      -
+                    </button>
                     <span className="text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">+</button>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-500 transition"
+                    >
+                      +
+                    </button>
                   </div>
                   <span className="text-white font-bold">{formatCurrency(item.total)}</span>
                 </div>
@@ -360,26 +396,78 @@ const ManualOrder = () => {
         </div>
 
         <div className="border-t border-gray-700 p-4 space-y-3">
-          <input type="text" placeholder="Customer name (optional)" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" />
-          <input type="tel" placeholder="Customer phone (optional)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" />
-          <textarea placeholder="Special instructions..." value={specialInstructions} onChange={(e) => setSpecialInstructions(e.target.value)} className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" rows={2} />
+          <input
+            type="text"
+            placeholder="Customer name (optional)"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+          />
+          <input
+            type="tel"
+            placeholder="Customer phone (optional)"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+          />
+          <textarea
+            placeholder="Special instructions..."
+            value={specialInstructions}
+            onChange={(e) => setSpecialInstructions(e.target.value)}
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+            rows={2}
+          />
 
           <div>
             <p className="text-gray-400 text-sm mb-2">Payment Method</p>
             <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => setPaymentMethod('cash')} className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${paymentMethod === 'cash' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}><DollarSign size={16} /> Cash</button>
-              <button onClick={() => setPaymentMethod('card')} className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${paymentMethod === 'card' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}><CreditCard size={16} /> Card</button>
-              <button onClick={() => setPaymentMethod('mobile')} className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${paymentMethod === 'mobile' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}><Smartphone size={16} /> Mobile</button>
+              <button
+                onClick={() => setPaymentMethod('cash')}
+                className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                  paymentMethod === 'cash' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <DollarSign size={16} /> Cash
+              </button>
+              <button
+                onClick={() => setPaymentMethod('card')}
+                className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                  paymentMethod === 'card' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <CreditCard size={16} /> Card
+              </button>
+              <button
+                onClick={() | setPaymentMethod('mobile')}
+                className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                  paymentMethod === 'mobile' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                <Smartphone size={16} /> Mobile
+              </button>
             </div>
           </div>
 
           <div className="pt-2 border-t border-gray-700">
-            <div className="flex justify-between text-gray-400 text-sm"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-            <div className="flex justify-between text-gray-400 text-sm"><span>VAT (15%)</span><span>{formatCurrency(tax)}</span></div>
-            <div className="flex justify-between text-white font-bold text-lg pt-2"><span>Total</span><span className="text-green-400">{formatCurrency(total)}</span></div>
+            <div className="flex justify-between text-gray-400 text-sm">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-400 text-sm">
+              <span>VAT (15%)</span>
+              <span>{formatCurrency(tax)}</span>
+            </div>
+            <div className="flex justify-between text-white font-bold text-lg pt-2">
+              <span>Total</span>
+              <span className="text-green-400">{formatCurrency(total)}</span>
+            </div>
           </div>
 
-          <button onClick={placeOrder} disabled={cart.length === 0 || processing} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition disabled:opacity-50">
+          <button
+            onClick={placeOrder}
+            disabled={cart.length === 0 || processing}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {processing ? 'Processing...' : 'Complete Order'}
           </button>
         </div>

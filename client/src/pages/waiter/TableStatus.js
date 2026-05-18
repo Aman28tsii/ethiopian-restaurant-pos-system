@@ -1,0 +1,363 @@
+import React, { useState, useEffect } from 'react';
+import API from '../../api/axios';
+import { 
+  Table, RefreshCw, Loader2, CheckCircle, XCircle, 
+  Clock, Coffee, Sparkles, AlertCircle, Bell, 
+  Users, Utensils, Wifi, WifiOff, Eye
+} from 'lucide-react';
+import socket from '../../socket';
+import { useLanguage } from '../../context/LanguageContext';
+
+const TableStatus = () => {
+  const { t } = useLanguage();
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null);
+  const [notification, setNotification] = useState('');
+  const [selectedWaiter, setSelectedWaiter] = useState('');
+  const [waiters, setWaiters] = useState([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedTableForAssign, setSelectedTableForAssign] = useState(null);
+
+  // Status options with colors and icons
+  const statusOptions = [
+    { value: 'available', label: 'Available', color: 'bg-green-500', icon: <CheckCircle size={16} />, textColor: 'text-green-400' },
+    { value: 'occupied', label: 'Occupied', color: 'bg-red-500', icon: <Users size={16} />, textColor: 'text-red-400' },
+    { value: 'reserved', label: 'Reserved', color: 'bg-yellow-500', icon: <Clock size={16} />, textColor: 'text-yellow-400' },
+    { value: 'cleaning', label: 'Cleaning', color: 'bg-blue-500', icon: <Sparkles size={16} />, textColor: 'text-blue-400' }
+  ];
+
+  useEffect(() => {
+    fetchTables();
+    fetchWaiters();
+    
+    // Listen for table status updates
+    socket.on('table_status_updated', (data) => {
+      fetchTables();
+      setNotification(`Table ${data.table_number} is now ${data.status}`);
+      setTimeout(() => setNotification(''), 3000);
+    });
+    
+    // Listen for order ready notifications
+    socket.on('order_ready_for_waiter', (data) => {
+      setNotification(`🍽️ ${data.message}`);
+      // Play sound
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(e => console.log('Audio not supported'));
+      setTimeout(() => setNotification(''), 5000);
+    });
+    
+    return () => {
+      socket.off('table_status_updated');
+      socket.off('order_ready_for_waiter');
+    };
+  }, []);
+
+  const fetchTables = async () => {
+    setLoading(true);
+    try {
+      const response = await API.get('/orders/tables/all');
+      setTables(response.data.data || []);
+    } catch (err) {
+      console.error('Fetch tables error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchWaiters = async () => {
+    try {
+      const response = await API.get('/orders/waiters');
+      setWaiters(response.data.data || []);
+    } catch (err) {
+      console.error('Fetch waiters error:', err);
+    }
+  };
+
+  const updateTableStatus = async (tableId, newStatus) => {
+    setUpdating(tableId);
+    try {
+      await API.put(`/orders/tables/${tableId}/status`, { status: newStatus });
+      fetchTables();
+    } catch (err) {
+      console.error('Update status error:', err);
+      alert(err.response?.data?.error || 'Failed to update table status');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const assignWaiter = async (tableId, waiterId) => {
+    try {
+      await API.put(`/orders/tables/${tableId}/assign-waiter`, { waiter_id: waiterId });
+      fetchTables();
+      setShowAssignModal(false);
+      setSelectedTableForAssign(null);
+      setSelectedWaiter('');
+    } catch (err) {
+      console.error('Assign waiter error:', err);
+      alert(err.response?.data?.error || 'Failed to assign waiter');
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    return statusOptions.find(s => s.value === status) || statusOptions[0];
+  };
+
+  const getStatusCount = (statusValue) => {
+    return tables.filter(t => t.status === statusValue).length;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="animate-spin text-blue-500" size={40} />
+      </div>
+    );
+  }
+
+  const availableCount = getStatusCount('available');
+  const occupiedCount = getStatusCount('occupied');
+  const reservedCount = getStatusCount('reserved');
+  const cleaningCount = getStatusCount('cleaning');
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Table Status Management</h1>
+          <p className="text-gray-400 mt-1">Manage table availability, reservations, and cleaning status</p>
+        </div>
+        <button
+          onClick={fetchTables}
+          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
+        >
+          <RefreshCw size={18} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Notification */}
+      {notification && (
+        <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 text-blue-400 text-center animate-pulse">
+          <Bell size={18} className="inline mr-2" />
+          {notification}
+        </div>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={20} className="text-green-400" />
+            <span className="text-green-400 font-semibold">Available</span>
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{availableCount}</p>
+        </div>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <Users size={20} className="text-red-400" />
+            <span className="text-red-400 font-semibold">Occupied</span>
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{occupiedCount}</p>
+        </div>
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <Clock size={20} className="text-yellow-400" />
+            <span className="text-yellow-400 font-semibold">Reserved</span>
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{reservedCount}</p>
+        </div>
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles size={20} className="text-blue-400" />
+            <span className="text-blue-400 font-semibold">Cleaning</span>
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{cleaningCount}</p>
+        </div>
+      </div>
+
+      {/* Tables Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {tables.map(table => {
+          const statusStyle = getStatusStyle(table.status);
+          return (
+            <div 
+              key={table.id} 
+              className={`bg-gray-800 rounded-xl border-2 overflow-hidden transition-all ${
+                table.status === 'available' ? 'border-green-500/30 hover:border-green-500' :
+                table.status === 'occupied' ? 'border-red-500/30 hover:border-red-500' :
+                table.status === 'reserved' ? 'border-yellow-500/30 hover:border-yellow-500' :
+                'border-blue-500/30 hover:border-blue-500'
+              }`}
+            >
+              {/* Table Header */}
+              <div className={`p-4 ${statusStyle.color}/10 border-b border-gray-700`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Table {table.table_number}</h3>
+                    <p className="text-gray-400 text-sm">Capacity: {table.capacity} seats</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full ${statusStyle.color}/20 ${statusStyle.textColor} text-sm font-semibold flex items-center gap-1`}>
+                    {statusStyle.icon}
+                    <span>{statusStyle.label}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Body */}
+              <div className="p-4 space-y-3">
+                {/* Waiter Assignment */}
+                <div>
+                  <p className="text-gray-400 text-xs mb-1">Assigned Waiter</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users size={14} className="text-gray-500" />
+                      <span className="text-white text-sm">
+                        {table.waiter_name || 'Not assigned'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedTableForAssign(table);
+                        setSelectedWaiter(table.waiter_id || '');
+                        setShowAssignModal(true);
+                      }}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current Order (if occupied) */}
+                {table.status === 'occupied' && table.current_order_number && (
+                  <div className="bg-gray-700/50 rounded-lg p-2">
+                    <p className="text-gray-400 text-xs mb-1">Current Order</p>
+                    <p className="text-white text-sm font-mono">{table.current_order_number}</p>
+                  </div>
+                )}
+
+                {/* Status Actions */}
+                <div className="pt-2 border-t border-gray-700">
+                  <p className="text-gray-400 text-xs mb-2">Change Status:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {statusOptions.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => updateTableStatus(table.id, option.value)}
+                        disabled={updating === table.id || table.status === option.value}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1 ${
+                          table.status === option.value
+                            ? `${option.color} text-white opacity-50 cursor-not-allowed`
+                            : `${option.color}/20 ${option.textColor} hover:${option.color} hover:text-white`
+                        }`}
+                      >
+                        {updating === table.id ? (
+                          <Loader2 className="animate-spin" size={12} />
+                        ) : (
+                          option.icon
+                        )}
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* No Tables Message */}
+      {tables.length === 0 && (
+        <div className="text-center py-12 bg-gray-800 rounded-xl">
+          <Table size={48} className="mx-auto text-gray-600 mb-3" />
+          <p className="text-gray-500">No tables found</p>
+        </div>
+      )}
+
+      {/* Assign Waiter Modal */}
+      {showAssignModal && selectedTableForAssign && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl max-w-md w-full border border-gray-700">
+            <div className="p-5 border-b border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Assign Waiter to Table {selectedTableForAssign.table_number}</h2>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedTableForAssign(null);
+                  setSelectedWaiter('');
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-5">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Select Waiter</label>
+              <select
+                value={selectedWaiter}
+                onChange={(e) => setSelectedWaiter(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              >
+                <option value="">-- No Waiter Assigned --</option>
+                {waiters.map(waiter => (
+                  <option key={waiter.id} value={waiter.id}>
+                    {waiter.name} ({waiter.email})
+                  </option>
+                ))}
+              </select>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => assignWaiter(selectedTableForAssign.id, selectedWaiter || null)}
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition"
+                >
+                  Assign
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedTableForAssign(null);
+                    setSelectedWaiter('');
+                  }}
+                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legend / Help */}
+      <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+        <h4 className="text-white font-semibold mb-2 text-sm">Quick Guide</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span className="text-gray-400">Available - Table is ready for customers</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span className="text-gray-400">Occupied - Customers are seated</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+            <span className="text-gray-400">Reserved - Table is booked</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span className="text-gray-400">Cleaning - Being cleaned after customers</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TableStatus;

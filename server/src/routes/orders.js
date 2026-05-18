@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, allowWaiter, allowCashier, allowKitchen, allowManager } from '../middleware/auth.js';
+import { protect, allowWaiter, allowCashier, allowKitchen, allowManager, allowOwner } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 import rateLimit from 'express-rate-limit';
 
@@ -7,8 +7,8 @@ const router = express.Router();
 
 // Rate limiter for public tracking endpoint
 const trackLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute per IP
+  windowMs: 60 * 1000,
+  max: 30,
   message: { success: false, error: 'Too many requests. Please wait.' }
 });
 
@@ -30,7 +30,7 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     const orderResult = await pool.query(
       `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, 
               o.customer_name, o.customer_phone, o.table_id, o.order_type, o.notes,
-              o.created_at, o.updated_at,
+              o.created_at, o.updated_at, o.waiter_id, o.confirmed_at,
               t.table_number
        FROM orders o
        LEFT JOIN tables t ON o.table_id = t.id
@@ -44,7 +44,6 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     
     const order = orderResult.rows[0];
     
-    // Get order items
     const itemsResult = await pool.query(
       `SELECT oi.id, oi.product_id, oi.quantity, oi.unit_price, oi.total_price,
               p.name as product_name
@@ -56,10 +55,7 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     
     res.json({
       success: true,
-      data: {
-        ...order,
-        items: itemsResult.rows
-      }
+      data: { ...order, items: itemsResult.rows }
     });
     
   } catch (err) {
@@ -69,7 +65,7 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
 });
 
 // ==================== PUBLIC QR ORDER ROUTE ====================
-// Public endpoint for QR code orders (no authentication required)
+// Customer places order via QR - Table does NOT become occupied yet
 router.post('/qr-order', async (req, res) => {
   try {
     const { items, table_id, customer_name, customer_phone, notes } = req.body;
@@ -83,6 +79,13 @@ router.post('/qr-order', async (req, res) => {
     try {
       await client.query('BEGIN');
       
+      // Get table info including waiter_id
+      const tableResult = await client.query(
+        'SELECT waiter_id FROM tables WHERE id = $1',
+        [table_id]
+      );
+      const waiterId = tableResult.rows[0]?.waiter_id;
+      
       // Calculate total
       let totalAmount = 0;
       for (const item of items) {
@@ -93,15 +96,15 @@ router.post('/qr-order', async (req, res) => {
         totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
       }
       
-      // Generate order number
       const orderNumber = `QR-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
       
-      // Insert order with 'pending_confirmation' status (waiter must confirm first)
+      // Insert order with 'pending_confirmation' status
+      // IMPORTANT: Table is NOT marked as occupied here
       const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
-         VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu')
+        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source, waiter_id)
+         VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu', $7)
          RETURNING id, order_number`,
-        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null]
+        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null, waiterId]
       );
       
       const orderId = orderResult.rows[0].id;
@@ -121,26 +124,26 @@ router.post('/qr-order', async (req, res) => {
         );
       }
       
-      // Update table status to 'ordering' (temporarily)
+      // Table status remains 'available' - NOT occupied
+      // Only set a temporary flag to show there's a pending order
       if (table_id) {
         await client.query(
-          `UPDATE tables SET status = 'ordering', current_order_id = $1 WHERE id = $2`,
+          `UPDATE tables SET status = 'available', pending_order_id = $1 WHERE id = $2`,
           [orderId, table_id]
         );
       }
       
       await client.query('COMMIT');
       
-      // Emit socket event for new pending order (for waiter dashboard)
+      // Emit socket event for waiter
       const io = req.app.get('io');
-      if (io) {
-        io.emit('new_pending_order', {
+      if (io && waiterId) {
+        io.to(`waiter_${waiterId}`).emit('new_pending_order', {
           order_id: orderId,
           order_number: orderNumber,
           table_id: table_id,
           customer_name: customer_name || 'Walk-in Customer',
-          total_amount: totalAmount,
-          source: 'qr_menu'
+          total_amount: totalAmount
         });
       }
       
@@ -170,7 +173,7 @@ router.post('/qr-order', async (req, res) => {
 });
 
 // ==================== WAITER CONFIRMATION ROUTE ====================
-// Waiter confirms order (moves to kitchen)
+// Waiter confirms order - NOW table becomes occupied
 router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
@@ -182,7 +185,9 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     
     // Check order exists and is pending confirmation
     const orderCheck = await client.query(
-      'SELECT id, status, table_id, customer_name FROM orders WHERE id = $1 AND status = $2',
+      `SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id
+       FROM orders o
+       WHERE o.id = $1 AND o.status = $2`,
       [orderId, 'pending_confirmation']
     );
     
@@ -194,6 +199,14 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     }
     
     const order = orderCheck.rows[0];
+    
+    // Verify this order belongs to the waiter (if waiter_id is set)
+    if (order.waiter_id && order.waiter_id !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'This order is not assigned to you' 
+      });
+    }
     
     // Update order status to 'pending' (ready for kitchen)
     await client.query(
@@ -213,11 +226,16 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
       [orderId, 'Order confirmed by waiter']
     );
     
-    // Update table status to occupied
+    // NOW mark table as occupied (only after waiter confirms)
     if (order.table_id) {
       await client.query(
-        `UPDATE tables SET status = 'occupied', updated_at = NOW() WHERE id = $1`,
-        [order.table_id]
+        `UPDATE tables 
+         SET status = 'occupied', 
+             current_order_id = $1, 
+             pending_order_id = NULL,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [orderId, order.table_id]
       );
     }
     
@@ -228,14 +246,17 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     if (io) {
       io.emit('order_confirmed', {
         order_id: orderId,
+        order_number: order.order_number,
         status: 'confirmed',
-        message: `Order #${orderId} has been confirmed by waiter`
+        waiter_id: userId,
+        message: `Order #${order.order_number} has been confirmed`
       });
       io.emit('new_order', {
         order_id: orderId,
         order_number: order.order_number,
         status: 'pending',
-        customer_name: order.customer_name
+        customer_name: order.customer_name,
+        table_id: order.table_id
       });
     }
     
@@ -256,6 +277,8 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
 
 // ==================== GET PENDING CONFIRMATION ORDERS ====================
 router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
   try {
     const result = await pool.query(
       `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
@@ -272,13 +295,15 @@ router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
                 '[]'
               ) as items
        FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
+       JOIN tables t ON o.table_id = t.id
        LEFT JOIN order_items oi ON o.id = oi.order_id
        LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.status = 'pending_confirmation' AND o.source = 'qr_menu'
+       WHERE o.status = 'pending_confirmation' 
+         AND (o.waiter_id = $1 OR o.waiter_id IS NULL)
+         AND o.source = 'qr_menu'
        GROUP BY o.id, t.table_number
        ORDER BY o.created_at ASC`,
-      []
+      [waiterId]
     );
     
     res.json({ success: true, data: result.rows });
@@ -288,9 +313,266 @@ router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== WAITER ROUTES ====================
+// ==================== GET WAITER'S ACTIVE ORDERS ====================
+router.get('/my-orders', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
+  try {
+    const result = await pool.query(
+      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
+              o.customer_name, o.table_id, o.created_at,
+              t.table_number,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.unit_price
+                  )
+                ) FILTER (WHERE p.id IS NOT NULL), 
+                '[]'
+              ) as items
+       FROM orders o
+       JOIN tables t ON o.table_id = t.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.waiter_id = $1
+         AND o.status NOT IN ('completed', 'cancelled', 'pending_confirmation')
+       GROUP BY o.id, t.table_number
+       ORDER BY o.created_at DESC`,
+      [waiterId]
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get waiter orders error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-// Waiter: Create order (manual from waiter)
+// ==================== KITCHEN ROUTES ====================
+
+// Kitchen: Get orders
+router.get('/kitchen', protect, allowKitchen, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        ko.id, ko.order_id, ko.status, ko.created_at,
+        o.order_number, o.customer_name, o.table_id,
+        t.table_number,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'name', p.name,
+              'quantity', oi.quantity
+            )
+          ) FILTER (WHERE p.id IS NOT NULL), 
+          '[]'
+        ) as items
+      FROM kitchen_orders ko
+      JOIN orders o ON ko.order_id = o.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      LEFT JOIN tables t ON o.table_id = t.id
+      WHERE ko.status IN ('pending', 'preparing')
+      GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number
+      ORDER BY 
+        CASE ko.status
+          WHEN 'pending' THEN 1
+          WHEN 'preparing' THEN 2
+        END,
+        ko.created_at ASC
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Kitchen orders error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Kitchen: Update order status and notify waiter when ready
+router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const result = await client.query(
+      `UPDATE kitchen_orders 
+       SET status = $1,
+           started_at = CASE WHEN $1 = 'preparing' AND status = 'pending' THEN NOW() ELSE started_at END,
+           completed_at = CASE WHEN $1 = 'ready' THEN NOW() ELSE completed_at END,
+           updated_at = NOW()
+       WHERE order_id = $2
+       RETURNING *`,
+      [status, orderId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    
+    // Get order details for notification
+    const orderDetails = await client.query(
+      `SELECT o.order_number, o.table_id, o.waiter_id, t.table_number
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       WHERE o.id = $1`,
+      [orderId]
+    );
+    
+    if (status === 'ready') {
+      await client.query(
+        `UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1`,
+        [orderId]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    const io = req.app.get('io');
+    if (io) {
+      // Notify everyone about status update
+      io.emit('order_status_updated', {
+        order_id: orderId,
+        status: status,
+        message: `Order #${orderDetails.rows[0].order_number} is now ${status}`
+      });
+      
+      // Specifically notify the waiter if order is ready
+      if (status === 'ready' && orderDetails.rows[0].waiter_id) {
+        io.to(`waiter_${orderDetails.rows[0].waiter_id}`).emit('order_ready_for_waiter', {
+          order_id: orderId,
+          order_number: orderDetails.rows[0].order_number,
+          table_number: orderDetails.rows[0].table_number,
+          message: `🍽️ Order #${orderDetails.rows[0].order_number} for Table ${orderDetails.rows[0].table_number} is ready!`
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      data: result.rows[0]
+    });
+    
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Update kitchen order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ==================== TABLE STATUS MANAGEMENT (for staff) ====================
+
+// Get all tables with details
+router.get('/tables/all', protect, allowWaiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
+              u.name as waiter_name,
+              o.order_number as current_order_number
+       FROM tables t
+       LEFT JOIN users u ON t.waiter_id = u.id
+       LEFT JOIN orders o ON t.current_order_id = o.id
+       ORDER BY t.table_number ASC`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get tables error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update table status (available, reserved, cleaning, occupied)
+router.put('/tables/:tableId/status', protect, allowWaiter, async (req, res) => {
+  const { tableId } = req.params;
+  const { status } = req.body;
+  
+  const validStatuses = ['available', 'reserved', 'cleaning', 'occupied'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, error: 'Invalid status' });
+  }
+  
+  try {
+    const result = await pool.query(
+      `UPDATE tables 
+       SET status = $1, 
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, table_number, status`,
+      [status, tableId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Table not found' });
+    }
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('table_status_updated', {
+        table_id: tableId,
+        table_number: result.rows[0].table_number,
+        status: status
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Table ${result.rows[0].table_number} status updated to ${status}`,
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Update table status error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== OWNER ROUTES ====================
+
+// Get all waiters (for Owner dropdown)
+router.get('/waiters', protect, allowOwner, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, email FROM users WHERE role = 'waiter' ORDER BY name`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get waiters error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Assign waiter to table
+router.put('/tables/:tableId/assign-waiter', protect, allowOwner, async (req, res) => {
+  const { tableId } = req.params;
+  const { waiter_id } = req.body;
+  
+  try {
+    const result = await pool.query(
+      `UPDATE tables SET waiter_id = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, table_number, waiter_id`,
+      [waiter_id, tableId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Table not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Assign waiter error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== WAITER MANUAL ORDER ROUTE ====================
 router.post('/', protect, allowWaiter, async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
@@ -318,10 +600,10 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
       
       const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
-         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, $9)
+        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source, waiter_id)
+         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, $9, $10)
          RETURNING id, order_number, total_amount`,
-        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null, source]
+        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null, source, userId]
       );
       
       const orderId = orderResult.rows[0].id;
@@ -355,7 +637,6 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       
       await client.query('COMMIT');
       
-      // Emit socket event for new order
       const io = req.app.get('io');
       if (io) {
         io.emit('new_order', {
@@ -487,96 +768,6 @@ router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== KITCHEN ROUTES ====================
-
-// Kitchen: Get orders
-router.get('/kitchen', protect, allowKitchen, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        ko.id, ko.order_id, ko.status, ko.created_at,
-        o.order_number, o.customer_name, o.table_id,
-        t.table_number,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'name', p.name,
-              'quantity', oi.quantity
-            )
-          ) FILTER (WHERE p.id IS NOT NULL), 
-          '[]'
-        ) as items
-      FROM kitchen_orders ko
-      JOIN orders o ON ko.order_id = o.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      LEFT JOIN tables t ON o.table_id = t.id
-      WHERE ko.status IN ('pending', 'preparing')
-      GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number
-      ORDER BY 
-        CASE ko.status
-          WHEN 'pending' THEN 1
-          WHEN 'preparing' THEN 2
-        END,
-        ko.created_at ASC
-    `);
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Kitchen orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Kitchen: Update order status
-router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) => {
-  const { orderId } = req.params;
-  const { status } = req.body;
-  
-  try {
-    const result = await pool.query(
-      `UPDATE kitchen_orders 
-       SET status = $1,
-           started_at = CASE WHEN $1 = 'preparing' AND status = 'pending' THEN NOW() ELSE started_at END,
-           completed_at = CASE WHEN $1 = 'ready' THEN NOW() ELSE completed_at END,
-           updated_at = NOW()
-       WHERE order_id = $2
-       RETURNING *`,
-      [status, orderId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
-    }
-    
-    if (status === 'ready') {
-      await pool.query(
-        `UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1`,
-        [orderId]
-      );
-    }
-    
-    // Emit socket event for status update
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_status_updated', {
-        order_id: orderId,
-        status: status,
-        message: `Order #${orderId} is now ${status}`
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: `Order status updated to ${status}`,
-      data: result.rows[0]
-    });
-    
-  } catch (err) {
-    console.error('Update kitchen order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // ==================== CASHIER ROUTES ====================
 
 // Cashier: Get ready orders for payment
@@ -641,6 +832,7 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
       [payment_method, orderId]
     );
     
+    // Free the table after payment
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
@@ -725,7 +917,7 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     await client.query('BEGIN');
     
     const orderCheck = await client.query(
-      'SELECT status, payment_status, table_id FROM orders WHERE id = $1 AND created_by = $2',
+      'SELECT status, payment_status, table_id FROM orders WHERE id = $1 AND waiter_id = $2',
       [orderId, userId]
     );
     
@@ -760,13 +952,22 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
-         SET status = 'available', current_order_id = NULL, updated_at = NOW()
+         SET status = 'available', current_order_id = NULL, pending_order_id = NULL, updated_at = NOW()
          WHERE id = $1`,
         [order.table_id]
       );
     }
     
     await client.query('COMMIT');
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_cancelled', {
+        order_id: orderId,
+        status: 'cancelled',
+        message: `Order has been cancelled`
+      });
+    }
     
     res.json({ 
       success: true, 

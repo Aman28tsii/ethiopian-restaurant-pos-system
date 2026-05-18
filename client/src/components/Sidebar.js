@@ -38,6 +38,7 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/settings', icon: Settings, label: t('settings') },
       { path: '/owner/customers', icon: Users, label: t('customers') },
       { path: '/owner/print-qr', icon: QrCode, label: t('printQRCodes') },
+      { path: '/owner/assign-waiters', icon: Users, label: 'Assign Waiters' },
       
   ];
 
@@ -57,9 +58,10 @@ const Sidebar = ({ user, onLogout }) => {
 
   // Waiter menu items
   const waiterMenu = [
-    { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
-    { path: '/waiter/orders', icon: ClipboardList, label: t('myOrders') },
-    { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
+      { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
+  { path: '/waiter/my-orders', icon: ClipboardList, label: 'My Orders' },
+  { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
+  { path: '/waiter/table-status', icon: Table, label: 'Table Status' },
   ];
 
   // Kitchen menu items

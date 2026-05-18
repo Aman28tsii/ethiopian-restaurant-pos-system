@@ -575,6 +575,9 @@ copyUrl: 'Copy URL',
 download: 'Download',
 qrPrintInstructions: 'Print this page and cut out each QR code. Place them on corresponding tables. Customers can scan to view menu and order.',
 pendingConfirmations: 'Confirm Orders',
+tableStatus: 'Table Status',
+manageTableAvailability: 'Manage table availability, reservations, and cleaning status',
+changeStatus: 'Change Status',
 
   },
   
@@ -1132,7 +1135,10 @@ copyUrl: 'አገናኝ ቅዳ',
 download: 'አውርድ',
 pendingConfirmations: 'ትዕዛዞችን አረጋግጥ',
 qrPrintInstructions: 'ይህን ገጽ አትመው እያንዳንዱን QR ኮድ ይቁረጡ። በየጠረጴዛው ላይ ያድርጓቸው። ደንበኞች ምናሌውን ለማየት እና ለማዘዝ መቃኘት ይችላሉ።',
-  }
+  tableStatus: 'የጠረጴዛ ሁኔታ',
+manageTableAvailability: 'የጠረጴዛ መገኘት፣ ቦታ ማስያዝ እና የጽዳት ሁኔታን ያስተዳድሩ',
+changeStatus: 'ሁኔታ ቀይር',
+}
 };
 
 // ============================================================

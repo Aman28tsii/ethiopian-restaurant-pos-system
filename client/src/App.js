@@ -29,6 +29,9 @@ import TrackOrder from './pages/TrackOrder';
 import Customers from './pages/Customers';
 import PrintQRCodes from './pages/owner/PrintQRCodes';
 import PendingConfirmations from './pages/waiter/PendingConfirmations';
+import AssignWaiters from './pages/owner/AssignWaiters';
+import MyOrders from './pages/waiter/MyOrders';
+import TableStatus from './pages/waiter/TableStatus';
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {
@@ -131,6 +134,7 @@ function App() {
                   <Route path="customers" element={<Customers />} />
                   <Route path="print-qr" element={<PrintQRCodes />} />
                   <Route path="*" element={<Navigate to="/owner/dashboard" />} />
+                  <Route path="assign-waiters" element={<AssignWaiters />} />
                 </Routes>
               </OwnerLayout>
             </RoleRoute>
@@ -173,6 +177,8 @@ function App() {
                   <Route path="orders" element={<div className="text-white p-6">My Orders</div>} />
                   <Route path="*" element={<Navigate to="/waiter/tables" />} />
                   <Route path="pending-confirmations" element={<PendingConfirmations />} />
+                  <Route path="my-orders" element={<MyOrders />} />
+                  <Route path="table-status" element={<TableStatus />} />
                 </Routes>
               </WaiterLayout>
             </RoleRoute>

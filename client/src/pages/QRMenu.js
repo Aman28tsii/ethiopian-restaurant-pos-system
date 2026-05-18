@@ -60,7 +60,6 @@ const QRMenu = () => {
       if (response.data.success) {
         alert(`✓ ${cart.length} item(s) added to your order!`);
         setCart([]);
-        // Refresh order details
         fetchOrderDetails(currentOrder.order_number);
         setShowCart(false);
       }
@@ -157,7 +156,7 @@ const QRMenu = () => {
             setCurrentOrder(updated);
             saveOrderToStorage(updated);
           }
-          if (newStatus === 'completed' || newStatus === 'confirmed') {
+          if (newStatus === 'completed') {
             clearInterval(interval);
           }
         }
@@ -445,7 +444,8 @@ const QRMenu = () => {
     const progress = getProgressPercent(orderStatus || currentOrder.status);
     const statusText = getStatusText(orderStatus || currentOrder.status);
     const isCompleted = orderStatus === 'completed';
-    const isPendingConfirmation = orderStatus === 'pending_confirmation';
+    // Allow adding more items until kitchen starts preparing
+    const canAddMore = orderStatus === 'pending_confirmation' || orderStatus === 'confirmed' || orderStatus === 'pending';
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
@@ -511,8 +511,8 @@ const QRMenu = () => {
                 Track Order
               </button>
               
-              {/* ADD MORE ITEMS BUTTON - NEW FEATURE */}
-              {isPendingConfirmation && (
+              {/* ADD MORE ITEMS BUTTON - Show until kitchen starts cooking */}
+              {canAddMore && (
                 <button 
                   onClick={() => {
                     saveContinueOrder();

@@ -1073,13 +1073,5 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
     client.release();
   }
 });
-// After successfully adding items and committing, add:
-const io = req.app.get('io');
-if (io) {
-  io.emit('order_items_added', {
-    order_id: orderId,
-    order_number: orderNumber,
-    new_total: newTotal
-  });
-}
+
 export default router;

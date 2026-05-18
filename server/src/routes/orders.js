@@ -65,7 +65,6 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
 });
 
 // ==================== PUBLIC QR ORDER ROUTE ====================
-// Customer places order via QR - Table does NOT become occupied yet
 router.post('/qr-order', async (req, res) => {
   try {
     const { items, table_id, customer_name, customer_phone, notes } = req.body;
@@ -98,8 +97,6 @@ router.post('/qr-order', async (req, res) => {
       
       const orderNumber = `QR-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
       
-      // Insert order with 'pending_confirmation' status
-      // IMPORTANT: Table is NOT marked as occupied here
       const orderResult = await client.query(
         `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source, waiter_id)
          VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu', $7)
@@ -109,7 +106,6 @@ router.post('/qr-order', async (req, res) => {
       
       const orderId = orderResult.rows[0].id;
       
-      // Insert order items
       for (const item of items) {
         const productResult = await client.query(
           'SELECT price, name FROM products WHERE id = $1',
@@ -124,8 +120,6 @@ router.post('/qr-order', async (req, res) => {
         );
       }
       
-      // Table status remains 'available' - NOT occupied
-      // Only set a temporary flag to show there's a pending order
       if (table_id) {
         await client.query(
           `UPDATE tables SET status = 'available', pending_order_id = $1 WHERE id = $2`,
@@ -135,7 +129,6 @@ router.post('/qr-order', async (req, res) => {
       
       await client.query('COMMIT');
       
-      // Emit socket event for waiter
       const io = req.app.get('io');
       if (io && waiterId) {
         io.to(`waiter_${waiterId}`).emit('new_pending_order', {
@@ -173,7 +166,6 @@ router.post('/qr-order', async (req, res) => {
 });
 
 // ==================== WAITER CONFIRMATION ROUTE ====================
-// Waiter confirms order - NOW table becomes occupied
 router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
@@ -183,7 +175,6 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // Check order exists and is pending confirmation
     const orderCheck = await client.query(
       `SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id
        FROM orders o
@@ -200,7 +191,16 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     
     const order = orderCheck.rows[0];
     
-    // Verify this order belongs to the waiter (if waiter_id is set)
+    // ✅ FIX: Set waiter_id if not already set (moved AFTER order is defined)
+    if (!order.waiter_id) {
+      await client.query(
+        `UPDATE orders SET waiter_id = $1 WHERE id = $2`,
+        [userId, orderId]
+      );
+      order.waiter_id = userId;
+    }
+    
+    // Verify this order belongs to the waiter
     if (order.waiter_id && order.waiter_id !== userId) {
       return res.status(403).json({ 
         success: false, 
@@ -208,7 +208,6 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
       });
     }
     
-    // Update order status to 'pending' (ready for kitchen)
     await client.query(
       `UPDATE orders 
        SET status = 'pending', 
@@ -219,14 +218,12 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
       [userId, orderId]
     );
     
-    // Add to kitchen_orders
     await client.query(
       `INSERT INTO kitchen_orders (order_id, status, notes)
        VALUES ($1, 'pending', $2)`,
       [orderId, 'Order confirmed by waiter']
     );
     
-    // NOW mark table as occupied (only after waiter confirms)
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
@@ -241,7 +238,6 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     
     await client.query('COMMIT');
     
-    // Emit socket events
     const io = req.app.get('io');
     if (io) {
       io.emit('order_confirmed', {
@@ -352,7 +348,6 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
 
 // ==================== KITCHEN ROUTES ====================
 
-// Kitchen: Get orders
 router.get('/kitchen', protect, allowKitchen, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -390,7 +385,6 @@ router.get('/kitchen', protect, allowKitchen, async (req, res) => {
   }
 });
 
-// Kitchen: Update order status and notify waiter when ready
 router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) => {
   const { orderId } = req.params;
   const { status } = req.body;
@@ -415,7 +409,6 @@ router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) =
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
     
-    // Get order details for notification
     const orderDetails = await client.query(
       `SELECT o.order_number, o.table_id, o.waiter_id, t.table_number
        FROM orders o
@@ -435,14 +428,12 @@ router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) =
     
     const io = req.app.get('io');
     if (io) {
-      // Notify everyone about status update
       io.emit('order_status_updated', {
         order_id: orderId,
         status: status,
         message: `Order #${orderDetails.rows[0].order_number} is now ${status}`
       });
       
-      // Specifically notify the waiter if order is ready
       if (status === 'ready' && orderDetails.rows[0].waiter_id) {
         io.to(`waiter_${orderDetails.rows[0].waiter_id}`).emit('order_ready_for_waiter', {
           order_id: orderId,
@@ -468,9 +459,8 @@ router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) =
   }
 });
 
-// ==================== TABLE STATUS MANAGEMENT (for staff) ====================
+// ==================== TABLE STATUS MANAGEMENT ====================
 
-// Get all tables with details
 router.get('/tables/all', protect, allowWaiter, async (req, res) => {
   try {
     const result = await pool.query(
@@ -489,7 +479,6 @@ router.get('/tables/all', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// Update table status (available, reserved, cleaning, occupied)
 router.put('/tables/:tableId/status', protect, allowWaiter, async (req, res) => {
   const { tableId } = req.params;
   const { status } = req.body;
@@ -535,7 +524,6 @@ router.put('/tables/:tableId/status', protect, allowWaiter, async (req, res) => 
 
 // ==================== OWNER ROUTES ====================
 
-// Get all waiters (for Owner dropdown)
 router.get('/waiters', protect, allowOwner, async (req, res) => {
   try {
     const result = await pool.query(
@@ -548,7 +536,6 @@ router.get('/waiters', protect, allowOwner, async (req, res) => {
   }
 });
 
-// Assign waiter to table
 router.put('/tables/:tableId/assign-waiter', protect, allowOwner, async (req, res) => {
   const { tableId } = req.params;
   const { waiter_id } = req.body;
@@ -770,7 +757,6 @@ router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
 
 // ==================== CASHIER ROUTES ====================
 
-// Cashier: Get ready orders for payment
 router.get('/ready', protect, allowCashier, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -793,7 +779,6 @@ router.get('/ready', protect, allowCashier, async (req, res) => {
   }
 });
 
-// Cashier: Process payment
 router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
   const { orderId } = req.params;
   const { payment_method } = req.body;
@@ -832,7 +817,6 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
       [payment_method, orderId]
     );
     
-    // Free the table after payment
     if (order.table_id) {
       await client.query(
         `UPDATE tables 
@@ -868,7 +852,6 @@ router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
 
 // ==================== MANAGER ROUTES ====================
 
-// Get order details
 router.get('/:orderId', protect, allowManager, async (req, res) => {
   try {
     const orderResult = await pool.query(
@@ -905,7 +888,7 @@ router.get('/:orderId', protect, allowManager, async (req, res) => {
   }
 });
 
-// Cancel order
+// ==================== CANCEL ORDER ====================
 router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
   const { orderId } = req.params;
   const { reason } = req.body;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { 
   ShoppingCart, Plus, Minus, X, Utensils, Phone, MapPin, Clock, 
-  Trash2, CheckCircle, AlertCircle, ChefHat, Truck, Coffee
+  Trash2, CheckCircle, AlertCircle, ChefHat, Truck, Coffee, Eye
 } from 'lucide-react';
 import socket from '../socket';
 
@@ -21,9 +21,11 @@ const QRMenu = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [orderStatus, setOrderStatus] = useState(null);
+  const [existingOrderNumber, setExistingOrderNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showQRGuide, setShowQRGuide] = useState(false);
+  const [showExistingOrderPrompt, setShowExistingOrderPrompt] = useState(false);
   const [timer, setTimer] = useState(0);
   const [restaurantInfo, setRestaurantInfo] = useState({
     name: 'EthioPOS Restaurant',
@@ -49,22 +51,43 @@ const QRMenu = () => {
     }
   };
 
-  // ==================== LOAD ORDER FROM LOCALSTORAGE ====================
-  const loadOrderFromStorage = () => {
+  // ==================== CHECK FOR EXISTING ORDER ====================
+  const checkForExistingOrder = () => {
     const saved = localStorage.getItem(getOrderStorageKey());
     if (saved) {
       try {
         const order = JSON.parse(saved);
-        setOrderPlaced(true);
-        setOrderStatus(order.status);
-        // Fetch full order details from API
-        fetchOrderDetails(order.order_number);
+        setExistingOrderNumber(order.order_number);
+        setShowExistingOrderPrompt(true);
         return true;
       } catch (e) {
-        console.error('Error loading saved order:', e);
+        console.error('Error checking saved order:', e);
       }
     }
     return false;
+  };
+
+  // ==================== LOAD AND RESTORE EXISTING ORDER ====================
+  const restoreExistingOrder = async () => {
+    const saved = localStorage.getItem(getOrderStorageKey());
+    if (saved) {
+      try {
+        const order = JSON.parse(saved);
+        setShowExistingOrderPrompt(false);
+        setOrderPlaced(true);
+        setOrderStatus(order.status);
+        await fetchOrderDetails(order.order_number);
+      } catch (e) {
+        console.error('Error restoring order:', e);
+      }
+    }
+  };
+
+  // ==================== CONTINUE WITH NEW ORDER (Clear Old) ====================
+  const continueWithNewOrder = () => {
+    localStorage.removeItem(getOrderStorageKey());
+    setExistingOrderNumber(null);
+    setShowExistingOrderPrompt(false);
   };
 
   // ==================== FETCH ORDER DETAILS FROM API ====================
@@ -82,9 +105,14 @@ const QRMenu = () => {
         });
         setOrderStatus(orderData.status);
         setOrderPlaced(true);
+        startStatusPolling(orderData.order_number);
       }
     } catch (err) {
       console.error('Fetch order details error:', err);
+      // If order not found, clear localStorage
+      localStorage.removeItem(getOrderStorageKey());
+      setExistingOrderNumber(null);
+      setShowExistingOrderPrompt(false);
     }
   };
 
@@ -94,6 +122,9 @@ const QRMenu = () => {
     setOrderPlaced(false);
     setCurrentOrder(null);
     setOrderStatus(null);
+    setExistingOrderNumber(null);
+    setShowExistingOrderPrompt(false);
+    window.location.reload();
   };
 
   // ==================== START POLLING FOR STATUS UPDATES ====================
@@ -107,7 +138,6 @@ const QRMenu = () => {
           if (currentOrder) {
             const updated = { ...currentOrder, status: newStatus };
             setCurrentOrder(updated);
-            // Update localStorage with new status
             const saved = localStorage.getItem(getOrderStorageKey());
             if (saved) {
               const existing = JSON.parse(saved);
@@ -115,7 +145,6 @@ const QRMenu = () => {
               localStorage.setItem(getOrderStorageKey(), JSON.stringify(existing));
             }
           }
-          // Stop polling when order is completed
           if (newStatus === 'completed' || newStatus === 'ready') {
             clearInterval(interval);
           }
@@ -249,11 +278,7 @@ const QRMenu = () => {
         setOrderStatus(data.status);
         setOrderPlaced(true);
         setCart([]);
-        
-        // Save to localStorage so it survives refresh
         saveOrderToStorage(newOrder);
-        
-        // Start polling for status updates
         startStatusPolling(data.order_number);
       }
     } catch (err) {
@@ -300,9 +325,13 @@ const QRMenu = () => {
     fetchProducts();
     loadRestaurantInfo();
     
-    // Try to load existing order from localStorage
-    loadOrderFromStorage();
-  }, []);
+    // Check for existing order AFTER tableId is set
+    setTimeout(() => {
+      if (tableId) {
+        checkForExistingOrder();
+      }
+    }, 100);
+  }, [tableId]);
 
   // ==================== RENDER HELPERS ====================
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
@@ -310,7 +339,42 @@ const QRMenu = () => {
   const total = subtotal + tax;
   const filteredProducts = selectedCategory === 'all' ? products : products.filter(p => p.category === selectedCategory);
 
-  // ==================== ORDER PLACED SCREEN (Customer stays here until payment) ====================
+  // ==================== EXISTING ORDER PROMPT SCREEN ====================
+  if (showExistingOrderPrompt && existingOrderNumber) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-700">
+          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock size={40} className="text-blue-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Existing Order Found</h2>
+          <p className="text-gray-400 mb-2">You have an existing order:</p>
+          <div className="bg-gray-700/50 rounded-xl p-3 mb-4">
+            <p className="text-white font-mono">{existingOrderNumber}</p>
+          </div>
+          <p className="text-gray-400 text-sm mb-6">Would you like to track this order or start a new one?</p>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={restoreExistingOrder}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
+            >
+              <Eye size={18} />
+              Track Order
+            </button>
+            <button
+              onClick={continueWithNewOrder}
+              className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition"
+            >
+              Start New Order
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== ORDER PLACED SCREEN ====================
   if (orderPlaced && currentOrder) {
     const progress = getProgressPercent(orderStatus || currentOrder.status);
     const statusText = getStatusText(orderStatus || currentOrder.status);
@@ -319,7 +383,6 @@ const QRMenu = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          {/* Status Card */}
           <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 mb-6">
             <div className="text-center mb-6">
               <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
@@ -329,7 +392,6 @@ const QRMenu = () => {
               <p className="text-sm mt-1 font-semibold text-blue-400">{statusText}</p>
             </div>
 
-            {/* Progress Bar */}
             <div className="mb-6">
               <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -339,7 +401,6 @@ const QRMenu = () => {
               </div>
             </div>
 
-            {/* Order Details */}
             <div className="bg-gray-700/50 rounded-xl p-4 mb-4">
               <div className="flex justify-between mb-2">
                 <span className="text-gray-400">Order Number</span>
@@ -361,7 +422,6 @@ const QRMenu = () => {
               )}
             </div>
 
-            {/* Info Message */}
             {!isCompleted && (
               <div className="bg-yellow-500/10 rounded-xl p-3 mb-4 text-center">
                 <p className="text-yellow-400 text-sm">
@@ -372,13 +432,10 @@ const QRMenu = () => {
 
             {isCompleted && (
               <div className="bg-green-500/10 rounded-xl p-3 mb-4 text-center">
-                <p className="text-green-400 text-sm">
-                  🎉 Order completed! Thank you for dining with us.
-                </p>
+                <p className="text-green-400 text-sm">🎉 Order completed! Thank you for dining with us.</p>
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button 
                 onClick={() => window.location.href = `/track-order?order=${currentOrder.order_number}`} 
@@ -397,7 +454,6 @@ const QRMenu = () => {
             </div>
           </div>
 
-          {/* Help Section */}
           <div className="text-center text-gray-500 text-sm">
             <p>Need help? Call the restaurant at {restaurantInfo.phone}</p>
           </div>
@@ -456,10 +512,19 @@ const QRMenu = () => {
       </header>
 
       {/* QR Guide Button */}
-      <div className="px-4 py-2">
+      <div className="px-4 py-2 flex justify-between items-center">
         <button onClick={() => setShowQRGuide(true)} className="text-xs text-blue-400 flex items-center gap-1">
           <span className="text-lg">ℹ️</span> How QR ordering works
         </button>
+        {existingOrderNumber && (
+          <button 
+            onClick={restoreExistingOrder}
+            className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full flex items-center gap-1"
+          >
+            <Eye size={12} />
+            View Existing Order
+          </button>
+        )}
       </div>
 
       {/* QR Guide Modal */}

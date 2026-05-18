@@ -4,7 +4,7 @@ import {
   ShoppingCart, Package, BarChart3, Users, LogOut, Store,
   ChevronLeft, ChevronRight, TrendingUp, Receipt, 
   ChefHat, Clock, LayoutDashboard, Settings, ClipboardList,
-  Table as TableIcon, History, Menu, X, QrCode, Table
+  Table as TableIcon, History, Menu, X, QrCode
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -34,12 +34,10 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/expenses', icon: Receipt, label: t('expenses') },
     { path: '/owner/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/owner/staff', icon: Users, label: t('staffManagement') },
+    { path: '/owner/customers', icon: Users, label: t('customers') },
+    { path: '/owner/print-qr', icon: QrCode, label: 'Print QR Codes' },
     { path: '/owner/pending-approvals', icon: Clock, label: t('pendingApprovals') },
     { path: '/owner/settings', icon: Settings, label: t('settings') },
-      { path: '/owner/customers', icon: Users, label: t('customers') },
-      { path: '/owner/print-qr', icon: QrCode, label: t('printQRCodes') },
-      { path: '/owner/assign-waiters', icon: Users, label: 'Assign Waiters' },
-      
   ];
 
   // Manager menu items
@@ -58,10 +56,10 @@ const Sidebar = ({ user, onLogout }) => {
 
   // Waiter menu items
   const waiterMenu = [
-      { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
-  { path: '/waiter/my-orders', icon: ClipboardList, label: 'My Orders' },
-  { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
-  { path: '/waiter/table-status', icon: Table, label: 'Table Status' },
+    { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
+    { path: '/waiter/my-orders', icon: ClipboardList, label: 'My Orders' },
+    { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
+    { path: '/waiter/table-status', icon: TableIcon, label: 'Table Status' },
   ];
 
   // Kitchen menu items
@@ -89,7 +87,6 @@ const Sidebar = ({ user, onLogout }) => {
 
   const menuItems = getMenuItems();
 
-  // Mobile overlay
   const MobileOverlay = () => (
     isMobileOpen && (
       <div 
@@ -101,7 +98,6 @@ const Sidebar = ({ user, onLogout }) => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         className="fixed top-4 left-4 z-50 md:hidden bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-700"
@@ -111,7 +107,6 @@ const Sidebar = ({ user, onLogout }) => {
 
       <MobileOverlay />
 
-      {/* Sidebar */}
       <aside 
         className={`
           fixed md:relative z-40 flex flex-col bg-gray-800 border-r border-gray-700 transition-all duration-300
@@ -121,7 +116,6 @@ const Sidebar = ({ user, onLogout }) => {
           h-full
         `}
       >
-        {/* Logo */}
         <div className={`p-6 border-b border-gray-700 ${isCollapsed && !isMobile ? 'px-4' : ''}`}>
           <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
             <Store className="text-blue-500 flex-shrink-0" size={32} />
@@ -134,7 +128,6 @@ const Sidebar = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* Collapse Toggle - Hide on mobile */}
         {!isMobile && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -145,7 +138,6 @@ const Sidebar = ({ user, onLogout }) => {
           </button>
         )}
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
           {menuItems.map((item) => (
             <NavLink
@@ -167,7 +159,6 @@ const Sidebar = ({ user, onLogout }) => {
           ))}
         </nav>
 
-        {/* User Info & Logout */}
         <div className="p-4 border-t border-gray-700">
           {(!isCollapsed || isMobile) && (
             <div className="mb-3 px-4 py-2 bg-gray-700 rounded-xl">

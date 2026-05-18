@@ -4,14 +4,14 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { LanguageProvider } from './context/LanguageContext';
 
-// Layouts
+// Role-based layouts
 import OwnerLayout from './layouts/OwnerLayout';
 import ManagerLayout from './layouts/ManagerLayout';
 import CashierLayout from './layouts/CashierLayout';
 import WaiterLayout from './layouts/WaiterLayout';
 import KitchenLayout from './layouts/KitchenLayout';
 
-// Pages
+// Role-specific pages
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import CashierPOS from './pages/cashier/CashierPOS';
@@ -28,10 +28,11 @@ import QRMenu from './pages/QRMenu';
 import TrackOrder from './pages/TrackOrder';
 import Customers from './pages/Customers';
 import PrintQRCodes from './pages/owner/PrintQRCodes';
+
+// Waiter pages
 import MyOrders from './pages/waiter/MyOrders';
 import TableStatus from './pages/waiter/TableStatus';
 import PendingConfirmations from './pages/waiter/PendingConfirmations';
-
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {
@@ -93,7 +94,7 @@ function App() {
     );
   }
 
-  // PUBLIC ROUTES - No login required (for customers scanning QR codes)
+  // PUBLIC ROUTES - No login required
   if (!isAuthenticated) {
     return (
       <Router>
@@ -110,7 +111,7 @@ function App() {
 
   const userRole = user?.role || 'cashier';
 
-  // AUTHENTICATED ROUTES - Staff only
+  // AUTHENTICATED ROUTES
   return (
     <LanguageProvider>
       <Router>
@@ -134,7 +135,6 @@ function App() {
                   <Route path="customers" element={<Customers />} />
                   <Route path="print-qr" element={<PrintQRCodes />} />
                   <Route path="*" element={<Navigate to="/owner/dashboard" />} />
-                  <Route path="assign-waiters" element={<AssignWaiters />} />
                 </Routes>
               </OwnerLayout>
             </RoleRoute>
@@ -175,10 +175,10 @@ function App() {
                 <Routes>
                   <Route path="tables" element={<TableGrid />} />
                   <Route path="orders" element={<div className="text-white p-6">My Orders</div>} />
-                  <Route path="*" element={<Navigate to="/waiter/tables" />} />
-                  <Route path="pending-confirmations" element={<PendingConfirmations />} />
                   <Route path="my-orders" element={<MyOrders />} />
                   <Route path="table-status" element={<TableStatus />} />
+                  <Route path="pending-confirmations" element={<PendingConfirmations />} />
+                  <Route path="*" element={<Navigate to="/waiter/tables" />} />
                 </Routes>
               </WaiterLayout>
             </RoleRoute>

@@ -59,6 +59,7 @@ const Sidebar = ({ user, onLogout }) => {
   const waiterMenu = [
     { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
     { path: '/waiter/orders', icon: ClipboardList, label: t('myOrders') },
+    { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
   ];
 
   // Kitchen menu items

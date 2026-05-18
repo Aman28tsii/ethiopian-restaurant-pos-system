@@ -28,6 +28,7 @@ import QRMenu from './pages/QRMenu';
 import TrackOrder from './pages/TrackOrder';
 import Customers from './pages/Customers';
 import PrintQRCodes from './pages/owner/PrintQRCodes';
+import PendingConfirmations from './pages/waiter/PendingConfirmations';
 
 // Role-based route guard
 const RoleRoute = ({ children, allowedRoles, userRole, redirectTo = '/login' }) => {
@@ -171,6 +172,7 @@ function App() {
                   <Route path="tables" element={<TableGrid />} />
                   <Route path="orders" element={<div className="text-white p-6">My Orders</div>} />
                   <Route path="*" element={<Navigate to="/waiter/tables" />} />
+                  <Route path="pending-confirmations" element={<PendingConfirmations />} />
                 </Routes>
               </WaiterLayout>
             </RoleRoute>

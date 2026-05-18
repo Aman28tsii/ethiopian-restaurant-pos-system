@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
-import { CheckCircle, XCircle, Clock, Users, Utensils, Loader2, Bell } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
+import { CheckCircle, XCircle, Clock, Users, Utensils, Loader2, Bell, RefreshCw } from 'lucide-react';
 import socket from '../../socket';
 
 const PendingConfirmations = () => {
-  const { t } = useLanguage();
   const [pendingOrders, setPendingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
@@ -17,7 +15,7 @@ const PendingConfirmations = () => {
     // Listen for new pending orders
     socket.on('new_pending_order', (data) => {
       fetchPendingOrders();
-      setNotification(`📱 New order from Table ${data.table_id || 'QR'}`);
+      setNotification(`📱 New order from ${data.customer_name || 'Customer'}`);
       setTimeout(() => setNotification(''), 5000);
       // Play sound
       const audio = new Audio('/notification.mp3');
@@ -47,7 +45,7 @@ const PendingConfirmations = () => {
       const response = await API.put(`/orders/confirm/${orderId}`);
       if (response.data.success) {
         setPendingOrders(prev => prev.filter(o => o.id !== orderId));
-        alert(`Order confirmed! Sent to kitchen.`);
+        alert(`✅ Order confirmed! Sent to kitchen.`);
       }
     } catch (err) {
       console.error('Confirm order error:', err);
@@ -79,7 +77,7 @@ const PendingConfirmations = () => {
         </div>
         <button
           onClick={fetchPendingOrders}
-          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"
+          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
         >
           <RefreshCw size={18} />
           Refresh
@@ -190,18 +188,6 @@ const PendingConfirmations = () => {
                     <CheckCircle size={18} />
                   )}
                   Confirm Order
-                </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm('Reject this order? The customer will be notified.')) {
-                      // Add reject endpoint if needed
-                      alert('Order rejected');
-                    }
-                  }}
-                  className="flex-1 py-3 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
-                >
-                  <XCircle size={18} />
-                  Reject
                 </button>
               </div>
             </div>

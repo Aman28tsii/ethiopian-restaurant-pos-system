@@ -25,7 +25,7 @@ const TableStatus = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUserRole(user?.role);
     fetchTables();
-    fetchWaiters(); // This will silently fail if user is not owner
+    fetchWaiters(); // Will only fetch if user is owner
     
     socket.on('table_status_updated', (data) => {
       fetchTables();
@@ -57,13 +57,18 @@ const TableStatus = () => {
   };
 
   const fetchWaiters = async () => {
+    // Only owners can access this endpoint - silently skip for others
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user?.role !== 'owner' && user?.role !== 'admin') {
+      setWaiters([]);
+      return;
+    }
+    
     try {
       const response = await API.get('/orders/waiters');
       setWaiters(response.data.data || []);
     } catch (err) {
-      // Silently fail - only owners can access this endpoint
-      // Non-owners just get empty waiters list
-      console.log('Waiters fetch skipped - insufficient permissions');
+      console.log('Unable to fetch waiters');
       setWaiters([]);
     }
   };

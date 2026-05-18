@@ -46,12 +46,14 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/manager/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/manager/reports', icon: BarChart3, label: t('salesReports') },
     { path: '/manager/profit', icon: TrendingUp, label: t('profit') },
+    { path: '/manager/tables', icon: Table, label: 'Manage Tables' },
   ];
 
   // Cashier menu items
   const cashierMenu = [
     { path: '/cashier/pos', icon: ShoppingCart, label: t('posTerminal') },
     { path: '/cashier/history', icon: History, label: t('salesHistory') },
+    { path: '/cashier/manual-order', icon: ShoppingCart, label: 'Manual Order' },
   ];
 
   // Waiter menu items

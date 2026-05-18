@@ -559,7 +559,7 @@ router.put('/tables/:tableId/assign-waiter', protect, allowOwner, async (req, re
   }
 });
 
-// ==================== WAITER MANUAL ORDER ROUTE ====================
+//// ==================== WAITER MANUAL ORDER ROUTE ====================
 router.post('/', protect, allowWaiter, async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
@@ -595,6 +595,7 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       
       const orderId = orderResult.rows[0].id;
       
+      // Insert order items
       for (const item of items) {
         const productResult = await client.query(
           'SELECT price FROM products WHERE id = $1',
@@ -608,6 +609,40 @@ router.post('/', protect, allowWaiter, async (req, res) => {
           [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
         );
       }
+      
+      // ==================== INVENTORY DEDUCTION ====================
+      // Deduct ingredients from inventory based on recipes
+      for (const item of items) {
+        // Get recipe for this product
+        const recipeResult = await client.query(
+          `SELECT r.ingredient_id, r.quantity_required, i.name, i.quantity as current_stock
+           FROM recipes r
+           JOIN ingredients i ON r.ingredient_id = i.id
+           WHERE r.product_id = $1`,
+          [item.product_id]
+        );
+        
+        // Deduct each ingredient
+        for (const recipe of recipeResult.rows) {
+          const requiredAmount = parseFloat(recipe.quantity_required) * item.quantity;
+          const newStock = parseFloat(recipe.current_stock) - requiredAmount;
+          
+          // Check if enough stock
+          if (newStock < 0) {
+            throw new Error(`Insufficient stock for ingredient: ${recipe.name}. Required: ${requiredAmount}, Available: ${recipe.current_stock}`);
+          }
+          
+          // Update inventory
+          await client.query(
+            `UPDATE ingredients 
+             SET quantity = quantity - $1, 
+                 updated_at = NOW()
+             WHERE id = $2`,
+            [requiredAmount, recipe.ingredient_id]
+          );
+        }
+      }
+      // ==================== END INVENTORY DEDUCTION ====================
       
       await client.query(
         `INSERT INTO kitchen_orders (order_id, status, notes)

@@ -28,6 +28,8 @@ import QRMenu from './pages/QRMenu';
 import TrackOrder from './pages/TrackOrder';
 import Customers from './pages/Customers';
 import PrintQRCodes from './pages/owner/PrintQRCodes';
+import ManageTables from './pages/manager/ManageTables';
+import ManualOrder from './pages/cashier/ManualOrder';
 
 // Waiter pages
 import MyOrders from './pages/waiter/MyOrders';
@@ -150,6 +152,7 @@ function App() {
                   <Route path="reports" element={<Reports />} />
                   <Route path="profit" element={<ProfitReports />} />
                   <Route path="*" element={<Navigate to="/manager/dashboard" />} />
+                  <Route path="tables" element={<ManageTables />} />
                 </Routes>
               </ManagerLayout>
             </RoleRoute>
@@ -163,6 +166,7 @@ function App() {
                   <Route path="pos" element={<CashierPOS userRole={userRole} />} />
                   <Route path="history" element={<div className="text-white p-6">Sales History</div>} />
                   <Route path="*" element={<Navigate to="/cashier/pos" />} />
+                  <Route path="manual-order" element={<ManualOrder />} />
                 </Routes>
               </CashierLayout>
             </RoleRoute>

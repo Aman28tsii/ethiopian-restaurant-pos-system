@@ -256,45 +256,32 @@ const QRMenu = () => {
     ? products 
     : products.filter(p => p.category === selectedCategory);
 
-  // Order Placed Screen
+  // Order Placed Screen - Waiting for Waiter Confirmation
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center p-4">
         <div className="order-success bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-            <CheckCircle size={40} className="text-green-600" />
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <ClockIcon size={40} className="text-yellow-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Order Placed! 🎉</h2>
-          <p className="text-gray-600 mb-4">Your order has been sent to the kitchen.</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Order Received! 🍽️</h2>
+          <p className="text-gray-600 mb-4">Your order has been sent to the waiter for confirmation.</p>
           
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 mb-4">
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 mb-4">
             <p className="text-sm text-gray-500">Order Number</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <p className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
               {orderNumber}
             </p>
           </div>
           
-          {/* Tracking Link */}
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-6">
-            <p className="text-sm text-gray-600 mb-2">Track your order status:</p>
-            <a 
-              href={`/track-order?order=${orderNumber}`}
-              className="text-indigo-600 font-semibold underline break-all text-sm hover:text-indigo-800 transition"
-            >
-              {window.location.origin}/track-order?order={orderNumber}
-            </a>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/track-order?order=${orderNumber}`);
-                alert('Tracking link copied!');
-              }}
-              className="mt-2 text-sm bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-600 px-3 py-1 rounded-lg hover:from-indigo-200 hover:to-purple-200 transition"
-            >
-              Copy Link
-            </button>
+          <div className="bg-blue-50 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-3 justify-center">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+              <p className="text-sm text-gray-600">Waiting for waiter to confirm your order...</p>
+            </div>
           </div>
           
-          <p className="text-gray-500 text-sm mb-6">Please wait at your table. Your food will be served shortly.</p>
+          <p className="text-gray-500 text-sm mb-6">A waiter will come to your table shortly to confirm your order.</p>
           
           <div className="flex gap-3">
             <button
@@ -341,6 +328,13 @@ const QRMenu = () => {
                 </div>
               </div>
 
+              {/* Status Badge - Show pending confirmation if applicable */}
+              {trackingOrder.status === 'pending_confirmation' && (
+                <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl p-3 mb-4 text-center">
+                  <p className="text-yellow-400 text-sm">⏳ Waiting for waiter confirmation...</p>
+                </div>
+              )}
+
               {/* Timer */}
               <div className="bg-white/5 rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
@@ -351,7 +345,7 @@ const QRMenu = () => {
                       <p className="text-2xl font-bold text-white">{timer} min</p>
                     </div>
                   </div>
-                  {estimatedTime > 0 && trackingOrder.status !== 'completed' && trackingOrder.status !== 'ready' && (
+                  {estimatedTime > 0 && trackingOrder.status !== 'completed' && trackingOrder.status !== 'ready' && trackingOrder.status !== 'pending_confirmation' && (
                     <div className="flex items-center gap-3">
                       <ChefHat className="text-orange-400 timer-animation" size={24} />
                       <div>
@@ -372,71 +366,73 @@ const QRMenu = () => {
                 </div>
               </div>
 
-              {/* Status Timeline */}
-              <div className="mb-6">
-                <p className="text-gray-400 text-sm mb-4">Order Progress</p>
-                <div className="relative">
-                  <div className="absolute top-5 left-0 right-0 h-1 bg-gray-700 rounded-full">
-                    <div 
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                      style={{ 
-                        width: `${
-                          trackingOrder.status === 'pending' ? '25%' :
-                          trackingOrder.status === 'preparing' ? '50%' :
-                          trackingOrder.status === 'ready' ? '75%' :
-                          '100%'
-                        }` 
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="relative flex justify-between">
-                    <div className="text-center timeline-step">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
-                        getStepStatus('pending', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        getStepStatus('pending', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
-                        'bg-gray-700'
-                      }`}>
-                        <CheckCircle size={16} className="text-white" />
-                      </div>
-                      <p className="text-xs text-gray-400">Order Placed</p>
+              {/* Status Timeline - Skip if pending confirmation */}
+              {trackingOrder.status !== 'pending_confirmation' && (
+                <div className="mb-6">
+                  <p className="text-gray-400 text-sm mb-4">Order Progress</p>
+                  <div className="relative">
+                    <div className="absolute top-5 left-0 right-0 h-1 bg-gray-700 rounded-full">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${
+                            trackingOrder.status === 'pending' ? '25%' :
+                            trackingOrder.status === 'preparing' ? '50%' :
+                            trackingOrder.status === 'ready' ? '75%' :
+                            '100%'
+                          }` 
+                        }}
+                      />
                     </div>
                     
-                    <div className="text-center timeline-step">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
-                        getStepStatus('preparing', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        getStepStatus('preparing', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
-                        'bg-gray-700'
-                      }`}>
-                        <ChefHat size={16} className="text-white" />
+                    <div className="relative flex justify-between">
+                      <div className="text-center timeline-step">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                          getStepStatus('pending', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                          getStepStatus('pending', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
+                          'bg-gray-700'
+                        }`}>
+                          <CheckCircle size={16} className="text-white" />
+                        </div>
+                        <p className="text-xs text-gray-400">Order Placed</p>
                       </div>
-                      <p className="text-xs text-gray-400">Preparing</p>
-                    </div>
-                    
-                    <div className="text-center timeline-step">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
-                        getStepStatus('ready', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        getStepStatus('ready', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
-                        'bg-gray-700'
-                      }`}>
-                        <Coffee size={16} className="text-white" />
+                      
+                      <div className="text-center timeline-step">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                          getStepStatus('preparing', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                          getStepStatus('preparing', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
+                          'bg-gray-700'
+                        }`}>
+                          <ChefHat size={16} className="text-white" />
+                        </div>
+                        <p className="text-xs text-gray-400">Preparing</p>
                       </div>
-                      <p className="text-xs text-gray-400">Ready</p>
-                    </div>
-                    
-                    <div className="text-center timeline-step">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
-                        getStepStatus('completed', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        getStepStatus('completed', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
-                        'bg-gray-700'
-                      }`}>
-                        <Truck size={16} className="text-white" />
+                      
+                      <div className="text-center timeline-step">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                          getStepStatus('ready', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                          getStepStatus('ready', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
+                          'bg-gray-700'
+                        }`}>
+                          <Coffee size={16} className="text-white" />
+                        </div>
+                        <p className="text-xs text-gray-400">Ready</p>
                       </div>
-                      <p className="text-xs text-gray-400">Completed</p>
+                      
+                      <div className="text-center timeline-step">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 z-10 relative transition-all ${
+                          getStepStatus('completed', trackingOrder.status) === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                          getStepStatus('completed', trackingOrder.status) === 'current' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse' :
+                          'bg-gray-700'
+                        }`}>
+                          <Truck size={16} className="text-white" />
+                        </div>
+                        <p className="text-xs text-gray-400">Completed</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Order Items */}
               <div className="border-t border-white/10 pt-4">
@@ -556,7 +552,7 @@ const QRMenu = () => {
                 1. Scan the QR code at your table<br />
                 2. Browse the menu and add items to your cart<br />
                 3. Enter your name and special requests<br />
-                4. Place your order - it goes directly to the kitchen!
+                4. Place your order - waiter will confirm!
               </p>
               <button
                 onClick={() => setShowQRGuide(false)}
@@ -782,6 +778,10 @@ const QRMenu = () => {
                   'Place Order'
                 )}
               </button>
+              
+              <p className="text-xs text-gray-400 text-center mt-3">
+                After placing order, a waiter will come to confirm
+              </p>
             </div>
           </div>
         </>

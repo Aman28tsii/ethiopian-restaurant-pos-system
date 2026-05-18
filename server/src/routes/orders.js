@@ -68,9 +68,229 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
   }
 });
 
+// ==================== PUBLIC QR ORDER ROUTE ====================
+// Public endpoint for QR code orders (no authentication required)
+router.post('/qr-order', async (req, res) => {
+  try {
+    const { items, table_id, customer_name, customer_phone, notes } = req.body;
+    
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items in order' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Calculate total
+      let totalAmount = 0;
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
+      }
+      
+      // Generate order number
+      const orderNumber = `QR-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+      
+      // Insert order with 'pending_confirmation' status (waiter must confirm first)
+      const orderResult = await client.query(
+        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
+         VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu')
+         RETURNING id, order_number`,
+        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null]
+      );
+      
+      const orderId = orderResult.rows[0].id;
+      
+      // Insert order items
+      for (const item of items) {
+        const productResult = await client.query(
+          'SELECT price, name FROM products WHERE id = $1',
+          [item.product_id]
+        );
+        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+        
+        await client.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
+        );
+      }
+      
+      // Update table status to 'ordering' (temporarily)
+      if (table_id) {
+        await client.query(
+          `UPDATE tables SET status = 'ordering', current_order_id = $1 WHERE id = $2`,
+          [orderId, table_id]
+        );
+      }
+      
+      await client.query('COMMIT');
+      
+      // Emit socket event for new pending order (for waiter dashboard)
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('new_pending_order', {
+          order_id: orderId,
+          order_number: orderNumber,
+          table_id: table_id,
+          customer_name: customer_name || 'Walk-in Customer',
+          total_amount: totalAmount,
+          source: 'qr_menu'
+        });
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: 'Order placed! Waiting for waiter confirmation.',
+        data: { 
+          order_id: orderId, 
+          order_number: orderNumber, 
+          total_amount: totalAmount,
+          status: 'pending_confirmation'
+        }
+      });
+      
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('QR order error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    } finally {
+      client.release();
+    }
+    
+  } catch (err) {
+    console.error('QR order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== WAITER CONFIRMATION ROUTE ====================
+// Waiter confirms order (moves to kitchen)
+router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user.id;
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Check order exists and is pending confirmation
+    const orderCheck = await client.query(
+      'SELECT id, status, table_id, customer_name FROM orders WHERE id = $1 AND status = $2',
+      [orderId, 'pending_confirmation']
+    );
+    
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found or already confirmed' 
+      });
+    }
+    
+    const order = orderCheck.rows[0];
+    
+    // Update order status to 'pending' (ready for kitchen)
+    await client.query(
+      `UPDATE orders 
+       SET status = 'pending', 
+           confirmed_by = $1, 
+           confirmed_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2`,
+      [userId, orderId]
+    );
+    
+    // Add to kitchen_orders
+    await client.query(
+      `INSERT INTO kitchen_orders (order_id, status, notes)
+       VALUES ($1, 'pending', $2)`,
+      [orderId, 'Order confirmed by waiter']
+    );
+    
+    // Update table status to occupied
+    if (order.table_id) {
+      await client.query(
+        `UPDATE tables SET status = 'occupied', updated_at = NOW() WHERE id = $1`,
+        [order.table_id]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    // Emit socket events
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_confirmed', {
+        order_id: orderId,
+        status: 'confirmed',
+        message: `Order #${orderId} has been confirmed by waiter`
+      });
+      io.emit('new_order', {
+        order_id: orderId,
+        order_number: order.order_number,
+        status: 'pending',
+        customer_name: order.customer_name
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Order confirmed and sent to kitchen',
+      data: { order_id: orderId, status: 'pending' }
+    });
+    
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Confirm order error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ==================== GET PENDING CONFIRMATION ORDERS ====================
+router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
+              o.table_id, o.notes, o.created_at, o.status,
+              t.table_number,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.unit_price
+                  )
+                ) FILTER (WHERE p.id IS NOT NULL), 
+                '[]'
+              ) as items
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.status = 'pending_confirmation' AND o.source = 'qr_menu'
+       GROUP BY o.id, t.table_number
+       ORDER BY o.created_at ASC`,
+      []
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get pending confirmation orders error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ==================== WAITER ROUTES ====================
 
-// Waiter: Create order
+// Waiter: Create order (manual from waiter)
 router.post('/', protect, allowWaiter, async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
@@ -98,10 +318,10 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
       
       const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes)
-         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8)
+        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
+         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, $9)
          RETURNING id, order_number, total_amount`,
-        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null]
+        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null, source]
       );
       
       const orderId = orderResult.rows[0].id;
@@ -560,110 +780,6 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   } finally {
     client.release();
-  }
-});
-// ==================== PUBLIC QR ORDER ROUTE ====================
-// Public endpoint for QR code orders (no authentication required)
-router.post('/qr-order', async (req, res) => {
-  try {
-    const { items, table_id, customer_name, customer_phone, notes } = req.body;
-    
-    if (!items || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'No items in order' });
-    }
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Calculate total
-      let totalAmount = 0;
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
-      }
-      
-      // Generate order number
-      const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
-      
-      // Insert order (no user_id since customer is not logged in)
-      const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source)
-         VALUES ($1, $2, 'pending', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu')
-         RETURNING id, order_number`,
-        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null]
-      );
-      
-      const orderId = orderResult.rows[0].id;
-      
-      // Insert order items
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price, name FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
-        
-        await client.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
-        );
-      }
-      
-      // Add to kitchen queue
-      await client.query(
-        `INSERT INTO kitchen_orders (order_id, status, notes)
-         VALUES ($1, 'pending', $2)`,
-        [orderId, notes || null]
-      );
-      
-      // Update table status if table_id provided
-      if (table_id) {
-        await client.query(
-          `UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2`,
-          [orderId, table_id]
-        );
-      }
-      
-      await client.query('COMMIT');
-      
-      // Emit socket event for new order
-      const io = req.app.get('io');
-      if (io) {
-        io.emit('new_order', {
-          order_id: orderId,
-          order_number: orderNumber,
-          table_id: table_id,
-          source: 'qr_menu'
-        });
-      }
-      
-      res.status(201).json({
-        success: true,
-        message: 'Order placed successfully',
-        data: { 
-          order_id: orderId, 
-          order_number: orderNumber, 
-          total_amount: totalAmount 
-        }
-      });
-      
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('QR order error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    } finally {
-      client.release();
-    }
-    
-  } catch (err) {
-    console.error('QR order error:', err);
-    res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
-import { Plus, Edit2, Trash2, Save, X, Loader2, RefreshCw, Table, QrCode } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
-import socket from '../../socket';
+import { 
+  Plus, Edit2, Trash2, X, Loader2, RefreshCw, 
+  Table, QrCode 
+} from 'lucide-react';
 
 const ManageTables = () => {
-  const { t } = useLanguage();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
+  const [notification, setNotification] = useState('');
   const [formData, setFormData] = useState({
     table_number: '',
     capacity: 4,
     status: 'available'
   });
-  const [notification, setNotification] = useState('');
 
   useEffect(() => {
     fetchTables();
@@ -119,38 +119,29 @@ const ManageTables = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Manage Tables</h1>
           <p className="text-gray-400 mt-1">Add, edit, or remove restaurant tables</p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={fetchTables}
-            className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
-          >
+          <button onClick={fetchTables} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition">
             <RefreshCw size={18} />
             Refresh
           </button>
-          <button
-            onClick={openCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
-          >
+          <button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition">
             <Plus size={18} />
             Add Table
           </button>
         </div>
       </div>
 
-      {/* Notification */}
       {notification && (
         <div className="bg-green-500/20 border border-green-500/30 rounded-xl p-3 text-green-400 text-center">
           {notification}
         </div>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-800 rounded-xl p-4 text-center border border-gray-700">
           <p className="text-gray-400 text-sm">Total Tables</p>
@@ -170,7 +161,6 @@ const ManageTables = () => {
         </div>
       </div>
 
-      {/* Tables Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {tables.map(table => (
           <div key={table.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-blue-500/50 transition-all">
@@ -222,7 +212,6 @@ const ManageTables = () => {
         ))}
       </div>
 
-      {/* No Tables Message */}
       {tables.length === 0 && (
         <div className="text-center py-12 bg-gray-800 rounded-xl">
           <Table size={48} className="mx-auto text-gray-600 mb-3" />

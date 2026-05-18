@@ -20,6 +20,141 @@ const generateSaleNumber = () => {
   return `SALE-${timestamp}${random}`;
 };
 
+// ==================== WASTAGE CALCULATION FUNCTION ====================
+/**
+ * Calculate actual ingredient usage with wastage factors
+ * @param {Array} recipeIngredients - Array of ingredients with wastage settings
+ * @param {number} orderQuantity - Quantity of the product ordered
+ * @returns {Array} - Array of calculated deductions with wastage
+ */
+const calculateStockDeductionWithWastage = (recipeIngredients, orderQuantity) => {
+  const deductions = [];
+  
+  for (const ingredient of recipeIngredients) {
+    // Get wastage factors (with defaults if not set)
+    const wastagePercent = parseFloat(ingredient.wastage_percentage) || 0;
+    const cookingLossPercent = parseFloat(ingredient.cooking_loss_percentage) || 0;
+    
+    // Base calculation (expected usage)
+    let expectedQuantity = parseFloat(ingredient.quantity_required) * orderQuantity;
+    
+    // Apply ingredient wastage (trimming, spoilage, spillage)
+    let afterWastage = expectedQuantity * (1 + (wastagePercent / 100));
+    
+    // Apply cooking loss (evaporation, shrinkage, oil absorption)
+    let finalQuantity = afterWastage * (1 + (cookingLossPercent / 100));
+    
+    // Round appropriately based on unit type
+    if (ingredient.unit === 'pcs' || ingredient.unit === 'pieces') {
+      finalQuantity = Math.ceil(finalQuantity); // Can't use half an egg
+    } else {
+      finalQuantity = Math.ceil(finalQuantity * 100) / 100; // Round up to 2 decimals
+    }
+    
+    const wastageAmount = finalQuantity - expectedQuantity;
+    const wastagePercentage = expectedQuantity > 0 
+      ? (wastageAmount / expectedQuantity * 100).toFixed(1) 
+      : 0;
+    
+    deductions.push({
+      ingredient_id: ingredient.ingredient_id,
+      ingredient_name: ingredient.name,
+      expected_quantity: expectedQuantity,
+      actual_quantity: finalQuantity,
+      wastage_amount: wastageAmount,
+      wastage_percentage: wastagePercentage,
+      unit: ingredient.unit,
+      unit_cost: parseFloat(ingredient.unit_cost) || 0,
+      wastage_cost: wastageAmount * (parseFloat(ingredient.unit_cost) || 0)
+    });
+  }
+  
+  return deductions;
+};
+
+/**
+ * Process stock deduction with wastage tracking for an order
+ * @param {number} orderId - The order ID
+ * @param {Array} items - Order items
+ * @param {Object} client - Database client for transaction
+ * @returns {Array} - All deductions performed
+ */
+const processOrderStockDeduction = async (orderId, items, client) => {
+  const allDeductions = [];
+  
+  for (const item of items) {
+    // Fetch recipe for this product with wastage settings
+    const recipeQuery = `
+      SELECT 
+        ri.ingredient_id,
+        ri.quantity_required,
+        i.name,
+        i.unit,
+        i.wastage_percentage,
+        i.cooking_loss_percentage,
+        i.quantity as current_stock,
+        i.unit_cost
+      FROM recipe_ingredients ri
+      JOIN ingredients i ON ri.ingredient_id = i.id
+      WHERE ri.product_id = $1
+    `;
+    
+    const recipeResult = await client.query(recipeQuery, [item.product_id]);
+    
+    if (recipeResult.rows.length === 0) {
+      console.warn(`No recipe found for product ${item.product_id}`);
+      continue;
+    }
+    
+    // Calculate deductions with wastage
+    const deductions = calculateStockDeductionWithWastage(recipeResult.rows, item.quantity);
+    
+    // Apply each deduction
+    for (const deduction of deductions) {
+      // Check if enough stock
+      const ingredient = recipeResult.rows.find(r => r.ingredient_id === deduction.ingredient_id);
+      
+      if (parseFloat(ingredient.current_stock) < deduction.actual_quantity) {
+        throw new Error(`Insufficient stock for ${deduction.ingredient_name}. Available: ${ingredient.current_stock} ${deduction.unit}, Required: ${deduction.actual_quantity}`);
+      }
+      
+      // Update ingredient stock
+      await client.query(`
+        UPDATE ingredients 
+        SET quantity = quantity - $1,
+            last_used = NOW(),
+            updated_at = NOW()
+        WHERE id = $2
+      `, [deduction.actual_quantity, deduction.ingredient_id]);
+      
+      // Record stock transaction with wastage info
+      await client.query(`
+        INSERT INTO stock_transactions (
+          ingredient_id,
+          order_id,
+          expected_quantity,
+          actual_quantity,
+          wastage_amount,
+          wastage_percentage,
+          transaction_type,
+          created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'order_deduction', NOW())
+      `, [
+        deduction.ingredient_id,
+        orderId,
+        deduction.expected_quantity,
+        deduction.actual_quantity,
+        deduction.wastage_amount,
+        deduction.wastage_percentage
+      ]);
+      
+      allDeductions.push(deduction);
+    }
+  }
+  
+  return allDeductions;
+};
+
 // ==================== PUBLIC ROUTES ====================
 
 // Track order by order number (Public - no authentication needed)
@@ -191,7 +326,6 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
     
     const order = orderCheck.rows[0];
     
-    // ✅ FIX: Set waiter_id if not already set (moved AFTER order is defined)
     if (!order.waiter_id) {
       await client.query(
         `UPDATE orders SET waiter_id = $1 WHERE id = $2`,
@@ -200,7 +334,6 @@ router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
       order.waiter_id = userId;
     }
     
-    // Verify this order belongs to the waiter
     if (order.waiter_id && order.waiter_id !== userId) {
       return res.status(403).json({ 
         success: false, 
@@ -559,7 +692,7 @@ router.put('/tables/:tableId/assign-waiter', protect, allowOwner, async (req, re
   }
 });
 
-//// ==================== WAITER MANUAL ORDER ROUTE ====================
+// ==================== WAITER MANUAL ORDER ROUTE (UPDATED WITH WASTAGE) ====================
 router.post('/', protect, allowWaiter, async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
@@ -610,39 +743,8 @@ router.post('/', protect, allowWaiter, async (req, res) => {
         );
       }
       
-      // ==================== INVENTORY DEDUCTION ====================
-      // Deduct ingredients from inventory based on recipes
-      for (const item of items) {
-        // Get recipe for this product
-        const recipeResult = await client.query(
-          `SELECT r.ingredient_id, r.quantity_required, i.name, i.quantity as current_stock
-           FROM recipes r
-           JOIN ingredients i ON r.ingredient_id = i.id
-           WHERE r.product_id = $1`,
-          [item.product_id]
-        );
-        
-        // Deduct each ingredient
-        for (const recipe of recipeResult.rows) {
-          const requiredAmount = parseFloat(recipe.quantity_required) * item.quantity;
-          const newStock = parseFloat(recipe.current_stock) - requiredAmount;
-          
-          // Check if enough stock
-          if (newStock < 0) {
-            throw new Error(`Insufficient stock for ingredient: ${recipe.name}. Required: ${requiredAmount}, Available: ${recipe.current_stock}`);
-          }
-          
-          // Update inventory
-          await client.query(
-            `UPDATE ingredients 
-             SET quantity = quantity - $1, 
-                 updated_at = NOW()
-             WHERE id = $2`,
-            [requiredAmount, recipe.ingredient_id]
-          );
-        }
-      }
-      // ==================== END INVENTORY DEDUCTION ====================
+      // ==================== INVENTORY DEDUCTION WITH WASTAGE ====================
+      const stockDeductions = await processOrderStockDeduction(orderId, items, client);
       
       await client.query(
         `INSERT INTO kitchen_orders (order_id, status, notes)
@@ -672,7 +774,11 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Order created and sent to kitchen',
-        data: orderResult.rows[0]
+        data: {
+          ...orderResult.rows[0],
+          stock_deductions: stockDeductions,  // Include wastage info in response
+          total_wastage_cost: stockDeductions.reduce((sum, d) => sum + d.wastage_cost, 0)
+        }
       });
       
     } catch (err) {
@@ -711,7 +817,7 @@ router.get('/table/:tableId/active-order', protect, allowWaiter, async (req, res
   }
 });
 
-// ==================== ADD ITEMS TO EXISTING ORDER ====================
+// ==================== ADD ITEMS TO EXISTING ORDER (UPDATED WITH WASTAGE) ====================
 router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -745,6 +851,7 @@ router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
     }
     
     let additionalAmount = 0;
+    const newItems = [];
     
     for (const item of items) {
       const productResult = await client.query(
@@ -761,7 +868,12 @@ router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
          VALUES ($1, $2, $3, $4, $5)`,
         [orderId, item.product_id, item.quantity, unitPrice, itemTotal]
       );
+      
+      newItems.push(item);
     }
+    
+    // Process stock deduction for new items with wastage
+    const stockDeductions = await processOrderStockDeduction(orderId, newItems, client);
     
     const newTotal = parseFloat(order.total_amount) + additionalAmount;
     
@@ -778,7 +890,9 @@ router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
       success: true,
       message: 'Items added to order',
       additional_amount: additionalAmount,
-      new_total: newTotal
+      new_total: newTotal,
+      stock_deductions: stockDeductions,
+      total_wastage_cost: stockDeductions.reduce((sum, d) => sum + d.wastage_cost, 0)
     });
     
   } catch (err) {
@@ -1001,6 +1115,7 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     client.release();
   }
 });
+
 // ==================== PUBLIC: Customer adds items to existing order ====================
 router.post('/:orderId/customer-add-items', async (req, res) => {
   const { orderId } = req.params;
@@ -1071,6 +1186,51 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   } finally {
     client.release();
+  }
+});
+
+// ==================== GET WASTAGE REPORT FOR ORDER ====================
+router.get('/:orderId/wastage', protect, allowManager, async (req, res) => {
+  const { orderId } = req.params;
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        st.ingredient_id,
+        i.name as ingredient_name,
+        i.unit,
+        st.expected_quantity,
+        st.actual_quantity,
+        st.wastage_amount,
+        st.wastage_percentage,
+        st.created_at,
+        (st.wastage_amount * i.unit_cost) as wastage_cost
+      FROM stock_transactions st
+      JOIN ingredients i ON st.ingredient_id = i.id
+      WHERE st.order_id = $1
+      ORDER BY st.wastage_amount DESC
+    `, [orderId]);
+    
+    const summary = await pool.query(`
+      SELECT 
+        SUM(st.wastage_amount * i.unit_cost) as total_wastage_cost,
+        SUM(st.wastage_amount) as total_wastage_quantity,
+        AVG(st.wastage_percentage) as avg_wastage_percentage
+      FROM stock_transactions st
+      JOIN ingredients i ON st.ingredient_id = i.id
+      WHERE st.order_id = $1
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      data: {
+        details: result.rows,
+        summary: summary.rows[0]
+      }
+    });
+  } catch (err) {
+    console.error('Get wastage report error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

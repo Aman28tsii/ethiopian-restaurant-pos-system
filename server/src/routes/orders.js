@@ -1001,5 +1001,76 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     client.release();
   }
 });
-
+// ==================== PUBLIC: Customer adds items to existing order ====================
+router.post('/:orderId/customer-add-items', async (req, res) => {
+  const { orderId } = req.params;
+  const { items } = req.body;
+  
+  if (!items || items.length === 0) {
+    return res.status(400).json({ success: false, error: 'No items to add' });
+  }
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const orderCheck = await client.query(
+      'SELECT id, status, total_amount FROM orders WHERE id = $1 AND status = $2',
+      [orderId, 'pending_confirmation']
+    );
+    
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found or already confirmed' 
+      });
+    }
+    
+    const order = orderCheck.rows[0];
+    let additionalAmount = 0;
+    
+    for (const item of items) {
+      const productResult = await client.query(
+        'SELECT price, name FROM products WHERE id = $1',
+        [item.product_id]
+      );
+      
+      const unitPrice = parseFloat(productResult.rows[0].price);
+      const itemTotal = unitPrice * item.quantity;
+      additionalAmount += itemTotal;
+      
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [orderId, item.product_id, item.quantity, unitPrice, itemTotal]
+      );
+    }
+    
+    const newTotal = parseFloat(order.total_amount) + additionalAmount;
+    
+    await client.query(
+      `UPDATE orders 
+       SET total_amount = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [newTotal, orderId]
+    );
+    
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: 'Items added to order',
+      additional_amount: additionalAmount,
+      new_total: newTotal
+    });
+    
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Customer add items error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
 export default router;

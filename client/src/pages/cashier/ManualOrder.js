@@ -438,7 +438,7 @@ const ManualOrder = () => {
                 <CreditCard size={16} /> Card
               </button>
               <button
-                onClick={() | setPaymentMethod('mobile')}
+                onClick={() => setPaymentMethod('mobile')}
                 className={`py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
                   paymentMethod === 'mobile' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}

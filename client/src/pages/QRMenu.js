@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { 
   ShoppingCart, Plus, Minus, X, Utensils, Phone, MapPin, Clock, 
-  Trash2, CheckCircle, AlertCircle, ChefHat, Truck, Coffee, Eye
+  Trash2, CheckCircle, AlertCircle, ChefHat, Truck, Coffee
 } from 'lucide-react';
 import socket from '../socket';
 
@@ -21,12 +21,15 @@ const QRMenu = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [orderStatus, setOrderStatus] = useState(null);
-  const [existingOrderNumber, setExistingOrderNumber] = useState(null);
+  const [orderNumber, setOrderNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showQRGuide, setShowQRGuide] = useState(false);
-  const [showExistingOrderPrompt, setShowExistingOrderPrompt] = useState(false);
+  const [showOrderTracking, setShowOrderTracking] = useState(false);
+  const [trackingOrder, setTrackingOrder] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(20);
+  const [priceUpdate, setPriceUpdate] = useState(null);
   const [restaurantInfo, setRestaurantInfo] = useState({
     name: 'EthioPOS Restaurant',
     address: 'Addis Ababa, Ethiopia',
@@ -36,11 +39,44 @@ const QRMenu = () => {
 
   // ==================== LOCALSTORAGE KEYS ====================
   const getOrderStorageKey = () => `qr_order_table_${tableId}`;
+  const getContinueOrderKey = () => `continue_order_${tableId}`;
+
+  // ==================== ADD MORE ITEMS FUNCTION ====================
+  const addMoreItemsToOrder = async () => {
+    if (cart.length === 0) {
+      alert('Please add items to continue');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await API.post(`/orders/${currentOrder.order_id}/customer-add-items`, {
+        items: cart.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity
+        }))
+      });
+
+      if (response.data.success) {
+        alert(`✓ ${cart.length} item(s) added to your order!`);
+        setCart([]);
+        // Refresh order details
+        fetchOrderDetails(currentOrder.order_number);
+        setShowCart(false);
+      }
+    } catch (err) {
+      console.error('Add items error:', err);
+      alert(err.response?.data?.error || 'Failed to add items');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ==================== SAVE ORDER TO LOCALSTORAGE ====================
   const saveOrderToStorage = (order) => {
     if (order && order.order_number) {
       localStorage.setItem(getOrderStorageKey(), JSON.stringify({
+        order_id: order.order_id,
         order_number: order.order_number,
         total_amount: order.total_amount,
         status: order.status,
@@ -51,46 +87,42 @@ const QRMenu = () => {
     }
   };
 
-  // ==================== CHECK FOR EXISTING ORDER ====================
-  const checkForExistingOrder = () => {
-    const saved = localStorage.getItem(getOrderStorageKey());
-    if (saved) {
-      try {
-        const order = JSON.parse(saved);
-        setExistingOrderNumber(order.order_number);
-        setShowExistingOrderPrompt(true);
+  // ==================== CHECK FOR CONTINUING ORDER ====================
+  const checkForContinuingOrder = () => {
+    const continueOrderNum = localStorage.getItem(getContinueOrderKey());
+    if (continueOrderNum && !orderPlaced) {
+      if (window.confirm('You have an existing order. Would you like to continue adding items to it?')) {
+        setOrderNumber(continueOrderNum);
+        fetchOrderDetails(continueOrderNum);
+        localStorage.removeItem(getContinueOrderKey());
         return true;
-      } catch (e) {
-        console.error('Error checking saved order:', e);
+      } else {
+        localStorage.removeItem(getContinueOrderKey());
       }
     }
     return false;
   };
 
-  // ==================== LOAD AND RESTORE EXISTING ORDER ====================
-  const restoreExistingOrder = async () => {
+  // ==================== LOAD SAVED ORDER ====================
+  const loadSavedOrder = () => {
     const saved = localStorage.getItem(getOrderStorageKey());
     if (saved) {
       try {
         const order = JSON.parse(saved);
-        setShowExistingOrderPrompt(false);
-        setOrderPlaced(true);
+        setCurrentOrder(order);
+        setOrderNumber(order.order_number);
         setOrderStatus(order.status);
-        await fetchOrderDetails(order.order_number);
+        setOrderPlaced(true);
+        startStatusPolling(order.order_number);
+        return true;
       } catch (e) {
-        console.error('Error restoring order:', e);
+        console.error('Error loading saved order:', e);
       }
     }
+    return false;
   };
 
-  // ==================== CONTINUE WITH NEW ORDER (Clear Old) ====================
-  const continueWithNewOrder = () => {
-    localStorage.removeItem(getOrderStorageKey());
-    setExistingOrderNumber(null);
-    setShowExistingOrderPrompt(false);
-  };
-
-  // ==================== FETCH ORDER DETAILS FROM API ====================
+  // ==================== FETCH ORDER DETAILS ====================
   const fetchOrderDetails = async (orderNum) => {
     try {
       const response = await API.get(`/orders/track/${orderNum}`);
@@ -109,25 +141,10 @@ const QRMenu = () => {
       }
     } catch (err) {
       console.error('Fetch order details error:', err);
-      // If order not found, clear localStorage
-      localStorage.removeItem(getOrderStorageKey());
-      setExistingOrderNumber(null);
-      setShowExistingOrderPrompt(false);
     }
   };
 
-  // ==================== CLEAR SAVED ORDER ====================
-  const clearSavedOrder = () => {
-    localStorage.removeItem(getOrderStorageKey());
-    setOrderPlaced(false);
-    setCurrentOrder(null);
-    setOrderStatus(null);
-    setExistingOrderNumber(null);
-    setShowExistingOrderPrompt(false);
-    window.location.reload();
-  };
-
-  // ==================== START POLLING FOR STATUS UPDATES ====================
+  // ==================== START POLLING ====================
   const startStatusPolling = (orderNum) => {
     const interval = setInterval(async () => {
       try {
@@ -138,20 +155,34 @@ const QRMenu = () => {
           if (currentOrder) {
             const updated = { ...currentOrder, status: newStatus };
             setCurrentOrder(updated);
-            const saved = localStorage.getItem(getOrderStorageKey());
-            if (saved) {
-              const existing = JSON.parse(saved);
-              existing.status = newStatus;
-              localStorage.setItem(getOrderStorageKey(), JSON.stringify(existing));
-            }
+            saveOrderToStorage(updated);
           }
-          if (newStatus === 'completed' || newStatus === 'ready') {
+          if (newStatus === 'completed' || newStatus === 'confirmed') {
             clearInterval(interval);
           }
         }
       } catch (err) {}
     }, 10000);
     return interval;
+  };
+
+  // ==================== CLEAR SAVED ORDER ====================
+  const clearSavedOrder = () => {
+    localStorage.removeItem(getOrderStorageKey());
+    localStorage.removeItem(getContinueOrderKey());
+    setOrderPlaced(false);
+    setCurrentOrder(null);
+    setOrderNumber(null);
+    setOrderStatus(null);
+    setTrackingOrder(null);
+    window.location.reload();
+  };
+
+  // ==================== SAVE CONTINUE ORDER ====================
+  const saveContinueOrder = () => {
+    if (orderNumber) {
+      localStorage.setItem(getContinueOrderKey(), orderNumber);
+    }
   };
 
   // ==================== HELPER FUNCTIONS ====================
@@ -198,14 +229,19 @@ const QRMenu = () => {
   // ==================== DATA FETCHING ====================
   const fetchProducts = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await API.get('/products');
       const productsData = response.data.data || [];
-      setProducts(productsData);
-      const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
-      setCategories(uniqueCategories);
+      if (productsData.length === 0) {
+        setError('No menu items found. Please contact the restaurant.');
+      } else {
+        setProducts(productsData);
+        const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+      }
     } catch (err) {
-      setError('Unable to load menu');
+      setError('Unable to load menu. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -222,10 +258,14 @@ const QRMenu = () => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
+        setPriceUpdate(product.id);
+        setTimeout(() => setPriceUpdate(null), 300);
         return prev.map(item => item.id === product.id 
           ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price } 
           : item);
       }
+      setPriceUpdate(product.id);
+      setTimeout(() => setPriceUpdate(null), 300);
       return [...prev, { id: product.id, name: product.name, price, quantity: 1, total: price }];
     });
   };
@@ -236,6 +276,8 @@ const QRMenu = () => {
       if (!item) return prev;
       const newQty = item.quantity + delta;
       if (newQty <= 0) return prev.filter(i => i.id !== productId);
+      setPriceUpdate(productId);
+      setTimeout(() => setPriceUpdate(null), 300);
       return prev.map(i => i.id === productId ? { ...i, quantity: newQty, total: newQty * i.price } : i);
     });
   };
@@ -275,6 +317,7 @@ const QRMenu = () => {
           placed_at: new Date().toISOString()
         };
         setCurrentOrder(newOrder);
+        setOrderNumber(data.order_number);
         setOrderStatus(data.status);
         setOrderPlaced(true);
         setCart([]);
@@ -325,10 +368,12 @@ const QRMenu = () => {
     fetchProducts();
     loadRestaurantInfo();
     
-    // Check for existing order AFTER tableId is set
     setTimeout(() => {
       if (tableId) {
-        checkForExistingOrder();
+        const loaded = loadSavedOrder();
+        if (!loaded) {
+          checkForContinuingOrder();
+        }
       }
     }, 100);
   }, [tableId]);
@@ -339,35 +384,56 @@ const QRMenu = () => {
   const total = subtotal + tax;
   const filteredProducts = selectedCategory === 'all' ? products : products.filter(p => p.category === selectedCategory);
 
-  // ==================== EXISTING ORDER PROMPT SCREEN ====================
-  if (showExistingOrderPrompt && existingOrderNumber) {
+  // ==================== ORDER TRACKING MODAL ====================
+  if (showOrderTracking && trackingOrder) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
-        <div className="bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-700">
-          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock size={40} className="text-blue-400" />
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+          <div className="sticky top-0 bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-white">Track Your Order</h2>
+            <button onClick={() => setShowOrderTracking(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Existing Order Found</h2>
-          <p className="text-gray-400 mb-2">You have an existing order:</p>
-          <div className="bg-gray-700/50 rounded-xl p-3 mb-4">
-            <p className="text-white font-mono">{existingOrderNumber}</p>
-          </div>
-          <p className="text-gray-400 text-sm mb-6">Would you like to track this order or start a new one?</p>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={restoreExistingOrder}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
-            >
-              <Eye size={18} />
-              Track Order
-            </button>
-            <button
-              onClick={continueWithNewOrder}
-              className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition"
-            >
-              Start New Order
-            </button>
+          <div className="p-4 space-y-4">
+            <div className="bg-gray-700/50 rounded-xl p-3 text-center">
+              <p className="text-gray-400 text-sm">Order Number</p>
+              <p className="text-2xl font-bold text-white">{trackingOrder.order_number}</p>
+            </div>
+            <div className="bg-gray-700/50 rounded-xl p-3">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-400">Status</span>
+                <span className={`font-semibold ${trackingOrder.status === 'pending_confirmation' ? 'text-yellow-400' : trackingOrder.status === 'confirmed' ? 'text-blue-400' : trackingOrder.status === 'preparing' ? 'text-orange-400' : trackingOrder.status === 'ready' ? 'text-green-400' : 'text-purple-400'}`}>
+                  {getStatusText(trackingOrder.status)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total Amount</span>
+                <span className="text-green-400 font-bold">{formatCurrency(trackingOrder.total_amount)}</span>
+              </div>
+            </div>
+            <div className="bg-gray-700/50 rounded-xl p-3">
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Time Elapsed</span>
+                <span className="text-white font-bold">{timer} min</span>
+              </div>
+              {estimatedTime > 0 && trackingOrder.status !== 'completed' && trackingOrder.status !== 'ready' && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Estimated Remaining</span>
+                  <span className="text-orange-400 font-bold">{estimatedTime} min</span>
+                </div>
+              )}
+              {trackingOrder.status === 'ready' && (
+                <div className="text-center text-green-400 font-semibold animate-pulse">✓ Ready for Pickup!</div>
+              )}
+            </div>
+            <div className="border-t border-gray-700 pt-3">
+              <p className="text-gray-400 text-sm mb-2">Order Items:</p>
+              {trackingOrder.items && trackingOrder.items.map((item, idx) => (
+                <div key={idx} className="flex justify-between text-sm py-1">
+                  <span className="text-gray-300">{item.quantity}x {item.product_name}</span>
+                  <span className="text-white">{formatCurrency(item.total_price)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -379,6 +445,7 @@ const QRMenu = () => {
     const progress = getProgressPercent(orderStatus || currentOrder.status);
     const statusText = getStatusText(orderStatus || currentOrder.status);
     const isCompleted = orderStatus === 'completed';
+    const isPendingConfirmation = orderStatus === 'pending_confirmation';
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
@@ -397,7 +464,7 @@ const QRMenu = () => {
                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500" style={{ width: `${progress}%` }} />
               </div>
               <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span>Ordered</span><span>Confirm</span><span>Kitchen</span><span>Cooking</span><span>Ready</span><span>Done</span>
+                <span>Placed</span><span>Confirm</span><span>Kitchen</span><span>Cooking</span><span>Ready</span><span>Done</span>
               </div>
             </div>
 
@@ -443,6 +510,22 @@ const QRMenu = () => {
               >
                 Track Order
               </button>
+              
+              {/* ADD MORE ITEMS BUTTON - NEW FEATURE */}
+              {isPendingConfirmation && (
+                <button 
+                  onClick={() => {
+                    saveContinueOrder();
+                    setOrderPlaced(false);
+                    setCurrentOrder(null);
+                    setCart([]);
+                  }}
+                  className="flex-1 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-xl font-semibold"
+                >
+                  + Add More Items
+                </button>
+              )}
+              
               {isCompleted && (
                 <button 
                   onClick={clearSavedOrder} 
@@ -488,10 +571,21 @@ const QRMenu = () => {
     );
   }
 
+  if (products.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center">
+          <Utensils size={48} className="text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Menu Empty</h2>
+          <p className="text-gray-400 mb-6">No menu items available. Please contact the restaurant.</p>
+        </div>
+      </div>
+    );
+  }
+
   // ==================== MAIN MENU SCREEN ====================
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-      {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white sticky top-0 z-30 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
@@ -499,42 +593,30 @@ const QRMenu = () => {
               <h1 className="text-xl font-bold">{restaurantInfo.name}</h1>
               <p className="text-xs text-blue-100">Table {tableNumber || 'Guest'}</p>
             </div>
-            <button onClick={() => setShowCart(true)} className="relative bg-white/20 rounded-full p-2">
-              <ShoppingCart size={24} />
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {cart.reduce((s, i) => s + i.quantity, 0)}
-                </span>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowQRGuide(true)} className="bg-white/20 rounded-full p-2 hover:bg-white/30 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+              <button onClick={() => setShowCart(true)} className="relative bg-white/20 rounded-full p-2 hover:bg-white/30 transition">
+                <ShoppingCart size={24} />
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cart.reduce((s, i) => s + i.quantity, 0)}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* QR Guide Button */}
-      <div className="px-4 py-2 flex justify-between items-center">
-        <button onClick={() => setShowQRGuide(true)} className="text-xs text-blue-400 flex items-center gap-1">
-          <span className="text-lg">ℹ️</span> How QR ordering works
-        </button>
-        {existingOrderNumber && (
-          <button 
-            onClick={restoreExistingOrder}
-            className="text-xs bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full flex items-center gap-1"
-          >
-            <Eye size={12} />
-            View Existing Order
-          </button>
-        )}
-      </div>
-
-      {/* QR Guide Modal */}
       {showQRGuide && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowQRGuide(false)} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-2xl max-w-sm w-full p-6 text-center border border-gray-700">
               <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
               </div>
               <h3 className="text-lg font-bold text-white mb-2">How QR Ordering Works</h3>
               <p className="text-gray-400 text-sm mb-4">1. Scan QR code at your table<br />2. Browse menu and add items<br />3. Enter your details<br />4. Place order - waiter confirms!</p>
@@ -544,19 +626,17 @@ const QRMenu = () => {
         </>
       )}
 
-      {/* Restaurant Info Bar */}
       <div className="bg-gray-800/50 border-b border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-300">
         <div className="flex items-center gap-1"><MapPin size={14} /><span>{restaurantInfo.address}</span></div>
         <div className="flex items-center gap-1"><Phone size={14} /><span>{restaurantInfo.phone}</span></div>
         <div className="flex items-center gap-1"><Clock size={14} /><span>{restaurantInfo.hours}</span></div>
       </div>
 
-      {/* Categories */}
       <div className="bg-gray-800/50 border-b border-gray-700 sticky top-[72px] z-20">
         <div className="container mx-auto px-4">
           <div className="flex overflow-x-auto gap-2 py-3">
             {categories.map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-semibold transition ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
                 {cat === 'all' ? 'All Items' : cat}
               </button>
             ))}
@@ -564,7 +644,6 @@ const QRMenu = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
       <div className="container mx-auto px-4 py-6 pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map(product => (
@@ -576,7 +655,7 @@ const QRMenu = () => {
                     <p className="text-sm text-gray-400 mt-1">{product.description || 'Delicious Ethiopian dish'}</p>
                     <p className="text-blue-400 font-bold mt-2">{formatCurrency(product.price)}</p>
                   </div>
-                  <button onClick={() => addToCart(product)} className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition">
+                  <button onClick={() => addToCart(product)} className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition transform hover:scale-105">
                     <Plus size={20} />
                   </button>
                 </div>
@@ -586,9 +665,8 @@ const QRMenu = () => {
         </div>
       </div>
 
-      {/* Floating Cart Button */}
       {cart.length > 0 && !showCart && (
-        <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition z-40">
+        <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
           <div className="relative">
             <ShoppingCart size={24} />
             <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -598,7 +676,6 @@ const QRMenu = () => {
         </button>
       )}
 
-      {/* Cart Sidebar */}
       {showCart && (
         <>
           <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowCart(false)} />
@@ -610,18 +687,28 @@ const QRMenu = () => {
 
             <div className="flex-1 overflow-y-auto p-4">
               {cart.length === 0 ? (
-                <div className="text-center py-12"><ShoppingCart size={48} className="mx-auto text-gray-600 mb-3" /><p className="text-gray-500">Your cart is empty</p><p className="text-gray-400 text-sm">Tap on items to add</p></div>
+                <div className="text-center py-12">
+                  <ShoppingCart size={48} className="mx-auto text-gray-600 mb-3" />
+                  <p className="text-gray-500">Your cart is empty</p>
+                  <p className="text-gray-400 text-sm">Tap on items to add</p>
+                </div>
               ) : (
                 cart.map(item => (
                   <div key={item.id} className="bg-gray-700 rounded-lg p-3 mb-3">
-                    <div className="flex justify-between"><div><p className="font-medium text-white">{item.name}</p><p className="text-blue-400 text-sm">{formatCurrency(item.price)}</p></div><button onClick={() => removeFromCart(item.id)} className="text-red-400"><Trash2 size={16} /></button></div>
+                    <div className="flex justify-between">
+                      <div>
+                        <p className="font-medium text-white">{item.name}</p>
+                        <p className={`text-blue-400 text-sm ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.price)}</p>
+                      </div>
+                      <button onClick={() => removeFromCart(item.id)} className="text-red-400"><Trash2 size={16} /></button>
+                    </div>
                     <div className="flex justify-between items-center mt-2">
                       <div className="flex items-center gap-3">
                         <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">-</button>
                         <span className="text-white w-6 text-center">{item.quantity}</span>
                         <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">+</button>
                       </div>
-                      <span className="text-white font-bold">{formatCurrency(item.total)}</span>
+                      <span className={`font-bold text-white ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.total)}</span>
                     </div>
                   </div>
                 ))

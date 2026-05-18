@@ -25,7 +25,7 @@ const TableStatus = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUserRole(user?.role);
     fetchTables();
-    fetchWaiters();
+    fetchWaiters(); // This will silently fail if user is not owner
     
     socket.on('table_status_updated', (data) => {
       fetchTables();
@@ -61,8 +61,9 @@ const TableStatus = () => {
       const response = await API.get('/orders/waiters');
       setWaiters(response.data.data || []);
     } catch (err) {
-      console.error('Fetch waiters error:', err);
-      // Don't show error to user, just set empty array
+      // Silently fail - only owners can access this endpoint
+      // Non-owners just get empty waiters list
+      console.log('Waiters fetch skipped - insufficient permissions');
       setWaiters([]);
     }
   };
@@ -325,9 +326,15 @@ const TableStatus = () => {
             </div>
             <div className="p-5">
               <label className="block text-sm font-medium text-gray-300 mb-2">Select Waiter</label>
-              <select value={selectedWaiter} onChange={(e) => setSelectedWaiter(e.target.value)} className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white mb-4">
+              <select 
+                value={selectedWaiter} 
+                onChange={(e) => setSelectedWaiter(e.target.value)} 
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white mb-4"
+              >
                 <option value="">-- No Waiter Assigned --</option>
-                {waiters.map(waiter => (<option key={waiter.id} value={waiter.id}>{waiter.name} ({waiter.email})</option>))}
+                {waiters.map(waiter => (
+                  <option key={waiter.id} value={waiter.id}>{waiter.name} ({waiter.email})</option>
+                ))}
               </select>
               <div className="flex gap-3">
                 <button onClick={() => assignWaiter(selectedTableForAssign.id, selectedWaiter || null)} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">Assign</button>

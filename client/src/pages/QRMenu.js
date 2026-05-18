@@ -30,6 +30,7 @@ const QRMenu = () => {
   const [timer, setTimer] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(20);
   const [priceUpdate, setPriceUpdate] = useState(null);
+  const [isAddingMoreItems, setIsAddingMoreItems] = useState(false);
   const [restaurantInfo, setRestaurantInfo] = useState({
     name: 'EthioPOS Restaurant',
     address: 'Addis Ababa, Ethiopia',
@@ -42,7 +43,7 @@ const QRMenu = () => {
   const getContinueOrderKey = () => `continue_order_${tableId}`;
 
   // ==================== ADD MORE ITEMS FUNCTION ====================
-  const addMoreItemsToOrder = async () => {
+  const addMoreItemsToExistingOrder = async () => {
     if (cart.length === 0) {
       alert('Please add items to continue');
       return;
@@ -58,10 +59,12 @@ const QRMenu = () => {
       });
 
       if (response.data.success) {
-        alert(`✓ ${cart.length} item(s) added to your order!`);
+        alert(`✓ ${cart.length} item(s) added to your order! New total: ${formatCurrency(response.data.new_total)}`);
         setCart([]);
-        fetchOrderDetails(currentOrder.order_number);
         setShowCart(false);
+        // Refresh order details
+        await fetchOrderDetails(currentOrder.order_number);
+        setIsAddingMoreItems(false);
       }
     } catch (err) {
       console.error('Add items error:', err);
@@ -174,13 +177,31 @@ const QRMenu = () => {
     setOrderNumber(null);
     setOrderStatus(null);
     setTrackingOrder(null);
+    setIsAddingMoreItems(false);
     window.location.reload();
   };
 
-  // ==================== SAVE CONTINUE ORDER ====================
-  const saveContinueOrder = () => {
+  // ==================== START ADDING MORE ITEMS ====================
+  const startAddingMoreItems = () => {
+    // Save current order number to continue later
     if (orderNumber) {
       localStorage.setItem(getContinueOrderKey(), orderNumber);
+    }
+    setIsAddingMoreItems(true);
+    setOrderPlaced(false);
+    setCart([]);
+  };
+
+  // ==================== FINISH ADDING MORE ITEMS ====================
+  const finishAddingMoreItems = async () => {
+    if (cart.length > 0) {
+      await addMoreItemsToExistingOrder();
+    } else {
+      // If no items added, just go back
+      setIsAddingMoreItems(false);
+      if (orderNumber) {
+        await fetchOrderDetails(orderNumber);
+      }
     }
   };
 
@@ -439,12 +460,158 @@ const QRMenu = () => {
     );
   }
 
+  // ==================== ADDING MORE ITEMS SCREEN ====================
+  if (isAddingMoreItems) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+        <div className="sticky top-0 bg-yellow-600/20 backdrop-blur-sm p-3 text-center border-b border-yellow-500/30">
+          <p className="text-yellow-400 text-sm">
+            ➕ Adding more items to Order #{orderNumber}
+          </p>
+        </div>
+        
+        {/* Reuse the main menu content but with different buttons */}
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Add More Items</h2>
+            <button
+              onClick={finishAddingMoreItems}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold"
+            >
+              Done - Return to Order
+            </button>
+          </div>
+        </div>
+
+        {/* Restaurant Info Bar */}
+        <div className="bg-gray-800/50 border-b border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-300">
+          <div className="flex items-center gap-1"><MapPin size={14} /><span>{restaurantInfo.address}</span></div>
+          <div className="flex items-center gap-1"><Phone size={14} /><span>{restaurantInfo.phone}</span></div>
+          <div className="flex items-center gap-1"><Clock size={14} /><span>{restaurantInfo.hours}</span></div>
+        </div>
+
+        {/* Categories */}
+        <div className="bg-gray-800/50 border-b border-gray-700 sticky top-[72px] z-20">
+          <div className="container mx-auto px-4">
+            <div className="flex overflow-x-auto gap-2 py-3">
+              {categories.map(cat => (
+                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                  {cat === 'all' ? 'All Items' : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <div className="container mx-auto px-4 py-6 pb-32">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProducts.map(product => (
+              <div key={product.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-blue-500/50 transition">
+                <div className="p-4">
+                  <div className="flex justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white">{product.name}</h3>
+                      <p className="text-sm text-gray-400 mt-1">{product.description || 'Delicious Ethiopian dish'}</p>
+                      <p className="text-blue-400 font-bold mt-2">{formatCurrency(product.price)}</p>
+                    </div>
+                    <button onClick={() => addToCart(product)} className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition transform hover:scale-105">
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cart Sidebar */}
+        {showCart && (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowCart(false)} />
+            <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-gray-800 shadow-2xl z-50 flex flex-col">
+              <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600">
+                <h2 className="text-xl font-bold text-white">Items to Add</h2>
+                <button onClick={() => setShowCart(false)} className="text-white"><X size={24} /></button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {cart.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingCart size={48} className="mx-auto text-gray-600 mb-3" />
+                    <p className="text-gray-500">No items to add</p>
+                    <p className="text-gray-400 text-sm">Tap on products to add to your existing order</p>
+                  </div>
+                ) : (
+                  cart.map(item => (
+                    <div key={item.id} className="bg-gray-700 rounded-lg p-3 mb-3">
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-medium text-white">{item.name}</p>
+                          <p className={`text-blue-400 text-sm ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.price)}</p>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} className="text-red-400"><Trash2 size={16} /></button>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">-</button>
+                          <span className="text-white w-6 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">+</button>
+                        </div>
+                        <span className={`font-bold text-white ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.total)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="border-t border-gray-700 p-4">
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-gray-400"><span>Subtotal to Add</span><span>{formatCurrency(subtotal)}</span></div>
+                  <div className="flex justify-between text-gray-400"><span>VAT (15%)</span><span>{formatCurrency(tax)}</span></div>
+                  <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-gray-700"><span>Total to Add</span><span className="text-green-400">{formatCurrency(total)}</span></div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={addMoreItemsToExistingOrder}
+                    disabled={cart.length === 0 || loading}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition disabled:opacity-50"
+                  >
+                    {loading ? 'Adding...' : 'Add to Order'}
+                  </button>
+                  <button
+                    onClick={() => setShowCart(false)}
+                    className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold"
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Floating Cart Button */}
+        {cart.length > 0 && !showCart && (
+          <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
+            <div className="relative">
+              <ShoppingCart size={24} />
+              <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {cart.reduce((s, i) => s + i.quantity, 0)}
+              </span>
+            </div>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   // ==================== ORDER PLACED SCREEN ====================
   if (orderPlaced && currentOrder) {
     const progress = getProgressPercent(orderStatus || currentOrder.status);
     const statusText = getStatusText(orderStatus || currentOrder.status);
     const isCompleted = orderStatus === 'completed';
-    // Allow adding more items until kitchen starts preparing
     const canAddMore = orderStatus === 'pending_confirmation' || orderStatus === 'confirmed' || orderStatus === 'pending';
     
     return (
@@ -511,15 +678,9 @@ const QRMenu = () => {
                 Track Order
               </button>
               
-              {/* ADD MORE ITEMS BUTTON - Show until kitchen starts cooking */}
               {canAddMore && (
                 <button 
-                  onClick={() => {
-                    saveContinueOrder();
-                    setOrderPlaced(false);
-                    setCurrentOrder(null);
-                    setCart([]);
-                  }}
+                  onClick={startAddingMoreItems}
                   className="flex-1 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-xl font-semibold"
                 >
                   + Add More Items
@@ -583,7 +744,7 @@ const QRMenu = () => {
     );
   }
 
-  // ==================== MAIN MENU SCREEN ====================
+  // ==================== MAIN MENU SCREEN (Initial Order) ====================
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white sticky top-0 z-30 shadow-lg">

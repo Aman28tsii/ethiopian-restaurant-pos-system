@@ -21,7 +21,7 @@ const TrackOrder = () => {
     }
   }, []);
 
-  // Timer effect - counts up from order creation
+  // Timer effect
   useEffect(() => {
     let interval;
     if (order && order.created_at) {
@@ -104,81 +104,67 @@ const TrackOrder = () => {
   const getStatusIcon = (status) => {
     switch(status) {
       case 'pending_confirmation':
-        return <Clock className="text-yellow-500" size={32} />;
+        return React.createElement(Clock, { className: "text-yellow-500", size: 32 });
       case 'pending':
-        return <Clock className="text-blue-500" size={32} />;
+        return React.createElement(Clock, { className: "text-blue-500", size: 32 });
       case 'preparing':
-        return <ChefHat className="text-orange-500" size={32} />;
+        return React.createElement(ChefHat, { className: "text-orange-500", size: 32 });
       case 'ready':
-        return <Coffee className="text-green-500" size={32} />;
+        return React.createElement(Coffee, { className: "text-green-500", size: 32 });
       case 'completed':
-        return <CheckCircle className="text-purple-500" size={32} />;
+        return React.createElement(CheckCircle, { className: "text-purple-500", size: 32 });
       case 'cancelled':
-        return <AlertCircle className="text-red-500" size={32} />;
+        return React.createElement(AlertCircle, { className: "text-red-500", size: 32 });
       default:
-        return <Clock className="text-gray-500" size={32} />;
+        return React.createElement(Clock, { className: "text-gray-500", size: 32 });
     }
   };
 
   const getStatusText = (status) => {
-    switch(status) {
-      case 'pending_confirmation':
-        return 'Waiting for Waiter Confirmation';
-      case 'pending':
-        return 'Order Received by Kitchen';
-      case 'preparing':
-        return 'Being Prepared';
-      case 'ready':
-        return 'Ready for Pickup';
-      case 'completed':
-        return 'Completed';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return status;
-    }
+    const statusMap = {
+      'pending_confirmation': 'Waiting for Waiter Confirmation',
+      'pending': 'Order Received by Kitchen',
+      'preparing': 'Being Prepared',
+      'ready': 'Ready for Pickup',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
+    };
+    return statusMap[status] || status;
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'pending_confirmation':
-        return 'bg-yellow-500';
-      case 'pending':
-        return 'bg-blue-500';
-      case 'preparing':
-        return 'bg-orange-500';
-      case 'ready':
-        return 'bg-green-500';
-      case 'completed':
-        return 'bg-purple-500';
-      case 'cancelled':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
+    const colorMap = {
+      'pending_confirmation': 'bg-yellow-500',
+      'pending': 'bg-blue-500',
+      'preparing': 'bg-orange-500',
+      'ready': 'bg-green-500',
+      'completed': 'bg-purple-500',
+      'cancelled': 'bg-red-500'
+    };
+    return colorMap[status] || 'bg-gray-500';
   };
 
-  const getStepStatus = (step, currentStatus) => {
-    const steps = ['pending_confirmation', 'pending', 'preparing', 'ready', 'completed'];
-    const currentIndex = steps.indexOf(currentStatus);
-    const stepIndex = steps.indexOf(step);
-    
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
-    return 'pending';
-  };
-
-  // Calculate progress percentage
   const getProgressPercent = (status) => {
-    switch(status) {
-      case 'pending_confirmation': return 10;
-      case 'pending': return 25;
-      case 'preparing': return 50;
-      case 'ready': return 75;
-      case 'completed': return 100;
-      default: return 0;
-    }
+    const percentMap = {
+      'pending_confirmation': 10,
+      'pending': 25,
+      'preparing': 50,
+      'ready': 75,
+      'completed': 100
+    };
+    return percentMap[status] || 0;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading order...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
@@ -204,7 +190,8 @@ const TrackOrder = () => {
               disabled={loading}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? <RefreshCw className="animate-spin" size={20} /> : <span>Track Order</span>}
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+              Track Order
             </button>
           </form>
           
@@ -244,15 +231,15 @@ const TrackOrder = () => {
               <div className="bg-gray-700/50 rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-3">
-                    <Clock className="text-blue-400" size={24} />
+                    <Clock size={24} className="text-blue-400" />
                     <div>
                       <p className="text-gray-400 text-sm">Time Elapsed</p>
                       <p className="text-2xl font-bold text-white">{timer} min</p>
                     </div>
                   </div>
-                  {estimatedTime > 0 && order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled' && (
+                  {estimatedTime > 0 && order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled' && order.status !== 'pending_confirmation' && (
                     <div className="flex items-center gap-3">
-                      <ChefHat className="text-orange-400" size={24} />
+                      <ChefHat size={24} className="text-orange-400" />
                       <div>
                         <p className="text-gray-400 text-sm">Estimated Remaining</p>
                         <p className="text-2xl font-bold text-orange-400">{estimatedTime} min</p>
@@ -261,19 +248,10 @@ const TrackOrder = () => {
                   )}
                   {order.status === 'ready' && (
                     <div className="flex items-center gap-3 animate-pulse">
-                      <Coffee className="text-green-400" size={24} />
+                      <Coffee size={24} className="text-green-400" />
                       <div>
                         <p className="text-gray-400 text-sm">Status</p>
                         <p className="text-xl font-bold text-green-400">Ready for Pickup!</p>
-                      </div>
-                    </div>
-                  )}
-                  {order.status === 'cancelled' && (
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="text-red-400" size={24} />
-                      <div>
-                        <p className="text-gray-400 text-sm">Status</p>
-                        <p className="text-xl font-bold text-red-400">Order Cancelled</p>
                       </div>
                     </div>
                   )}
@@ -290,11 +268,11 @@ const TrackOrder = () => {
                     />
                   </div>
                   <div className="flex justify-between mt-2 text-xs text-gray-500">
-                    <span>Order Placed</span>
+                    <span>Placed</span>
                     <span>Confirmed</span>
                     <span>Preparing</span>
                     <span>Ready</span>
-                    <span>Completed</span>
+                    <span>Done</span>
                   </div>
                 </div>
               )}
@@ -385,7 +363,7 @@ const TrackOrder = () => {
             {/* Help Section */}
             <div className="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/30 text-center">
               <p className="text-blue-400 text-sm">
-                💡 Need help? Call the restaurant at <strong className="text-white">+251-XXX-XXX-XXX</strong>
+                💡 Need help? Call the restaurant
               </p>
             </div>
           </div>
@@ -404,4 +382,4 @@ const TrackOrder = () => {
   );
 };
 
-export default TrackOrder;s
+export default TrackOrder;

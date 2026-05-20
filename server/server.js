@@ -107,7 +107,21 @@ const startServer = async () => {
   app.get('/api/health', async (req, res) => {
     res.json({ success: true, status: 'healthy', timestamp: new Date().toISOString() });
   });
-  
+  // Add this near your other app.get routes
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'EthioPOS API is running', 
+    version: '2.0.0',
+    endpoints: {
+      products: '/api/products',
+      ingredients: '/api/ingredients',
+      orders: '/api/orders',
+      kitchen: '/api/kitchen/orders',
+      auth: '/api/auth'
+    }
+  });
+});
+
   app.use('/api/products', productRoutes);
   app.use('/api/sales', saleRoutes);
   app.use('/api/ingredients', ingredientRoutes);     // ✅ FIXED - using 'ingredientRoutes' (singular)

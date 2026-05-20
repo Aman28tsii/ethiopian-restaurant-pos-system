@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, allowWaiter } from '../middleware/auth.js';
+import { protect, allowWaiter, allowOwner } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 const router = express.Router();
@@ -21,7 +21,6 @@ router.get('/my-tables', protect, allowWaiter, async (req, res) => {
     let assignedTables = [];
     
     if (shiftResult.rows.length > 0) {
-      // Get tables from shift assignment
       const tableIds = shiftResult.rows[0].table_ids;
       const tablesResult = await pool.query(
         `SELECT t.*, u.name as waiter_name
@@ -33,7 +32,6 @@ router.get('/my-tables', protect, allowWaiter, async (req, res) => {
       );
       assignedTables = tablesResult.rows;
     } else {
-      // Fallback: get tables where this waiter is assigned
       const tablesResult = await pool.query(
         `SELECT t.*, u.name as waiter_name
          FROM tables t
@@ -52,7 +50,7 @@ router.get('/my-tables', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET WAITER'S ACTIVE ORDERS (Only their tables) ====================
+// ==================== GET WAITER'S ACTIVE ORDERS ====================
 router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -96,7 +94,7 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET PENDING CONFIRMATIONS (Only waiter's tables) ====================
+// ==================== GET PENDING CONFIRMATIONS ====================
 router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -140,7 +138,7 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== ASSIGN TABLES TO WAITER (Owner/Manager only) ====================
+// ==================== ASSIGN TABLES TO WAITER ====================
 router.post('/assign-tables', protect, allowOwner, async (req, res) => {
   const { waiter_id, table_ids, shift_date, shift_start, shift_end } = req.body;
   
@@ -153,7 +151,6 @@ router.post('/assign-tables', protect, allowOwner, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    // Deactivate previous shifts for this waiter
     await client.query(
       `UPDATE waiter_shifts 
        SET is_active = false 
@@ -161,7 +158,6 @@ router.post('/assign-tables', protect, allowOwner, async (req, res) => {
       [waiter_id, shift_date || null]
     );
     
-    // Create new shift assignment
     const result = await client.query(
       `INSERT INTO waiter_shifts (waiter_id, table_ids, shift_date, shift_start, shift_end, is_active)
        VALUES ($1, $2, $3, $4, $5, true)
@@ -169,7 +165,6 @@ router.post('/assign-tables', protect, allowOwner, async (req, res) => {
       [waiter_id, table_ids, shift_date || new Date().toISOString().split('T')[0], shift_start || '08:00', shift_end || '22:00']
     );
     
-    // Also update the tables table for quick access
     for (const tableId of table_ids) {
       await client.query(
         `UPDATE tables 

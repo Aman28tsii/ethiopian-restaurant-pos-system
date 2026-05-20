@@ -1,4 +1,5 @@
-﻿=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\api\axios.js ===
+﻿
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\api\axios.js ==========
 
 import axios from 'axios';
 
@@ -48,8 +49,46 @@ API.interceptors.response.use(
 
 export default API;
 
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\api\inventory.js ==========
 
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ActiveOrderSummary.js ===
+import API from './axios';
+
+// Get wastage report
+export const getWastageReport = async (startDate, endDate) => {
+    try {
+        const response = await API.get('/ingredients/wastage-report', {
+            params: { start_date: startDate, end_date: endDate }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Get wastage report error:', error);
+        throw error;
+    }
+};
+
+// Update ingredient wastage settings
+export const updateIngredientWastage = async (id, wastageData) => {
+    try {
+        const response = await API.put(`/ingredients/${id}/wastage`, wastageData);
+        return response.data;
+    } catch (error) {
+        console.error('Update wastage error:', error);
+        throw error;
+    }
+};
+
+// Calculate wastage for an order
+export const calculateOrderWastage = async (orderId) => {
+    try {
+        const response = await API.post(`/orders/${orderId}/calculate-wastage`);
+        return response.data;
+    } catch (error) {
+        console.error('Calculate order wastage error:', error);
+        throw error;
+    }
+};
+
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ActiveOrderSummary.js ==========
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Clock, CheckCircle, AlertCircle, Eye, X } from 'lucide-react';
@@ -185,8 +224,7 @@ const ActiveOrderSummary = ({ order, onClose, onTrack }) => {
 
 export default ActiveOrderSummary;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Charts.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Charts.js ==========
 
 import React from 'react';
 import {
@@ -367,8 +405,7 @@ export const HourlySalesChart = ({ data, title }) => {
   );
 };
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ExportButtons.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ExportButtons.js ==========
 
 import React from 'react';
 import { FileText, FileSpreadsheet } from 'lucide-react';
@@ -469,8 +506,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
 
 export default ExportButtons;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\LowStockAlert.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\LowStockAlert.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -553,8 +589,7 @@ const LowStockAlert = () => {
 
 export default LowStockAlert;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\RealTimeNotifications.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\RealTimeNotifications.js ==========
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import API from '../api/axios';
@@ -832,8 +867,7 @@ const RealTimeNotifications = () => {
 
 export default RealTimeNotifications;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ResponsiveTable.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\ResponsiveTable.js ==========
 
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
@@ -876,8 +910,7 @@ const ResponsiveTable = ({ headers, data, renderRow, emptyMessage }) => {
 
 export default ResponsiveTable;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Sidebar.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Sidebar.js ==========
 
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -1068,8 +1101,7 @@ const Sidebar = ({ user, onLogout }) => {
 
 export default Sidebar;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\StaffPerformance.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\StaffPerformance.js ==========
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import API from '../api/axios';
@@ -1243,8 +1275,7 @@ const StaffPerformance = () => {
 
 export default StaffPerformance;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Topbar.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\components\Topbar.js ==========
 
 import React, { useState } from 'react';
 import { Bell, User, Search, Globe } from 'lucide-react';
@@ -1336,8 +1367,7 @@ const Topbar = ({ user }) => {
 
 export default Topbar;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\context\LanguageContext.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\context\LanguageContext.js ==========
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
@@ -1919,7 +1949,30 @@ pendingConfirmations: 'Confirm Orders',
 tableStatus: 'Table Status',
 manageTableAvailability: 'Manage table availability, reservations, and cleaning status',
 changeStatus: 'Change Status',
-
+// -------------------- WASTAGE TRACKING --------------------
+wastageTracking: 'Wastage Tracking',
+trackIngredientWaste: 'Track ingredient waste from trimming, spoilage, and cooking loss',
+wastagePercentage: 'Wastage Factor (%)',
+cookingLoss: 'Cooking Loss (%)',
+yieldPercentage: 'Yield Percentage (%)',
+expectedUsage: 'Expected Usage',
+actualUsage: 'Actual Usage',
+wastageAmount: 'Wastage Amount',
+wastageCost: 'Wastage Cost',
+totalWastageCost: 'Total Wastage Cost',
+wastageReport: 'Wastage Report',
+wastageByIngredient: 'Wastage by Ingredient',
+dailyWastage: 'Daily Wastage',
+wastageDescription: 'When making food, not all ingredients are used 100%. Some is lost to trimming, spoilage, spillage, and cooking evaporation.',
+wastageExample: 'Example: 250g beef + 15% wastage = 287.5g deducted from inventory',
+trimmingWaste: 'Trimming & Spoilage',
+cookingEvaporation: 'Cooking Evaporation (shrinkage)',
+batchCooking: 'Batch Cooking Efficiency',
+autoWastageLearning: 'Auto-learning wastage factors from historical data',
+lowStockCritical: 'Critical - Reorder Now',
+wastageAlert: 'High Wastage Alert',
+wastageReductionTip: 'Tip: Track wastage to reduce costs by 5-15%',
+ingredientCostBreakdown: 'Ingredient Cost Breakdown',
   },
   
   // ============================================================
@@ -2479,6 +2532,30 @@ qrPrintInstructions: 'á‹­áˆ…áŠ• áŒˆáŒ½ áŠ á‰µáˆ˜á�
   tableStatus: 'á‹¨áŒ áˆ¨áŒ´á‹› áˆáŠ”á‰³',
 manageTableAvailability: 'á‹¨áŒ áˆ¨áŒ´á‹› áˆ˜áŒˆáŠ˜á‰µá£ á‰¦á‰³ áˆ›áˆµá‹«á‹ áŠ¥áŠ“ á‹¨áŒ½á‹³á‰µ áˆáŠ”á‰³áŠ• á‹«áˆµá‰°á‹³á‹µáˆ©',
 changeStatus: 'áˆáŠ”á‰³ á‰€á‹­áˆ­',
+// -------------------- WASTAGE TRACKING (Amharic) --------------------
+wastageTracking: 'á‹¨á‰†áˆ»áˆ» áˆ˜áŒ áŠ• áŠ­á‰µá‰µáˆ',
+trackIngredientWaste: 'áŠ¨áˆ˜á‰áˆ¨áŒ¥á£ áˆ˜á‰ áˆ‹áˆ¸á‰µ áŠ¥áŠ“ áˆ›á‰¥áˆ°á‹« á‹¨áˆšáŒ á‹á‹áŠ• áŠ•áŒ¥áˆ¨ áŠáŒˆáˆ­ áˆ˜áŠ¨á‰³á‰°áˆ',
+wastagePercentage: 'á‹¨á‰†áˆ»áˆ» áˆ˜áŒ áŠ• (%)',
+cookingLoss: 'á‹¨áˆ›á‰¥áˆ°á‹« áŠªáˆ³áˆ« (%)',
+yieldPercentage: 'á‹¨áˆáˆ­á‰µ áˆ˜áŒ áŠ• (%)',
+expectedUsage: 'á‹¨áˆšáŒ á‰ á‰€á‹ áŠ áŒ á‰ƒá‰€áˆ',
+actualUsage: 'á‰µáŠ­áŠ­áˆˆáŠ› áŠ áŒ á‰ƒá‰€áˆ',
+wastageAmount: 'á‹¨á‰†áˆ»áˆ» áˆ˜áŒ áŠ•',
+wastageCost: 'á‹¨á‰†áˆ»áˆ» á‹‹áŒ‹',
+totalWastageCost: 'áŒ á‰…áˆ‹áˆ‹ á‹¨á‰†áˆ»áˆ» á‹‹áŒ‹',
+wastageReport: 'á‹¨á‰†áˆ»áˆ» áˆªá–áˆ­á‰µ',
+wastageByIngredient: 'á‰ áŠ•áŒ¥áˆ¨ áŠáŒˆáˆ­ á‹¨á‰†áˆ»áˆ» áˆ˜áŒ áŠ•',
+dailyWastage: 'á‰€áŠ• á‰€áŠ• á‰†áˆ»áˆ»',
+wastageDescription: 'áˆáŒá‰¥ á‰ áˆšáˆ°áˆ«á‰ á‰µ áŒŠá‹œ áˆáˆ‰áˆ áŠ•áŒ¥áˆ¨ áŠáŒˆáˆ®á‰½ áˆ˜á‰¶ á‰ áˆ˜á‰¶ áŠ á‹­áŒ á‰€áˆ™áˆá¢ á‹¨á‰°á‹ˆáˆ°áŠá‹ á‰ áˆ˜á‰áˆ¨áŒ¥á£ á‰ áˆ˜á‰ áˆ‹áˆ¸á‰µ áŠ¥áŠ“ á‰ áˆ›á‰¥áˆ°á‹« á‹­áŒ á‹áˆá¢',
+wastageExample: 'áˆáˆ³áˆŒ: 250g áˆ¥áŒ‹ + 15% á‰†áˆ»áˆ» = 287.5g áŠ¨áŠ­áˆá‰½á‰µ á‹­á‰€áŠ•áˆ³áˆ',
+trimmingWaste: 'áˆ˜á‰áˆ¨áŒ¥ áŠ¥áŠ“ áˆ˜á‰ áˆ‹áˆ¸á‰µ',
+cookingEvaporation: 'á‹¨áˆ›á‰¥áˆ°á‹« á‰µáŠá‰µ (áˆ˜á‰€áŠáˆµ)',
+batchCooking: 'á‹¨á‰¡á‹µáŠ• áˆ›á‰¥áˆ°á‹« á‰¥á‰ƒá‰µ',
+autoWastageLearning: 'áŠ¨á‰³áˆªáŠ«á‹Š áˆ˜áˆ¨áŒƒ áˆ«áˆµ-á‰°áˆ›áˆª á‹¨á‰†áˆ»áˆ» áˆáŠ­áŠ•á‹«á‰¶á‰½',
+lowStockCritical: 'áŠ á‹°áŒˆáŠ› - áŠ áˆáŠ• áŠ¥áŠ•á‹°áŒˆáŠ“ á‹«á‹˜á‹™',
+wastageAlert: 'áŠ¨áá‰°áŠ› á‹¨á‰†áˆ»áˆ» áˆ›áŠ•á‰‚á‹«',
+wastageReductionTip: 'áˆáŠ­áˆ­: á‹ˆáŒªáŠ• á‰ 5-15% áˆˆáˆ˜á‰€áŠáˆµ á‰†áˆ»áˆ»áŠ• á‹­áŠ¨á‰³á‰°áˆ‰',
+ingredientCostBreakdown: 'á‹¨áŠ•áŒ¥áˆ¨ áŠáŒˆáˆ­ á‹ˆáŒª áŠ­áááˆ',
 }
 };
 
@@ -2523,8 +2600,7 @@ export const LanguageProvider = ({ children }) => {
   );
 };
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\CashierLayout.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\CashierLayout.js ==========
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
@@ -2546,8 +2622,7 @@ const CashierLayout = ({ children, user, onLogout }) => {
 
 export default CashierLayout;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\KitchenLayout.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\KitchenLayout.js ==========
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
@@ -2569,8 +2644,7 @@ const KitchenLayout = ({ children, user, onLogout }) => {
 
 export default KitchenLayout;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\ManagerLayout.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\ManagerLayout.js ==========
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
@@ -2592,8 +2666,7 @@ const ManagerLayout = ({ children, user, onLogout }) => {
 
 export default ManagerLayout;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\OwnerLayout.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\OwnerLayout.js ==========
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
@@ -2615,8 +2688,7 @@ const OwnerLayout = ({ children, user, onLogout }) => {
 
 export default OwnerLayout;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\WaiterLayout.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\layouts\WaiterLayout.js ==========
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
@@ -2638,8 +2710,7 @@ const WaiterLayout = ({ children, user, onLogout }) => {
 
 export default WaiterLayout;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\cashier\CashierPOS.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\cashier\CashierPOS.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -2823,8 +2894,7 @@ const CashierPOS = () => {
 
 export default CashierPOS;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\cashier\ManualOrder.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\cashier\ManualOrder.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -3306,8 +3376,7 @@ const ManualOrder = () => {
 
 export default ManualOrder;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\kitchen\KitchenDashboard.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\kitchen\KitchenDashboard.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -3567,8 +3636,7 @@ const KitchenDashboard = () => {
 
 export default KitchenDashboard;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\manager\ManagerDashboard.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\manager\ManagerDashboard.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -3691,8 +3759,7 @@ const ManagerDashboard = () => {
 
 export default ManagerDashboard;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\manager\ManageTables.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\manager\ManageTables.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -3982,8 +4049,7 @@ const ManageTables = () => {
 
 export default ManageTables;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\AssignWaiters.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\AssignWaiters.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -4156,8 +4222,7 @@ const AssignWaiters = () => {
 
 export default AssignWaiters;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\OwnerDashboard.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\OwnerDashboard.js ==========
 
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../api/axios';
@@ -4311,8 +4376,7 @@ const OwnerDashboard = () => {
 
 export default OwnerDashboard;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\PrintQRCodes.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\PrintQRCodes.js ==========
 
 import React, { useState } from 'react';
 import { Printer, Download, QrCode, Copy } from 'lucide-react';
@@ -4417,8 +4481,7 @@ const PrintQRCodes = () => {
 
 export default PrintQRCodes;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\Settings.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\owner\Settings.js ==========
 
 import React, { useState, useEffect } from 'react';
 import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2 } from 'lucide-react';
@@ -4614,8 +4677,7 @@ const Settings = () => {
 
 export default Settings;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\MyOrders.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\MyOrders.js ==========
 
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../../api/axios';
@@ -4839,8 +4901,7 @@ const MyOrders = () => {
 
 export default MyOrders;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\PendingConfirmations.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\PendingConfirmations.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -5029,8 +5090,7 @@ const PendingConfirmations = () => {
 
 export default PendingConfirmations;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\TableGrid.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\TableGrid.js ==========
 
 import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../api/axios';
@@ -5064,6 +5124,8 @@ const TableGrid = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrTable, setQrTable] = useState(null);
+  const [myShift, setMyShift] = useState(null);
+  const [shiftLoading, setShiftLoading] = useState(true);
 
   // Check screen size
   useEffect(() => {
@@ -5075,18 +5137,31 @@ const TableGrid = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const fetchTables = useCallback(async (silent = false) => {
+  // Fetch waiter's assigned tables only
+  const fetchMyTables = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const response = await API.get('/tables');
+      const response = await API.get('/waiter/my-tables');
       setTables(response.data.data || []);
     } catch (err) {
-      console.error('Fetch tables error:', err);
+      console.error('Fetch my tables error:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
+
+  // Fetch waiter's current shift
+  const fetchMyShift = async () => {
+    try {
+      const response = await API.get('/waiter/my-shift');
+      setMyShift(response.data.data);
+    } catch (err) {
+      console.error('Fetch my shift error:', err);
+    } finally {
+      setShiftLoading(false);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -5097,48 +5172,83 @@ const TableGrid = () => {
     }
   };
 
-  const fetchActiveOrders = async () => {
+  // Fetch waiter's active orders (only their tables)
+  const fetchMyActiveOrders = async () => {
     try {
-      const response = await API.get('/waiter/orders');
+      const response = await API.get('/waiter/my-orders');
       const orders = response.data.data || [];
       setActiveOrders(orders);
     } catch (err) {
-      console.error('Fetch active orders error:', err);
+      console.error('Fetch my active orders error:', err);
+    }
+  };
+
+  // Fetch pending confirmations for waiter's tables
+  const fetchMyPendingConfirmations = async () => {
+    try {
+      const response = await API.get('/waiter/pending-confirmations');
+      // Merge with active orders or handle separately
+      if (response.data.data && response.data.data.length > 0) {
+        setActiveOrders(prev => {
+          const existingIds = new Set(prev.map(o => o.id));
+          const newOrders = response.data.data.filter(o => !existingIds.has(o.id));
+          return [...newOrders, ...prev];
+        });
+      }
+    } catch (err) {
+      console.error('Fetch pending confirmations error:', err);
     }
   };
 
   useEffect(() => {
-    fetchTables();
+    fetchMyTables();
     fetchProducts();
-    fetchActiveOrders();
+    fetchMyActiveOrders();
+    fetchMyShift();
+    fetchMyPendingConfirmations();
     
     socket.on('order_status_updated', (data) => {
-      fetchActiveOrders();
-      fetchTables(true);
+      fetchMyActiveOrders();
+      fetchMyTables(true);
+      fetchMyPendingConfirmations();
     });
     
     socket.on('new_order', (data) => {
-      fetchActiveOrders();
+      fetchMyActiveOrders();
+      fetchMyPendingConfirmations();
+    });
+    
+    socket.on('new_pending_order', (data) => {
+      fetchMyPendingConfirmations();
+      // Play notification sound
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(e => console.log('Audio not supported'));
+      } catch(e) {}
     });
     
     return () => {
       socket.off('order_status_updated');
       socket.off('new_order');
+      socket.off('new_pending_order');
     };
-  }, [fetchTables]);
+  }, [fetchMyTables]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchTables(true);
-      fetchActiveOrders();
+      fetchMyTables(true);
+      fetchMyActiveOrders();
+      fetchMyPendingConfirmations();
     }, 10000);
     return () => clearInterval(interval);
-  }, [fetchTables]);
+  }, [fetchMyTables]);
 
   const manualRefresh = () => {
     setRefreshing(true);
-    fetchTables(false);
-    fetchActiveOrders();
+    fetchMyTables(false);
+    fetchMyActiveOrders();
+    fetchMyPendingConfirmations();
+    fetchMyShift();
   };
 
   // Generate QR Code URL for a table
@@ -5241,8 +5351,8 @@ const TableGrid = () => {
         setShowAddItemsModal(false);
         setAddItemsCart([]);
         setSelectedTableOrder(null);
-        await fetchTables();
-        await fetchActiveOrders();
+        await fetchMyTables();
+        await fetchMyActiveOrders();
       }
     } catch (err) {
       console.error('Add items error:', err);
@@ -5331,14 +5441,32 @@ const TableGrid = () => {
         setCart([]);
         setOrderNotes('');
         setSelectedTable(null);
-        await fetchTables();
-        await fetchActiveOrders();
+        await fetchMyTables();
+        await fetchMyActiveOrders();
       }
     } catch (err) {
       console.error('Submit order error:', err);
       alert(err.response?.data?.error || t('failedToSubmitOrder'));
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const confirmOrder = async (orderId) => {
+    setProcessing(orderId);
+    try {
+      const response = await API.put(`/orders/confirm/${orderId}`);
+      if (response.data.success) {
+        alert(`âœ… Order confirmed! Sent to kitchen.`);
+        await fetchMyActiveOrders();
+        await fetchMyPendingConfirmations();
+        await fetchMyTables();
+      }
+    } catch (err) {
+      console.error('Confirm order error:', err);
+      alert(err.response?.data?.error || 'Failed to confirm order');
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -5349,8 +5477,9 @@ const TableGrid = () => {
       setShowCancelModal(false);
       setCancelReason('');
       setOrderToCancel(null);
-      await fetchTables();
-      await fetchActiveOrders();
+      await fetchMyTables();
+      await fetchMyActiveOrders();
+      await fetchMyPendingConfirmations();
     } catch (err) {
       console.error('Cancel order error:', err);
       alert(err.response?.data?.error || t('failedToCancelOrder'));
@@ -5374,6 +5503,10 @@ const TableGrid = () => {
   const tax = subtotal * 0.15;
   const total = subtotal + tax;
 
+  // Separate pending confirmation orders
+  const pendingConfirmations = activeOrders.filter(o => o.status === 'pending_confirmation');
+  const regularActiveOrders = activeOrders.filter(o => o.status !== 'pending_confirmation');
+
   if (loading && tables.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -5387,9 +5520,8 @@ const TableGrid = () => {
 
   const occupiedCount = tables.filter(t => t.status === 'occupied').length;
   const availableCount = tables.filter(t => t.status === 'available').length;
-  const pendingOrdersCount = activeOrders.filter(o => o.status === 'pending').length;
-  const pendingOrders = activeOrders.filter(o => o.status === 'pending');
-  const preparingOrders = activeOrders.filter(o => o.status === 'preparing');
+  const pendingOrdersCount = regularActiveOrders.filter(o => o.status === 'pending').length;
+  const pendingConfirmationsCount = pendingConfirmations.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -5400,7 +5532,9 @@ const TableGrid = () => {
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
               {t('tableManagement')}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">{t('manageTables')}</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {myShift ? `Today's Shift: ${myShift.shift_start} - ${myShift.shift_end}` : t('manageTables')}
+            </p>
           </div>
           
           {/* Stats Cards */}
@@ -5417,6 +5551,12 @@ const TableGrid = () => {
               <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide">{t('pending')}</p>
               <p className="text-xl md:text-2xl font-bold text-white">{pendingOrdersCount}</p>
             </div>
+            {pendingConfirmationsCount > 0 && (
+              <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl px-3 md:px-5 py-2 md:py-3 border border-blue-500/20 animate-pulse">
+                <p className="text-blue-400 text-xs font-semibold uppercase tracking-wide">To Confirm</p>
+                <p className="text-xl md:text-2xl font-bold text-white">{pendingConfirmationsCount}</p>
+              </div>
+            )}
             <button
               onClick={manualRefresh}
               disabled={refreshing}
@@ -5427,74 +5567,114 @@ const TableGrid = () => {
           </div>
         </div>
 
-        {/* Active Orders Panel */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl border border-gray-700 overflow-hidden">
-          <div className="px-4 md:px-5 py-3 md:py-4 bg-gray-800/80 border-b border-gray-700 flex justify-between items-center flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Bell size={isMobile ? 16 : 18} className="text-amber-400" />
-              <h3 className="text-white font-semibold text-sm md:text-base">
-                {showActiveOrders ? t('activeOrders') : t('activeOrdersHidden')} ({activeOrders.length})
-              </h3>
+        {/* Pending Confirmations Section (QR Orders) */}
+        {pendingConfirmations.length > 0 && (
+          <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-blue-500/30 overflow-hidden">
+            <div className="px-4 md:px-5 py-3 md:py-4 bg-blue-500/20 border-b border-blue-500/30">
+              <div className="flex items-center gap-2">
+                <Bell size={isMobile ? 16 : 18} className="text-blue-400 animate-pulse" />
+                <h3 className="text-white font-semibold text-sm md:text-base">
+                  Pending Confirmations ({pendingConfirmations.length})
+                </h3>
+                <span className="text-xs text-blue-400">QR Orders waiting for you</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              {!showActiveOrders && activeOrders.length > 0 && (
-                <button
-                  onClick={() => setShowActiveOrders(true)}
-                  className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200"
-                >
-                  <Eye size={isMobile ? 14 : 16} />
-                  <span>{t('showOrders')}</span>
-                </button>
-              )}
-              {showActiveOrders && activeOrders.length > 0 && (
-                <button
-                  onClick={() => setShowActiveOrders(false)}
-                  className="text-gray-400 hover:text-white text-xs md:text-sm"
-                >
-                  {t('hide')}
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {showActiveOrders && activeOrders.length > 0 && (
-            <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
-              {activeOrders.map(order => (
-                <div key={order.id} className="p-3 md:p-4 hover:bg-gray-700/30 transition-all duration-200">
+            <div className="divide-y divide-blue-500/20">
+              {pendingConfirmations.map(order => (
+                <div key={order.id} className="p-3 md:p-4 hover:bg-blue-500/10 transition-all duration-200">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                         <p className="text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
-                        <span className={`px-2 py-0.5 md:py-1 rounded-full text-xs font-semibold ${
-                          order.status === 'pending' 
-                            ? 'bg-amber-500/20 text-amber-400' 
-                            : 'bg-blue-500/20 text-blue-400'
-                        }`}>
-                          {order.status === 'pending' ? t('pending') : t('preparing')}
+                        <span className="px-2 py-0.5 md:py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400">
+                          Awaiting Confirmation
                         </span>
-                        <span className="text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number || 'N/A'}</span>
+                        <span className="text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number}</span>
                       </div>
                       <p className="text-emerald-400 font-bold text-sm md:text-base mt-1">Br {parseFloat(order.total_amount).toFixed(2)}</p>
+                      {order.customer_name && (
+                        <p className="text-gray-400 text-xs mt-1">Customer: {order.customer_name}</p>
+                      )}
                     </div>
                     <button
-                      onClick={() => openCancelModal(order)}
-                      className="w-full sm:w-auto px-3 md:px-4 py-1.5 md:py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                      onClick={() => confirmOrder(order.id)}
+                      disabled={processing === order.id}
+                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                     >
-                      <XCircle size={isMobile ? 14 : 16} />
-                      {t('cancel')}
+                      {processing === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                      Confirm Order
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-          
-          {(!showActiveOrders || activeOrders.length === 0) && activeOrders.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              <p className="text-sm">{t('noActiveOrdersMessage')}</p>
+          </div>
+        )}
+
+        {/* Active Orders Panel */}
+        {regularActiveOrders.length > 0 && (
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl border border-gray-700 overflow-hidden">
+            <div className="px-4 md:px-5 py-3 md:py-4 bg-gray-800/80 border-b border-gray-700 flex justify-between items-center flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Bell size={isMobile ? 16 : 18} className="text-amber-400" />
+                <h3 className="text-white font-semibold text-sm md:text-base">
+                  {showActiveOrders ? t('activeOrders') : t('activeOrdersHidden')} ({regularActiveOrders.length})
+                </h3>
+              </div>
+              <div className="flex gap-2">
+                {!showActiveOrders && regularActiveOrders.length > 0 && (
+                  <button
+                    onClick={() => setShowActiveOrders(true)}
+                    className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200"
+                  >
+                    <Eye size={isMobile ? 14 : 16} />
+                    <span>{t('showOrders')}</span>
+                  </button>
+                )}
+                {showActiveOrders && regularActiveOrders.length > 0 && (
+                  <button
+                    onClick={() => setShowActiveOrders(false)}
+                    className="text-gray-400 hover:text-white text-xs md:text-sm"
+                  >
+                    {t('hide')}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+            
+            {showActiveOrders && regularActiveOrders.length > 0 && (
+              <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
+                {regularActiveOrders.map(order => (
+                  <div key={order.id} className="p-3 md:p-4 hover:bg-gray-700/30 transition-all duration-200">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                          <p className="text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
+                          <span className={`px-2 py-0.5 md:py-1 rounded-full text-xs font-semibold ${
+                            order.status === 'pending' 
+                              ? 'bg-amber-500/20 text-amber-400' 
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {order.status === 'pending' ? t('pending') : t('preparing')}
+                          </span>
+                          <span className="text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number || 'N/A'}</span>
+                        </div>
+                        <p className="text-emerald-400 font-bold text-sm md:text-base mt-1">Br {parseFloat(order.total_amount).toFixed(2)}</p>
+                      </div>
+                      <button
+                        onClick={() => openCancelModal(order)}
+                        className="w-full sm:w-auto px-3 md:px-4 py-1.5 md:py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <XCircle size={isMobile ? 14 : 16} />
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Legend */}
         <div className="flex flex-wrap gap-2 md:gap-4 bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-gray-700">
@@ -5522,65 +5702,78 @@ const TableGrid = () => {
           </div>
         </div>
 
-        {/* Floor Plan */}
-        <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-700">
-          <h2 className="text-lg md:text-xl font-semibold text-white mb-4 md:mb-6 flex items-center gap-2">
-            <div className="w-1 h-5 md:h-6 bg-gradient-to-b from-emerald-400 to-teal-400 rounded-full"></div>
-            {t('floorPlan')}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-            {tables.map(table => (
-              <div key={table.id} className="relative">
-                <button
-                  onClick={() => handleTableClick(table)}
-                  className={`relative group bg-gradient-to-br ${getTableGradient(table.status)} rounded-xl md:rounded-2xl p-3 md:p-5 text-center transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 w-full`}
-                >
-                  {/* Add Items Badge for Occupied Tables */}
-                  {table.status === 'occupied' && (
-                    <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-blue-500 rounded-full p-1 md:p-1.5 shadow-lg animate-pulse">
-                      <PlusCircle size={isMobile ? 10 : 14} className="text-white" />
-                    </div>
-                  )}
-                  
-                  {/* Table Icon */}
-                  <div className="mb-2 md:mb-3">
-                    {getStatusIcon(table.status)}
-                  </div>
-                  
-                  {/* Table Number */}
-                  <p className="text-base md:text-xl font-bold text-white">{t('table')} {table.table_number}</p>
-                  
-                  {/* Capacity */}
-                  <p className="text-[10px] md:text-xs text-white/70 mt-1">
-                    <Users size={isMobile ? 8 : 12} className="inline mr-0.5 md:mr-1" />
-                    {t('capacity')} {table.capacity}
-                  </p>
-                  
-                  {/* Status Badge */}
-                  <div className="mt-2 md:mt-3">
-                    <span className="text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
-                      {getStatusText(table.status)}
-                    </span>
-                  </div>
-                  
-                  {/* Hover Effect */}
-                  <div className="absolute inset-0 rounded-xl md:rounded-2xl bg-white/0 group-hover:bg-white/5 transition-all duration-300 pointer-events-none" />
-                </button>
-                
-                {/* QR Code Button - Available for all tables */}
-                <button
-                  onClick={(e) => openQRModal(table, e)}
-                  className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 rounded-full p-1.5 md:p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
-                  title={t('getQRCode')}
-                >
-                  <QrCode size={isMobile ? 14 : 18} className="text-white" />
-                </button>
-              </div>
-            ))}
+        {/* No Tables Assigned Message */}
+        {tables.length === 0 && !loading && (
+          <div className="bg-yellow-500/10 backdrop-blur-sm rounded-xl p-6 text-center border border-yellow-500/30">
+            <Utensils size={48} className="mx-auto text-yellow-400 mb-3" />
+            <h3 className="text-yellow-400 font-semibold text-lg">No Tables Assigned</h3>
+            <p className="text-gray-400 mt-2">
+              You don't have any tables assigned for today. Please contact your manager.
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* QR Code Modal - WITH REAL QR CODE */}
+        {/* Floor Plan - Only show assigned tables */}
+        {tables.length > 0 && (
+          <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-700">
+            <h2 className="text-lg md:text-xl font-semibold text-white mb-4 md:mb-6 flex items-center gap-2">
+              <div className="w-1 h-5 md:h-6 bg-gradient-to-b from-emerald-400 to-teal-400 rounded-full"></div>
+              {t('floorPlan')} - Your Assigned Tables
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+              {tables.map(table => (
+                <div key={table.id} className="relative">
+                  <button
+                    onClick={() => handleTableClick(table)}
+                    className={`relative group bg-gradient-to-br ${getTableGradient(table.status)} rounded-xl md:rounded-2xl p-3 md:p-5 text-center transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 w-full`}
+                  >
+                    {/* Add Items Badge for Occupied Tables */}
+                    {table.status === 'occupied' && (
+                      <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-blue-500 rounded-full p-1 md:p-1.5 shadow-lg animate-pulse">
+                        <PlusCircle size={isMobile ? 10 : 14} className="text-white" />
+                      </div>
+                    )}
+                    
+                    {/* Table Icon */}
+                    <div className="mb-2 md:mb-3">
+                      {getStatusIcon(table.status)}
+                    </div>
+                    
+                    {/* Table Number */}
+                    <p className="text-base md:text-xl font-bold text-white">{t('table')} {table.table_number}</p>
+                    
+                    {/* Capacity */}
+                    <p className="text-[10px] md:text-xs text-white/70 mt-1">
+                      <Users size={isMobile ? 8 : 12} className="inline mr-0.5 md:mr-1" />
+                      {t('capacity')} {table.capacity}
+                    </p>
+                    
+                    {/* Status Badge */}
+                    <div className="mt-2 md:mt-3">
+                      <span className="text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
+                        {getStatusText(table.status)}
+                      </span>
+                    </div>
+                    
+                    {/* Hover Effect */}
+                    <div className="absolute inset-0 rounded-xl md:rounded-2xl bg-white/0 group-hover:bg-white/5 transition-all duration-300 pointer-events-none" />
+                  </button>
+                  
+                  {/* QR Code Button - Available for all tables */}
+                  <button
+                    onClick={(e) => openQRModal(table, e)}
+                    className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 rounded-full p-1.5 md:p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                    title={t('getQRCode')}
+                  >
+                    <QrCode size={isMobile ? 14 : 18} className="text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* QR Code Modal */}
         {showQRModal && qrTable && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl">
@@ -5598,22 +5791,20 @@ const TableGrid = () => {
               </div>
               
               <div className="p-6 text-center">
-                {/* REAL QR CODE - Generated dynamically */}
                 <div className="bg-white rounded-xl p-4 mb-4 inline-block mx-auto shadow-lg">
-                   <QRCodeCanvas 
-                     value={generateQRCode(qrTable.table_number)}
-                             size={180}
-                               level="H"
-                       includeMargin={true}
-                             className="mx-auto"
-                                       />
+                  <QRCodeCanvas 
+                    value={generateQRCode(qrTable.table_number)}
+                    size={180}
+                    level="H"
+                    includeMargin={true}
+                    className="mx-auto"
+                  />
                 </div>
                 
                 <p className="text-gray-300 text-sm mb-3">
                   {t('qrCodeInstructions')}
                 </p>
                 
-                {/* Table info */}
                 <div className="bg-emerald-500/10 rounded-lg p-2 mb-3">
                   <p className="text-emerald-400 text-sm font-semibold">
                     {t('table')} {qrTable.table_number} - {t('capacity')}: {qrTable.capacity} {t('seats')}
@@ -5639,7 +5830,6 @@ const TableGrid = () => {
                   </button>
                   <button
                     onClick={() => {
-                      // Print QR code - find the canvas element and print
                       const canvas = document.querySelector('canvas');
                       if (canvas) {
                         const printWindow = window.open('', '_blank');
@@ -5658,24 +5848,10 @@ const TableGrid = () => {
                                   margin: 0;
                                   padding: 20px;
                                 }
-                                .qr-container {
-                                  text-align: center;
-                                }
-                                img {
-                                  max-width: 300px;
-                                  height: auto;
-                                }
-                                .table-info {
-                                  margin-top: 20px;
-                                  font-size: 18px;
-                                  color: #333;
-                                }
-                                .url {
-                                  margin-top: 10px;
-                                  font-size: 12px;
-                                  color: #666;
-                                  word-break: break-all;
-                                }
+                                .qr-container { text-align: center; }
+                                img { max-width: 300px; height: auto; }
+                                .table-info { margin-top: 20px; font-size: 18px; color: #333; }
+                                .url { margin-top: 10px; font-size: 12px; color: #666; word-break: break-all; }
                               </style>
                             </head>
                             <body>
@@ -5718,7 +5894,6 @@ const TableGrid = () => {
         {showOrderModal && selectedTable && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
             <div className="bg-gray-800 rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden border border-gray-700 shadow-2xl flex flex-col">
-              {/* Modal Header - Fixed at top */}
               <div className="flex-shrink-0 sticky top-0 bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-700 flex justify-between items-center z-10">
                 <div>
                   <h2 className="text-base md:text-xl font-bold text-white">{t('newOrderForTable')} {selectedTable.table_number}</h2>
@@ -5738,12 +5913,10 @@ const TableGrid = () => {
                 </button>
               </div>
 
-              {/* Modal Body - Scrollable */}
               <div className="flex-1 overflow-y-auto p-3 md:p-5">
                 <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
                   {/* Products Panel */}
                   <div className="flex-1">
-                    {/* Search and Categories */}
                     <div className="mb-4 md:mb-5">
                       <div className="relative mb-2 md:mb-3">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={isMobile ? 14 : 18} />
@@ -5772,7 +5945,6 @@ const TableGrid = () => {
                       </div>
                     </div>
 
-                    {/* Products Grid */}
                     <div className="grid grid-cols-2 gap-2 md:gap-3">
                       {filteredProducts.map(product => (
                         <button
@@ -6083,8 +6255,7 @@ const TableGrid = () => {
 
 export default TableGrid;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\TableStatus.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\waiter\TableStatus.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
@@ -6462,8 +6633,7 @@ const TableStatus = () => {
 
 export default TableStatus;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\CustomerOrderHistory.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\CustomerOrderHistory.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -6624,8 +6794,7 @@ const CustomerOrderHistory = () => {
 
 export default CustomerOrderHistory;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Customers.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Customers.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -7060,8 +7229,7 @@ const Customers = () => {
 
 export default Customers;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Dashboard.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Dashboard.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -7369,8 +7537,7 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Expenses.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Expenses.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -7791,8 +7958,7 @@ const Expenses = () => {
 
 export default Expenses;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Inventory.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Inventory.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -8239,8 +8405,7 @@ const Inventory = () => {
 
 export default Inventory;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Login.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Login.js ==========
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -8381,8 +8546,7 @@ const Login = ({ onLogin }) => {
 
 export default Login;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\PendingApprovals.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\PendingApprovals.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -8628,8 +8792,7 @@ const PendingApprovals = () => {
 
 export default PendingApprovals;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\POS.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\POS.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -9125,8 +9288,7 @@ const POS = ({ userRole = 'cashier' }) => {
 
 export default POS;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\ProfitReports.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\ProfitReports.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -9406,8 +9568,7 @@ const formatCurrency = (value) => {
 
 export default ProfitReports;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\QRMenu.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\QRMenu.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -10308,8 +10469,7 @@ const QRMenu = () => {
 
 export default QRMenu;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Recipes.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Recipes.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -10672,8 +10832,7 @@ ${t('profitMargin')}: ${response.data.data.profit_margin}%
 
 export default Recipes;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Reports.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Reports.js ==========
 
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
@@ -10701,8 +10860,7 @@ const Reports = () => {
 
 export default Reports;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Signup.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Signup.js ==========
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -10882,8 +11040,7 @@ const Signup = () => {
 
 export default Signup;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Staff.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\Staff.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -11284,8 +11441,7 @@ const Staff = () => {
 
 export default Staff;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\TrackOrder.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\pages\TrackOrder.js ==========
 
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
@@ -11687,8 +11843,7 @@ const TrackOrder = () => {
 
 export default TrackOrder;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.css ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.css ==========
 
 .App {
   text-align: center;
@@ -11729,8 +11884,7 @@ export default TrackOrder;
   }
 }
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.js ==========
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -11946,8 +12100,7 @@ function App() {
 
 export default App;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.test.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\App.test.js ==========
 
 import { render, screen } from '@testing-library/react';
 import App from './App';
@@ -11958,8 +12111,7 @@ test('renders learn react link', () => {
   expect(linkElement).toBeInTheDocument();
 });
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\index.css ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\index.css ==========
 
 @tailwind base;
 @tailwind components;
@@ -12677,8 +12829,7 @@ input[type="button"],
   animation: slide-up 0.3s ease-out;
 }
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\index.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\index.js ==========
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -12701,8 +12852,7 @@ root.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\reportWebVitals.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\reportWebVitals.js ==========
 
 const reportWebVitals = onPerfEntry => {
   if (onPerfEntry && onPerfEntry instanceof Function) {
@@ -12718,8 +12868,7 @@ const reportWebVitals = onPerfEntry => {
 
 export default reportWebVitals;
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\setupTests.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\setupTests.js ==========
 
 // jest-dom adds custom jest matchers for asserting on DOM nodes.
 // allows you to do things like:
@@ -12727,8 +12876,7 @@ export default reportWebVitals;
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-
-=== FILE: C:\Users\dell\ethiopian-restaurant-pos-system\client\src\socket.js ===
+========== C:\Users\dell\ethiopian-restaurant-pos-system\client\src\socket.js ==========
 
 // Temporarily disable socket - comment out everything
 console.log('WebSocket disabled - using API polling only');
@@ -12743,5 +12891,3 @@ const socket = {
 };
 
 export default socket;
-
-

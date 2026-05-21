@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import API from '../../api/axios';
 import { Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode } from 'lucide-react';
 import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
-import QRCode from 'qrcode.react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const TableGrid = () => {
   const { t } = useLanguage();
+  
+  // ========== STATE ==========
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -22,18 +23,70 @@ const TableGrid = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null); // FIXED: separate state
   const [showAddItemsModal, setShowAddItemsModal] = useState(false);
   const [selectedTableOrder, setSelectedTableOrder] = useState(null);
   const [addItemsCart, setAddItemsCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrTable, setQrTable] = useState(null);
   const [myShift, setMyShift] = useState(null);
-  const [shiftLoading, setShiftLoading] = useState(true);
+  
+  // Refs for cleanup
+  const intervalRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
-  // Check screen size
+  // ========== MEMOIZED VALUES ==========
+  const categories = useMemo(() => {
+    return ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+      const matchesSearch = product.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, debouncedSearch]);
+
+  const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.total, 0), [cart]);
+  const tax = subtotal * 0.15;
+  const total = subtotal + tax;
+
+  const pendingConfirmations = useMemo(() => 
+    activeOrders.filter(o => o.status === 'pending_confirmation'), 
+    [activeOrders]
+  );
+  
+  const regularActiveOrders = useMemo(() => 
+    activeOrders.filter(o => o.status !== 'pending_confirmation'), 
+    [activeOrders]
+  );
+
+  const occupiedCount = tables.filter(t => t.status === 'occupied').length;
+  const availableCount = tables.filter(t => t.status === 'available').length;
+  const pendingOrdersCount = regularActiveOrders.filter(o => o.status === 'pending').length;
+  const pendingConfirmationsCount = pendingConfirmations.length;
+
+  // ========== DEBOUNCE SEARCH ==========
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // ========== SCREEN SIZE DETECTION ==========
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -43,7 +96,7 @@ const TableGrid = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fetch waiter's assigned tables only
+  // ========== API CALLS (MEMOIZED) ==========
   const fetchMyTables = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -57,44 +110,37 @@ const TableGrid = () => {
     }
   }, []);
 
-  // Fetch waiter's current shift
-  const fetchMyShift = async () => {
+  const fetchMyShift = useCallback(async () => {
     try {
       const response = await API.get('/waiter/my-shift');
       setMyShift(response.data.data);
     } catch (err) {
       console.error('Fetch my shift error:', err);
-    } finally {
-      setShiftLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await API.get('/products');
       setProducts(response.data.data || []);
     } catch (err) {
       console.error('Fetch products error:', err);
     }
-  };
+  }, []);
 
-  // Fetch waiter's active orders (only their tables)
-  const fetchMyActiveOrders = async () => {
+  const fetchMyActiveOrders = useCallback(async () => {
     try {
       const response = await API.get('/waiter/my-orders');
-      const orders = response.data.data || [];
-      setActiveOrders(orders);
+      setActiveOrders(response.data.data || []);
     } catch (err) {
       console.error('Fetch my active orders error:', err);
     }
-  };
+  }, []);
 
-  // Fetch pending confirmations for waiter's tables
-  const fetchMyPendingConfirmations = async () => {
+  const fetchMyPendingConfirmations = useCallback(async () => {
     try {
       const response = await API.get('/waiter/pending-confirmations');
-      // Merge with active orders or handle separately
-      if (response.data.data && response.data.data.length > 0) {
+      if (response.data.data?.length > 0) {
         setActiveOrders(prev => {
           const existingIds = new Set(prev.map(o => o.id));
           const newOrders = response.data.data.filter(o => !existingIds.has(o.id));
@@ -104,112 +150,9 @@ const TableGrid = () => {
     } catch (err) {
       console.error('Fetch pending confirmations error:', err);
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    fetchMyTables();
-    fetchProducts();
-    fetchMyActiveOrders();
-    fetchMyShift();
-    fetchMyPendingConfirmations();
-    
-    socket.on('order_status_updated', (data) => {
-      fetchMyActiveOrders();
-      fetchMyTables(true);
-      fetchMyPendingConfirmations();
-    });
-    
-    socket.on('new_order', (data) => {
-      fetchMyActiveOrders();
-      fetchMyPendingConfirmations();
-    });
-    
-    socket.on('new_pending_order', (data) => {
-      fetchMyPendingConfirmations();
-      // Play notification sound
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(e => console.log('Audio not supported'));
-      } catch(e) {}
-    });
-    
-    return () => {
-      socket.off('order_status_updated');
-      socket.off('new_order');
-      socket.off('new_pending_order');
-    };
-  }, [fetchMyTables]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchMyTables(true);
-      fetchMyActiveOrders();
-      fetchMyPendingConfirmations();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchMyTables]);
-
-  const manualRefresh = () => {
-    setRefreshing(true);
-    fetchMyTables(false);
-    fetchMyActiveOrders();
-    fetchMyPendingConfirmations();
-    fetchMyShift();
-  };
-
-  // Generate QR Code URL for a table
-  const generateQRCode = (tableNumber) => {
-    const qrUrl = `${window.location.origin}/qr-menu?table=${tableNumber}`;
-    return qrUrl;
-  };
-
-  // Open QR modal for a table
-  const openQRModal = (table, e) => {
-    e.stopPropagation();
-    setQrTable(table);
-    setShowQRModal(true);
-  };
-
-  // Copy QR URL to clipboard
-  const copyQRUrl = () => {
-    if (qrTable) {
-      const qrUrl = generateQRCode(qrTable.table_number);
-      navigator.clipboard.writeText(qrUrl);
-      alert(`✅ QR URL copied!\n\nShare this link with customers:\n${qrUrl}\n\nYou can also generate a QR code image using any QR code generator website.`);
-    }
-  };
-
-  const getTableGradient = (status) => {
-    switch(status) {
-      case 'available': return 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700';
-      case 'occupied': return 'from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700';
-      case 'reserved': return 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700';
-      case 'cleaning': return 'from-slate-500 to-slate-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch(status) {
-      case 'available': return t('available');
-      case 'occupied': return t('occupied');
-      case 'reserved': return t('reserved');
-      case 'cleaning': return t('cleaning');
-      default: return status;
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'available': return <Utensils size={isMobile ? 20 : 28} className="text-white/80" />;
-      case 'occupied': return <Users size={isMobile ? 20 : 28} className="text-white/80" />;
-      case 'reserved': return <Clock size={isMobile ? 20 : 28} className="text-white/80" />;
-      case 'cleaning': return <Coffee size={isMobile ? 20 : 28} className="text-white/80" />;
-      default: return <Utensils size={isMobile ? 20 : 28} className="text-white/80" />;
-    }
-  };
-
-  const fetchTableActiveOrder = async (tableId) => {
+  const fetchTableActiveOrder = useCallback(async (tableId) => {
     try {
       const response = await API.get(`/orders/table/${tableId}/active-order`);
       return response.data.data;
@@ -217,10 +160,129 @@ const TableGrid = () => {
       console.error('Fetch active order error:', err);
       return null;
     }
-  };
+  }, []);
 
-  const openAddItemsModal = async (table) => {
-    setProcessing(true);
+  // ========== INITIAL DATA LOAD ==========
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await Promise.all([
+        fetchMyTables(),
+        fetchProducts(),
+        fetchMyActiveOrders(),
+        fetchMyShift(),
+        fetchMyPendingConfirmations()
+      ]);
+    };
+    loadInitialData();
+
+    // Socket events
+    const handleOrderStatusUpdate = () => {
+      fetchMyActiveOrders();
+      fetchMyTables(true);
+      fetchMyPendingConfirmations();
+    };
+    
+    const handleNewOrder = () => {
+      fetchMyActiveOrders();
+      fetchMyPendingConfirmations();
+    };
+    
+    const handleNewPendingOrder = () => {
+      fetchMyPendingConfirmations();
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => console.log('Audio not supported'));
+      } catch(e) {}
+    };
+
+    socket.on('order_status_updated', handleOrderStatusUpdate);
+    socket.on('new_order', handleNewOrder);
+    socket.on('new_pending_order', handleNewPendingOrder);
+    
+    return () => {
+      socket.off('order_status_updated', handleOrderStatusUpdate);
+      socket.off('new_order', handleNewOrder);
+      socket.off('new_pending_order', handleNewPendingOrder);
+    };
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift]);
+
+  // ========== POLLING INTERVAL ==========
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      fetchMyTables(true);
+      fetchMyActiveOrders();
+      fetchMyPendingConfirmations();
+    }, 10000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations]);
+
+  // ========== HANDLERS ==========
+  const manualRefresh = useCallback(() => {
+    setRefreshing(true);
+    Promise.all([
+      fetchMyTables(false),
+      fetchMyActiveOrders(),
+      fetchMyPendingConfirmations(),
+      fetchMyShift()
+    ]).finally(() => setRefreshing(false));
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift]);
+
+  const generateQRCode = useCallback((tableNumber) => {
+    return `${window.location.origin}/qr-menu?table=${tableNumber}`;
+  }, []);
+
+  const openQRModal = useCallback((table, e) => {
+    e.stopPropagation();
+    setQrTable(table);
+    setShowQRModal(true);
+  }, []);
+
+  const copyQRUrl = useCallback(() => {
+    if (qrTable) {
+      const qrUrl = generateQRCode(qrTable.table_number);
+      navigator.clipboard.writeText(qrUrl);
+      alert(`✅ QR URL copied!\n\nShare this link with customers:\n${qrUrl}`);
+    }
+  }, [qrTable, generateQRCode]);
+
+  const getTableGradient = useCallback((status) => {
+    switch(status) {
+      case 'available': return 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700';
+      case 'occupied': return 'from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700';
+      case 'reserved': return 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700';
+      case 'cleaning': return 'from-slate-500 to-slate-600';
+      default: return 'from-gray-500 to-gray-600';
+    }
+  }, []);
+
+  const getStatusText = useCallback((status) => {
+    switch(status) {
+      case 'available': return t('available');
+      case 'occupied': return t('occupied');
+      case 'reserved': return t('reserved');
+      case 'cleaning': return t('cleaning');
+      default: return status;
+    }
+  }, [t]);
+
+  const getStatusIcon = useCallback((status) => {
+    const size = isMobile ? 20 : 28;
+    switch(status) {
+      case 'available': return <Utensils size={size} className="text-white/80" />;
+      case 'occupied': return <Users size={size} className="text-white/80" />;
+      case 'reserved': return <Clock size={size} className="text-white/80" />;
+      case 'cleaning': return <Coffee size={size} className="text-white/80" />;
+      default: return <Utensils size={size} className="text-white/80" />;
+    }
+  }, [isMobile]);
+
+  const openAddItemsModal = useCallback(async (table) => {
+    setIsSubmitting(true);
     try {
       const activeOrder = await fetchTableActiveOrder(table.id);
       if (activeOrder) {
@@ -233,17 +295,17 @@ const TableGrid = () => {
       console.error('Error fetching active order:', err);
       alert(t('couldNotFetchOrder'));
     } finally {
-      setProcessing(false);
+      setIsSubmitting(false);
     }
-  };
+  }, [fetchTableActiveOrder, t]);
 
-  const addItemsToExistingOrder = async () => {
+  const addItemsToExistingOrder = useCallback(async () => {
     if (addItemsCart.length === 0) {
       alert(t('pleaseAddItems'));
       return;
     }
 
-    setProcessing(true);
+    setIsSubmitting(true);
     try {
       const response = await API.post(`/orders/${selectedTableOrder.id}/add-items`, {
         items: addItemsCart.map(item => ({
@@ -257,18 +319,17 @@ const TableGrid = () => {
         setShowAddItemsModal(false);
         setAddItemsCart([]);
         setSelectedTableOrder(null);
-        await fetchMyTables();
-        await fetchMyActiveOrders();
+        await Promise.all([fetchMyTables(), fetchMyActiveOrders()]);
       }
     } catch (err) {
       console.error('Add items error:', err);
       alert(err.response?.data?.error || t('failedToAddItems'));
     } finally {
-      setProcessing(false);
+      setIsSubmitting(false);
     }
-  };
+  }, [addItemsCart, selectedTableOrder, t, fetchMyTables, fetchMyActiveOrders]);
 
-  const handleTableClick = async (table) => {
+  const handleTableClick = useCallback(async (table) => {
     if (table.status === 'available') {
       setSelectedTable(table);
       setShowOrderModal(true);
@@ -279,11 +340,10 @@ const TableGrid = () => {
     } else if (table.status === 'cleaning') {
       alert(`${t('table')} ${table.table_number} ${t('isCleaning')}`);
     }
-  };
+  }, [t, openAddItemsModal]);
 
-  const addToCart = (product) => {
+  const addToCart = useCallback((product) => {
     const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-    
     setCart(prevCart => {
       const existing = prevCart.find(item => item.id === product.id);
       if (existing) {
@@ -301,33 +361,31 @@ const TableGrid = () => {
         total: price
       }];
     });
-  };
+  }, []);
 
-  const updateQuantity = (productId, delta) => {
+  const updateQuantity = useCallback((productId, delta) => {
     setCart(prevCart => {
       const item = prevCart.find(i => i.id === productId);
       if (!item) return prevCart;
-      
       const newQuantity = item.quantity + delta;
       if (newQuantity <= 0) {
         return prevCart.filter(i => i.id !== productId);
       }
-      
       return prevCart.map(i =>
         i.id === productId
           ? { ...i, quantity: newQuantity, total: newQuantity * i.price }
           : i
       );
     });
-  };
+  }, []);
 
-  const submitOrder = async () => {
+  const submitOrder = useCallback(async () => {
     if (cart.length === 0) {
       alert(t('pleaseAddItems'));
       return;
     }
 
-    setProcessing(true);
+    setIsSubmitting(true);
     try {
       const orderData = {
         items: cart.map(item => ({
@@ -347,72 +405,60 @@ const TableGrid = () => {
         setCart([]);
         setOrderNotes('');
         setSelectedTable(null);
-        await fetchMyTables();
-        await fetchMyActiveOrders();
+        await Promise.all([fetchMyTables(), fetchMyActiveOrders()]);
       }
     } catch (err) {
       console.error('Submit order error:', err);
       alert(err.response?.data?.error || t('failedToSubmitOrder'));
     } finally {
-      setProcessing(false);
+      setIsSubmitting(false);
     }
-  };
+  }, [cart, selectedTable, orderNotes, t, fetchMyTables, fetchMyActiveOrders]);
 
-  const confirmOrder = async (orderId) => {
-    setProcessing(orderId);
+  const confirmOrder = useCallback(async (orderId) => {
+    setConfirmingOrderId(orderId);
     try {
       const response = await API.put(`/orders/confirm/${orderId}`);
       if (response.data.success) {
         alert(`✅ Order confirmed! Sent to kitchen.`);
-        await fetchMyActiveOrders();
-        await fetchMyPendingConfirmations();
-        await fetchMyTables();
+        await Promise.all([
+          fetchMyActiveOrders(),
+          fetchMyPendingConfirmations(),
+          fetchMyTables()
+        ]);
       }
     } catch (err) {
       console.error('Confirm order error:', err);
       alert(err.response?.data?.error || 'Failed to confirm order');
     } finally {
-      setProcessing(null);
+      setConfirmingOrderId(null);
     }
-  };
+  }, [fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyTables]);
 
-  const cancelOrder = async (orderId, reason) => {
+  const cancelOrder = useCallback(async (orderId, reason) => {
     try {
       await API.put(`/orders/${orderId}/cancel`, { reason });
       alert(t('orderCancelledSuccess'));
       setShowCancelModal(false);
       setCancelReason('');
       setOrderToCancel(null);
-      await fetchMyTables();
-      await fetchMyActiveOrders();
-      await fetchMyPendingConfirmations();
+      await Promise.all([
+        fetchMyTables(),
+        fetchMyActiveOrders(),
+        fetchMyPendingConfirmations()
+      ]);
     } catch (err) {
       console.error('Cancel order error:', err);
       alert(err.response?.data?.error || t('failedToCancelOrder'));
     }
-  };
+  }, [t, fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations]);
 
-  const openCancelModal = (order) => {
+  const openCancelModal = useCallback((order) => {
     setOrderToCancel(order);
     setShowCancelModal(true);
-  };
+  }, []);
 
-  // Filter products by category and search
-  const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const tax = subtotal * 0.15;
-  const total = subtotal + tax;
-
-  // Separate pending confirmation orders
-  const pendingConfirmations = activeOrders.filter(o => o.status === 'pending_confirmation');
-  const regularActiveOrders = activeOrders.filter(o => o.status !== 'pending_confirmation');
-
+  // ========== LOADING STATE ==========
   if (loading && tables.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -424,11 +470,7 @@ const TableGrid = () => {
     );
   }
 
-  const occupiedCount = tables.filter(t => t.status === 'occupied').length;
-  const availableCount = tables.filter(t => t.status === 'available').length;
-  const pendingOrdersCount = regularActiveOrders.filter(o => o.status === 'pending').length;
-  const pendingConfirmationsCount = pendingConfirmations.length;
-
+  // ========== RENDER ==========
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="p-3 md:p-8 space-y-4 md:space-y-6 pb-24 md:pb-8">
@@ -504,10 +546,10 @@ const TableGrid = () => {
                     </div>
                     <button
                       onClick={() => confirmOrder(order.id)}
-                      disabled={processing === order.id}
-                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                      disabled={confirmingOrderId === order.id}
+                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      {processing === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                      {confirmingOrderId === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
                       Confirm Order
                     </button>
                   </div>
@@ -633,39 +675,27 @@ const TableGrid = () => {
                     onClick={() => handleTableClick(table)}
                     className={`relative group bg-gradient-to-br ${getTableGradient(table.status)} rounded-xl md:rounded-2xl p-3 md:p-5 text-center transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 w-full`}
                   >
-                    {/* Add Items Badge for Occupied Tables */}
                     {table.status === 'occupied' && (
                       <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-blue-500 rounded-full p-1 md:p-1.5 shadow-lg animate-pulse">
                         <PlusCircle size={isMobile ? 10 : 14} className="text-white" />
                       </div>
                     )}
-                    
-                    {/* Table Icon */}
                     <div className="mb-2 md:mb-3">
                       {getStatusIcon(table.status)}
                     </div>
-                    
-                    {/* Table Number */}
                     <p className="text-base md:text-xl font-bold text-white">{t('table')} {table.table_number}</p>
-                    
-                    {/* Capacity */}
                     <p className="text-[10px] md:text-xs text-white/70 mt-1">
                       <Users size={isMobile ? 8 : 12} className="inline mr-0.5 md:mr-1" />
                       {t('capacity')} {table.capacity}
                     </p>
-                    
-                    {/* Status Badge */}
                     <div className="mt-2 md:mt-3">
                       <span className="text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-white/20 text-white whitespace-nowrap">
                         {getStatusText(table.status)}
                       </span>
                     </div>
-                    
-                    {/* Hover Effect */}
                     <div className="absolute inset-0 rounded-xl md:rounded-2xl bg-white/0 group-hover:bg-white/5 transition-all duration-300 pointer-events-none" />
                   </button>
                   
-                  {/* QR Code Button - Available for all tables */}
                   <button
                     onClick={(e) => openQRModal(table, e)}
                     className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 rounded-full p-1.5 md:p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
@@ -688,109 +718,39 @@ const TableGrid = () => {
                   <h2 className="text-xl font-bold text-white">{t('qrCodeForTable')} {qrTable.table_number}</h2>
                   <p className="text-gray-400 text-sm mt-1">{t('customersScanToOrder')}</p>
                 </div>
-                <button
-                  onClick={() => setShowQRModal(false)}
-                  className="text-gray-400 hover:text-gray-300 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center"
-                >
-                  ✕
-                </button>
+                <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-gray-300 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">✕</button>
               </div>
-              
               <div className="p-6 text-center">
                 <div className="bg-white rounded-xl p-4 mb-4 inline-block mx-auto shadow-lg">
-                  <QRCodeCanvas 
-                    value={generateQRCode(qrTable.table_number)}
-                    size={180}
-                    level="H"
-                    includeMargin={true}
-                    className="mx-auto"
-                  />
+                  <QRCodeCanvas value={generateQRCode(qrTable.table_number)} size={180} level="H" includeMargin={true} className="mx-auto" />
                 </div>
-                
-                <p className="text-gray-300 text-sm mb-3">
-                  {t('qrCodeInstructions')}
-                </p>
-                
+                <p className="text-gray-300 text-sm mb-3">{t('qrCodeInstructions')}</p>
                 <div className="bg-emerald-500/10 rounded-lg p-2 mb-3">
-                  <p className="text-emerald-400 text-sm font-semibold">
-                    {t('table')} {qrTable.table_number} - {t('capacity')}: {qrTable.capacity} {t('seats')}
-                  </p>
+                  <p className="text-emerald-400 text-sm font-semibold">{t('table')} {qrTable.table_number} - {t('capacity')}: {qrTable.capacity} {t('seats')}</p>
                 </div>
-                
                 <div className="bg-gray-700/50 rounded-lg p-3 mb-4">
                   <p className="text-gray-400 text-xs mb-1">{t('qrUrl')}</p>
-                  <p className="text-white text-xs break-all font-mono">
-                    {generateQRCode(qrTable.table_number)}
-                  </p>
+                  <p className="text-white text-xs break-all font-mono">{generateQRCode(qrTable.table_number)}</p>
                 </div>
-                
                 <div className="flex gap-3">
-                  <button
-                    onClick={copyQRUrl}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
+                  <button onClick={copyQRUrl} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                     {t('copyQrUrl')}
                   </button>
-                  <button
-                    onClick={() => {
-                      const canvas = document.querySelector('canvas');
-                      if (canvas) {
-                        const printWindow = window.open('', '_blank');
-                        printWindow.document.write(`
-                          <html>
-                            <head>
-                              <title>QR Code - Table ${qrTable.table_number}</title>
-                              <style>
-                                body {
-                                  display: flex;
-                                  justify-content: center;
-                                  align-items: center;
-                                  height: 100vh;
-                                  flex-direction: column;
-                                  font-family: Arial, sans-serif;
-                                  margin: 0;
-                                  padding: 20px;
-                                }
-                                .qr-container { text-align: center; }
-                                img { max-width: 300px; height: auto; }
-                                .table-info { margin-top: 20px; font-size: 18px; color: #333; }
-                                .url { margin-top: 10px; font-size: 12px; color: #666; word-break: break-all; }
-                              </style>
-                            </head>
-                            <body>
-                              <div class="qr-container">
-                                <h2>Table ${qrTable.table_number} QR Code</h2>
-                                <img src="${canvas.toDataURL()}" />
-                                <div class="table-info">
-                                  <p>Scan to view menu and order</p>
-                                  <p>Table ${qrTable.table_number} | Capacity: ${qrTable.capacity} seats</p>
-                                </div>
-                                <div class="url">
-                                  <p>${generateQRCode(qrTable.table_number)}</p>
-                                </div>
-                              </div>
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                        printWindow.print();
-                      }
-                    }}
-                    className="flex-1 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
+                  <button onClick={() => {
+                    const canvas = document.querySelector('canvas');
+                    if (canvas) {
+                      const printWindow = window.open('', '_blank');
+                      printWindow.document.write(`<html><head><title>QR Code - Table ${qrTable.table_number}</title><style>body{display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:Arial,sans-serif;margin:0;padding:20px}.qr-container{text-align:center}img{max-width:300px;height:auto}.table-info{margin-top:20px;font-size:18px;color:#333}.url{margin-top:10px;font-size:12px;color:#666;word-break:break-all}</style></head><body><div class="qr-container"><h2>Table ${qrTable.table_number} QR Code</h2><img src="${canvas.toDataURL()}" /><div class="table-info"><p>Scan to view menu and order</p><p>Table ${qrTable.table_number} | Capacity: ${qrTable.capacity} seats</p></div><div class="url"><p>${generateQRCode(qrTable.table_number)}</p></div></div></body></html>`);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+                  }} className="flex-1 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                     {t('print')}
                   </button>
                 </div>
-                
-                <p className="text-gray-500 text-xs mt-4">
-                  💡 {t('qrNote')}
-                </p>
+                <p className="text-gray-500 text-xs mt-4">💡 {t('qrNote')}</p>
               </div>
             </div>
           </div>
@@ -805,108 +765,51 @@ const TableGrid = () => {
                   <h2 className="text-base md:text-xl font-bold text-white">{t('newOrderForTable')} {selectedTable.table_number}</h2>
                   <p className="text-gray-400 text-xs md:text-sm mt-0.5 md:mt-1">{t('capacity')}: {selectedTable.capacity} {t('seats')}</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowOrderModal(false);
-                    setCart([]);
-                    setSelectedTable(null);
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                  }}
-                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition-all duration-200"
-                >
-                  ✕
-                </button>
+                <button onClick={() => { setShowOrderModal(false); setCart([]); setSelectedTable(null); setSearchTerm(''); setSelectedCategory('all'); }} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition-all duration-200">✕</button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-3 md:p-5">
                 <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
-                  {/* Products Panel */}
                   <div className="flex-1">
                     <div className="mb-4 md:mb-5">
                       <div className="relative mb-2 md:mb-3">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={isMobile ? 14 : 18} />
-                        <input
-                          type="text"
-                          placeholder={t('searchMenu')}
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
+                        <input type="text" placeholder={t('searchMenu')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                       </div>
                       <div className="flex gap-1 md:gap-2 overflow-x-auto pb-2">
                         {categories.map(cat => (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-2 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
-                              selectedCategory === cat
-                                ? 'bg-emerald-600 text-white shadow-lg'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                            }`}
-                          >
+                          <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-2 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${selectedCategory === cat ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                             {cat === 'all' ? t('allItems') : cat}
                           </button>
                         ))}
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-2 md:gap-3">
                       {filteredProducts.map(product => (
-                        <button
-                          key={product.id}
-                          onClick={() => addToCart(product)}
-                          className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105 hover:shadow-xl group"
-                        >
+                        <button key={product.id} onClick={() => addToCart(product)} className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105 hover:shadow-xl group">
                           <div className="text-xl md:text-3xl mb-1 md:mb-2">🍽️</div>
                           <p className="text-white font-semibold text-xs md:text-sm mb-0.5 md:mb-1 line-clamp-2">{product.name}</p>
                           <p className="text-emerald-400 font-bold text-sm md:text-base">Br {parseFloat(product.price).toFixed(2)}</p>
-                          <div className="mt-1 md:mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[10px] md:text-xs text-emerald-400">{t('addToOrder')}</span>
-                          </div>
+                          <div className="mt-1 md:mt-2 opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-[10px] md:text-xs text-emerald-400">{t('addToOrder')}</span></div>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Cart Panel */}
                   <div className="w-full lg:w-96 bg-gray-700/30 rounded-xl md:rounded-2xl p-3 md:p-4">
-                    <h3 className="text-white font-semibold text-sm md:text-base flex items-center gap-2 mb-3 md:mb-4">
-                      <CheckCircle size={isMobile ? 14 : 18} className="text-emerald-400" />
-                      {t('currentOrder')}
-                    </h3>
-
+                    <h3 className="text-white font-semibold text-sm md:text-base flex items-center gap-2 mb-3 md:mb-4"><CheckCircle size={isMobile ? 14 : 18} className="text-emerald-400" /> {t('currentOrder')}</h3>
                     <div className="max-h-[300px] md:max-h-[400px] overflow-y-auto space-y-2 md:space-y-3 mb-3 md:mb-4">
                       {cart.length === 0 ? (
-                        <div className="text-center py-6 md:py-12">
-                          <Utensils size={isMobile ? 32 : 48} className="mx-auto text-gray-600 mb-2 md:mb-3" />
-                          <p className="text-gray-500 text-sm md:text-base">{t('cartEmpty')}</p>
-                          <p className="text-gray-600 text-xs md:text-sm">{t('tapToAdd')}</p>
-                        </div>
+                        <div className="text-center py-6 md:py-12"><Utensils size={isMobile ? 32 : 48} className="mx-auto text-gray-600 mb-2 md:mb-3" /><p className="text-gray-500 text-sm md:text-base">{t('cartEmpty')}</p><p className="text-gray-600 text-xs md:text-sm">{t('tapToAdd')}</p></div>
                       ) : (
                         cart.map(item => (
                           <div key={item.id} className="bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
-                            <div className="flex justify-between items-start mb-1 md:mb-2">
-                              <div>
-                                <p className="text-white font-medium text-sm md:text-base">{item.name}</p>
-                                <p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p>
-                              </div>
-                            </div>
+                            <div className="flex justify-between items-start mb-1 md:mb-2"><div><p className="text-white font-medium text-sm md:text-base">{item.name}</p><p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p></div></div>
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-2 md:gap-3">
-                                <button
-                                  onClick={() => updateQuantity(item.id, -1)}
-                                  className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600 transition"
-                                >
-                                  <span className="text-white font-bold text-sm md:text-base">-</span>
-                                </button>
+                                <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600 transition"><span className="text-white font-bold text-sm md:text-base">-</span></button>
                                 <span className="text-white font-semibold text-base md:text-lg w-6 md:w-8 text-center">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(item.id, 1)}
-                                  className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600 transition"
-                                >
-                                  <span className="text-white font-bold text-sm md:text-base">+</span>
-                                </button>
+                                <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600 transition"><span className="text-white font-bold text-sm md:text-base">+</span></button>
                               </div>
                               <span className="text-white font-bold text-sm md:text-base">Br {item.total.toFixed(2)}</span>
                             </div>
@@ -914,42 +817,16 @@ const TableGrid = () => {
                         ))
                       )}
                     </div>
-
                     <div className="border-t border-gray-700 pt-3 md:pt-4">
                       <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
-                        <div className="flex justify-between text-gray-400 text-xs md:text-sm">
-                          <span>{t('subtotal')}</span>
-                          <span>Br {subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-gray-400 text-xs md:text-sm">
-                          <span>{t('vat')}</span>
-                          <span>Br {tax.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-white font-bold text-base md:text-xl pt-1 md:pt-2 border-t border-gray-700">
-                          <span>{t('total')}</span>
-                          <span className="text-emerald-400">Br {total.toFixed(2)}</span>
-                        </div>
+                        <div className="flex justify-between text-gray-400 text-xs md:text-sm"><span>{t('subtotal')}</span><span>Br {subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-gray-400 text-xs md:text-sm"><span>{t('vat')}</span><span>Br {tax.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-white font-bold text-base md:text-xl pt-1 md:pt-2 border-t border-gray-700"><span>{t('total')}</span><span className="text-emerald-400">Br {total.toFixed(2)}</span></div>
                       </div>
-
-                      <textarea
-                        placeholder={t('specialInstructions')}
-                        value={orderNotes}
-                        onChange={(e) => setOrderNotes(e.target.value)}
-                        className="w-full px-3 md:px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg md:rounded-xl text-white text-xs md:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3 md:mb-4"
-                        rows={2}
-                      />
-
-                      <button
-                        onClick={submitOrder}
-                        disabled={cart.length === 0 || processing}
-                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg md:rounded-xl font-bold text-sm md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {processing ? (
-                          <Loader2 className="animate-spin inline mr-2" size={isMobile ? 16 : 20} />
-                        ) : (
-                          <Utensils className="inline mr-2" size={isMobile ? 16 : 20} />
-                        )}
-                        {processing ? t('sending') : t('sendToKitchen')}
+                      <textarea placeholder={t('specialInstructions')} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} className="w-full px-3 md:px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg md:rounded-xl text-white text-xs md:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3 md:mb-4" rows={2} />
+                      <button onClick={submitOrder} disabled={cart.length === 0 || isSubmitting} className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg md:rounded-xl font-bold text-sm md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        {isSubmitting ? <Loader2 className="animate-spin inline mr-2" size={isMobile ? 16 : 20} /> : <Utensils className="inline mr-2" size={isMobile ? 16 : 20} />}
+                        {isSubmitting ? t('sending') : t('sendToKitchen')}
                       </button>
                     </div>
                   </div>
@@ -964,190 +841,43 @@ const TableGrid = () => {
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-xl md:rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl">
               <div className="p-4 md:p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg md:text-xl font-bold text-white">{t('cancelOrder')}</h2>
-                  <button
-                    onClick={() => {
-                      setShowCancelModal(false);
-                      setCancelReason('');
-                      setOrderToCancel(null);
-                    }}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="mb-4 md:mb-6">
-                  <p className="text-gray-300 text-sm md:text-base">{t('orderNumber')}: #{orderToCancel.order_number}</p>
-                  <p className="text-emerald-400 font-bold text-base md:text-lg mt-1">Br {parseFloat(orderToCancel.total_amount).toFixed(2)}</p>
-                </div>
-
-                <div className="mb-4 md:mb-6">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">{t('cancellationReason')}</label>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder={t('cancellationPlaceholder')}
-                    className="w-full px-3 md:px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg md:rounded-xl text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => cancelOrder(orderToCancel.id, cancelReason)}
-                    className="flex-1 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white rounded-lg md:rounded-xl font-semibold transition-all"
-                  >
-                    {t('yesCancel')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCancelModal(false);
-                      setCancelReason('');
-                      setOrderToCancel(null);
-                    }}
-                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg md:rounded-xl font-semibold transition-all"
-                  >
-                    {t('noKeep')}
-                  </button>
-                </div>
+                <div className="flex justify-between items-center mb-4"><h2 className="text-lg md:text-xl font-bold text-white">{t('cancelOrder')}</h2><button onClick={() => { setShowCancelModal(false); setCancelReason(''); setOrderToCancel(null); }} className="text-gray-400 hover:text-white">✕</button></div>
+                <div className="mb-4 md:mb-6"><p className="text-gray-300 text-sm md:text-base">{t('orderNumber')}: #{orderToCancel.order_number}</p><p className="text-emerald-400 font-bold text-base md:text-lg mt-1">Br {parseFloat(orderToCancel.total_amount).toFixed(2)}</p></div>
+                <div className="mb-4 md:mb-6"><label className="block text-sm font-medium text-gray-300 mb-2">{t('cancellationReason')}</label><textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder={t('cancellationPlaceholder')} className="w-full px-3 md:px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg md:rounded-xl text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500" rows={3} /></div>
+                <div className="flex gap-3"><button onClick={() => cancelOrder(orderToCancel.id, cancelReason)} className="flex-1 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white rounded-lg md:rounded-xl font-semibold transition-all">{t('yesCancel')}</button><button onClick={() => { setShowCancelModal(false); setCancelReason(''); setOrderToCancel(null); }} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg md:rounded-xl font-semibold transition-all">{t('noKeep')}</button></div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ADD ITEMS MODAL (Occupied Table) */}
+        {/* ADD ITEMS MODAL */}
         {showAddItemsModal && selectedTableOrder && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-xl md:rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700 shadow-2xl flex flex-col">
               <div className="flex-shrink-0 sticky top-0 bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-700">
                 <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-base md:text-xl font-bold text-white">{t('addItemsToOrder')} #{selectedTableOrder.order_number}</h2>
-                    <p className="text-emerald-400 text-xs md:text-sm mt-0.5 md:mt-1">
-                      {t('currentTotal')}: Br {parseFloat(selectedTableOrder.total_amount).toFixed(2)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowAddItemsModal(false);
-                      setAddItemsCart([]);
-                      setSelectedTableOrder(null);
-                    }}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center"
-                  >
-                    ✕
-                  </button>
+                  <div><h2 className="text-base md:text-xl font-bold text-white">{t('addItemsToOrder')} #{selectedTableOrder.order_number}</h2><p className="text-emerald-400 text-xs md:text-sm mt-0.5 md:mt-1">{t('currentTotal')}: Br {parseFloat(selectedTableOrder.total_amount).toFixed(2)}</p></div>
+                  <button onClick={() => { setShowAddItemsModal(false); setAddItemsCart([]); setSelectedTableOrder(null); }} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center">✕</button>
                 </div>
               </div>
-
               <div className="flex-1 overflow-y-auto p-3 md:p-5">
                 <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
                   <div className="flex-1">
                     <div className="grid grid-cols-2 gap-2 md:gap-3">
                       {products.map(product => (
-                        <button
-                          key={product.id}
-                          onClick={() => {
-                            const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-                            setAddItemsCart(prev => {
-                              const existing = prev.find(item => item.id === product.id);
-                              if (existing) {
-                                return prev.map(item =>
-                                  item.id === product.id
-                                    ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price }
-                                    : item
-                                );
-                              }
-                              return [...prev, {
-                                id: product.id,
-                                name: product.name,
-                                price: price,
-                                quantity: 1,
-                                total: price
-                              }];
-                            });
-                          }}
-                          className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105"
-                        >
+                        <button key={product.id} onClick={() => { const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price; setAddItemsCart(prev => { const existing = prev.find(item => item.id === product.id); if (existing) { return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price } : item); } return [...prev, { id: product.id, name: product.name, price: price, quantity: 1, total: price }]; }); }} className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105">
                           <p className="text-white font-semibold text-sm md:text-base">{product.name}</p>
                           <p className="text-emerald-400 font-bold text-xs md:text-sm mt-0.5 md:mt-1">Br {parseFloat(product.price).toFixed(2)}</p>
                         </button>
                       ))}
                     </div>
                   </div>
-
                   <div className="w-full lg:w-96 bg-gray-700/30 rounded-xl md:rounded-2xl p-3 md:p-4">
                     <h3 className="text-white font-semibold text-sm md:text-base mb-3 md:mb-4">{t('itemsToAdd')}</h3>
-
                     <div className="max-h-[300px] md:max-h-[400px] overflow-y-auto space-y-2 md:space-y-3 mb-3 md:mb-4">
-                      {addItemsCart.length === 0 ? (
-                        <div className="text-center py-6 md:py-12">
-                          <p className="text-gray-500 text-sm md:text-base">{t('noItemsSelected')}</p>
-                        </div>
-                      ) : (
-                        addItemsCart.map(item => (
-                          <div key={item.id} className="bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-white font-medium text-sm md:text-base">{item.name}</p>
-                                <p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p>
-                              </div>
-                              <div className="flex items-center gap-2 md:gap-3">
-                                <button
-                                  onClick={() => {
-                                    setAddItemsCart(prev => {
-                                      const existing = prev.find(i => i.id === item.id);
-                                      if (existing.quantity === 1) {
-                                        return prev.filter(i => i.id !== item.id);
-                                      }
-                                      return prev.map(i =>
-                                        i.id === item.id
-                                          ? { ...i, quantity: i.quantity - 1, total: (i.quantity - 1) * i.price }
-                                          : i
-                                      );
-                                    });
-                                  }}
-                                  className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600"
-                                >
-                                  -
-                                </button>
-                                <span className="text-white font-semibold text-sm md:text-base">{item.quantity}</span>
-                                <button
-                                  onClick={() => {
-                                    setAddItemsCart(prev =>
-                                      prev.map(i =>
-                                        i.id === item.id
-                                          ? { ...i, quantity: i.quantity + 1, total: (i.quantity + 1) * i.price }
-                                          : i
-                                      )
-                                    );
-                                  }}
-                                  className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
+                      {addItemsCart.length === 0 ? (<div className="text-center py-6 md:py-12"><p className="text-gray-500 text-sm md:text-base">{t('noItemsSelected')}</p></div>) : (addItemsCart.map(item => (<div key={item.id} className="bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3"><div className="flex justify-between items-center"><div><p className="text-white font-medium text-sm md:text-base">{item.name}</p><p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p></div><div className="flex items-center gap-2 md:gap-3"><button onClick={() => { setAddItemsCart(prev => { const existing = prev.find(i => i.id === item.id); if (existing.quantity === 1) { return prev.filter(i => i.id !== item.id); } return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1, total: (i.quantity - 1) * i.price } : i); }); }} className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600">-</button><span className="text-white font-semibold text-sm md:text-base">{item.quantity}</span><button onClick={() => { setAddItemsCart(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1, total: (i.quantity + 1) * i.price } : i)); }} className="w-6 h-6 md:w-8 md:h-8 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-600">+</button></div></div></div>)))}
                     </div>
-
-                    <div className="border-t border-gray-700 pt-3 md:pt-4">
-                      <div className="flex justify-between text-white font-bold text-sm md:text-base mb-3 md:mb-4">
-                        <span>{t('subtotal')}</span>
-                        <span className="text-emerald-400">Br {addItemsCart.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</span>
-                      </div>
-                      <button
-                        onClick={addItemsToExistingOrder}
-                        disabled={addItemsCart.length === 0 || processing}
-                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg md:rounded-xl font-bold text-sm md:text-base transition-all disabled:opacity-50"
-                      >
-                        {processing ? t('adding') : t('addToOrder')}
-                      </button>
-                    </div>
+                    <div className="border-t border-gray-700 pt-3 md:pt-4"><div className="flex justify-between text-white font-bold text-sm md:text-base mb-3 md:mb-4"><span>{t('subtotal')}</span><span className="text-emerald-400">Br {addItemsCart.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</span></div><button onClick={addItemsToExistingOrder} disabled={addItemsCart.length === 0 || isSubmitting} className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg md:rounded-xl font-bold text-sm md:text-base transition-all disabled:opacity-50">{isSubmitting ? t('adding') : t('addToOrder')}</button></div>
                   </div>
                 </div>
               </div>

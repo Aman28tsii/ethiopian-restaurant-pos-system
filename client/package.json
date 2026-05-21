@@ -12,7 +12,7 @@
     "file-saver": "^2.0.5",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.5.31",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "^1.16.0",
     "postcss": "^8.4.31",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.5",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import API from '../../api/axios';
-import { Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode, UserPlus } from 'lucide-react';
+import { Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode, UserCheck } from 'lucide-react';
 import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -590,7 +590,7 @@ const TableGrid = () => {
           <div className="px-4 md:px-5 py-3 md:py-4 bg-gray-800/80 border-b border-gray-700">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <UserPlus size={isMobile ? 16 : 18} className="text-green-400" />
+                <UserCheck size={isMobile ? 16 : 18} className="text-green-400" />
                 <h3 className="text-white font-semibold text-sm md:text-base">
                   Assign Yourself to Tables
                 </h3>

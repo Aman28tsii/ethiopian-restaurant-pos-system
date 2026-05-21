@@ -202,7 +202,7 @@ const TableGrid = () => {
   }, [mySelfTables.length, fetchSelfTables, fetchAvailableSelfTables, fetchMyTables]);
 
   const unassignSelf = useCallback(async (tableId) => {
-    if (!confirm('Remove this table from your assignment?')) return;
+    if (!window.confirm('Remove this table from your assignment?')) return;
     try {
       const response = await API.delete(`/waiter/unassign-table/${tableId}`);
       alert(response.data.message);

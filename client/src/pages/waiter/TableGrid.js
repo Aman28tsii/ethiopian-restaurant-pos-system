@@ -454,7 +454,7 @@ const TableGrid = () => {
         notes: orderNotes
       };
 
-      const response = await API.post('/waiter/orders', orderData);
+      const response = await API.post('/orders', orderData);
       
       if (response.data.success) {
         alert(`${t('orderSent')} #${response.data.data.order_number}!`);

@@ -4,7 +4,28 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// ==================== GET AVAILABLE TABLES FOR WAITER ====================
+// ==================== GET WAITER'S ASSIGNED TABLES ====================
+router.get('/my-tables', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
+  try {
+    const result = await pool.query(
+      `SELECT t.*, 
+              CASE WHEN t.self_assigned THEN 'Self-Assigned' ELSE 'Manager-Assigned' END as assignment_type
+       FROM tables t
+       WHERE t.assigned_waiter_id = $1
+       ORDER BY t.status = 'occupied' DESC, t.table_number ASC`,
+      [waiterId]
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get my tables error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== GET AVAILABLE TABLES FOR SELF-ASSIGNMENT ====================
 router.get('/available-tables', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -44,12 +65,14 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
     );
     
     if (tableCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'Table not found' });
     }
     
     const table = tableCheck.rows[0];
     
     if (table.status !== 'available') {
+      await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
         error: `Table ${table.table_number} is ${table.status}. Only available tables can be assigned.` 
@@ -66,6 +89,7 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
     );
     
     if (parseInt(currentAssignments.rows[0].count) >= 5) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
         error: 'You already have 5 assigned tables. Please unassign some tables first.' 
@@ -85,7 +109,7 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
       [waiterId, tableId]
     );
     
-    // Record self-assignment history
+    // Record self-assignment history (if table exists)
     await client.query(
       `INSERT INTO waiter_self_assignments (waiter_id, table_id, status)
        VALUES ($1, $2, 'active')`,
@@ -137,6 +161,7 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
     );
     
     if (tableCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ 
         success: false, 
         error: 'Table not found or not assigned to you' 
@@ -146,6 +171,7 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
     const table = tableCheck.rows[0];
     
     if (table.status === 'occupied') {
+      await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
         error: `Table ${table.table_number} is occupied. Cannot unassign until table is available.` 
@@ -195,48 +221,22 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
   }
 });
 
-// ==================== GET WAITER'S ASSIGNED TABLES ====================
-router.get('/my-tables', protect, allowWaiter, async (req, res) => {
+// ==================== GET WAITER'S CURRENT SHIFT ====================
+router.get('/my-shift', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT t.*, 
-              CASE WHEN t.self_assigned THEN 'Self-Assigned' ELSE 'Manager-Assigned' END as assignment_type,
-              wsa.assigned_at
-       FROM tables t
-       LEFT JOIN waiter_self_assignments wsa ON t.id = wsa.table_id AND wsa.status = 'active'
-       WHERE t.assigned_waiter_id = $1
-       ORDER BY t.status = 'occupied' DESC, t.table_number ASC`,
+      `SELECT * FROM waiter_shifts 
+       WHERE waiter_id = $1 
+       AND shift_date = CURRENT_DATE 
+       AND is_active = true`,
       [waiterId]
     );
     
-    res.json({ success: true, data: result.rows });
+    res.json({ success: true, data: result.rows[0] || null });
   } catch (err) {
-    console.error('Get my tables error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== GET WAITER'S TABLE STATS ====================
-router.get('/my-stats', protect, allowWaiter, async (req, res) => {
-  const waiterId = req.user.id;
-  
-  try {
-    const stats = await pool.query(
-      `SELECT 
-         COUNT(*) as total_assigned,
-         COUNT(CASE WHEN status = 'occupied' THEN 1 END) as occupied_tables,
-         COUNT(CASE WHEN status = 'available' THEN 1 END) as available_tables,
-         COUNT(CASE WHEN self_assigned = true THEN 1 END) as self_assigned_count
-       FROM tables 
-       WHERE assigned_waiter_id = $1`,
-      [waiterId]
-    );
-    
-    res.json({ success: true, data: stats.rows[0] });
-  } catch (err) {
-    console.error('Get waiter stats error:', err);
+    console.error('Get my shift error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -277,5 +277,69 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// ==================== GET PENDING CONFIRMATIONS FOR WAITER'S TABLES ====================
+router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
+  try {
+    const result = await pool.query(
+      `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
+              o.table_id, o.notes, o.created_at, o.status,
+              t.table_number,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.unit_price
+                  )
+                ) FILTER (WHERE p.id IS NOT NULL), 
+                '[]'
+              ) as items
+       FROM orders o
+       JOIN tables t ON o.table_id = t.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.status = 'pending_confirmation' 
+         AND o.source = 'qr_menu'
+         AND t.assigned_waiter_id = $1
+       GROUP BY o.id, t.table_number
+       ORDER BY o.created_at ASC`,
+      [waiterId]
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get pending confirmations error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== GET WAITER'S STATS ====================
+router.get('/my-stats', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
+  try {
+    const stats = await pool.query(
+      `SELECT 
+         COUNT(*) as total_assigned,
+         COUNT(CASE WHEN status = 'occupied' THEN 1 END) as occupied_tables,
+         COUNT(CASE WHEN status = 'available' THEN 1 END) as available_tables,
+         COUNT(CASE WHEN self_assigned = true THEN 1 END) as self_assigned_count
+       FROM tables 
+       WHERE assigned_waiter_id = $1`,
+      [waiterId]
+    );
+    
+    res.json({ success: true, data: stats.rows[0] });
+  } catch (err) {
+    console.error('Get waiter stats error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
 
 export default router;

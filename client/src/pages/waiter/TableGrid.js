@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import API from '../../api/axios';
-import { 
-  Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, 
-  Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode 
-} from 'lucide-react';
+import { Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode } from 'lucide-react';
 import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -11,7 +8,6 @@ import { QRCodeCanvas } from 'qrcode.react';
 const TableGrid = () => {
   const { t } = useLanguage();
   
-  // ========== MAIN STATE ==========
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -37,16 +33,12 @@ const TableGrid = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrTable, setQrTable] = useState(null);
   const [myShift, setMyShift] = useState(null);
-  
-  // ========== SELF-ASSIGNMENT STATE ==========
   const [myAssignedTables, setMyAssignedTables] = useState([]);
   const [availableTablesList, setAvailableTablesList] = useState([]);
-  
-  // Refs
+
   const intervalRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // ========== MEMOIZED VALUES ==========
   const categories = useMemo(() => {
     return ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
   }, [products]);
@@ -63,33 +55,20 @@ const TableGrid = () => {
   const tax = subtotal * 0.15;
   const total = subtotal + tax;
 
-  const pendingConfirmations = useMemo(() => 
-    activeOrders.filter(o => o.status === 'pending_confirmation'), 
-    [activeOrders]
-  );
-  
-  const regularActiveOrders = useMemo(() => 
-    activeOrders.filter(o => o.status !== 'pending_confirmation'), 
-    [activeOrders]
-  );
+  const pendingConfirmations = useMemo(() => activeOrders.filter(o => o.status === 'pending_confirmation'), [activeOrders]);
+  const regularActiveOrders = useMemo(() => activeOrders.filter(o => o.status !== 'pending_confirmation'), [activeOrders]);
 
   const occupiedCount = tables.filter(t => t.status === 'occupied').length;
   const availableCount = tables.filter(t => t.status === 'available').length;
   const pendingOrdersCount = regularActiveOrders.filter(o => o.status === 'pending').length;
   const pendingConfirmationsCount = pendingConfirmations.length;
 
-  // ========== DEBOUNCE ==========
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 300);
-    return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    };
+    searchTimeoutRef.current = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [searchTerm]);
 
-  // ========== SCREEN SIZE ==========
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -97,14 +76,13 @@ const TableGrid = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ========== API CALLS ==========
   const fetchMyTables = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const response = await API.get('/waiter/my-tables');
       setTables(response.data.data || []);
     } catch (err) {
-      console.error('Fetch my tables error:', err);
+      console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,7 +94,7 @@ const TableGrid = () => {
       const response = await API.get('/waiter/my-shift');
       setMyShift(response.data.data);
     } catch (err) {
-      console.error('Fetch my shift error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -125,7 +103,7 @@ const TableGrid = () => {
       const response = await API.get('/products');
       setProducts(response.data.data || []);
     } catch (err) {
-      console.error('Fetch products error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -134,7 +112,7 @@ const TableGrid = () => {
       const response = await API.get('/waiter/my-orders');
       setActiveOrders(response.data.data || []);
     } catch (err) {
-      console.error('Fetch my active orders error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -149,7 +127,7 @@ const TableGrid = () => {
         });
       }
     } catch (err) {
-      console.error('Fetch pending confirmations error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -162,13 +140,12 @@ const TableGrid = () => {
     }
   }, []);
 
-  // ========== SELF-ASSIGNMENT API CALLS ==========
   const fetchMyAssignedTables = useCallback(async () => {
     try {
       const response = await API.get('/waiter/my-tables');
       setMyAssignedTables(response.data.data || []);
     } catch (err) {
-      console.error('Fetch assigned tables error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -177,7 +154,7 @@ const TableGrid = () => {
       const response = await API.get('/waiter/available-tables');
       setAvailableTablesList(response.data.data || []);
     } catch (err) {
-      console.error('Fetch available tables error:', err);
+      console.error(err);
     }
   }, []);
 
@@ -189,11 +166,7 @@ const TableGrid = () => {
     try {
       const response = await API.post(`/waiter/assign-table/${tableId}`);
       alert(response.data.message);
-      await Promise.all([
-        fetchMyAssignedTables(), 
-        fetchAvailableTables(), 
-        fetchMyTables()
-      ]);
+      await Promise.all([fetchMyAssignedTables(), fetchAvailableTables(), fetchMyTables()]);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to assign table');
     }
@@ -204,17 +177,12 @@ const TableGrid = () => {
     try {
       const response = await API.delete(`/waiter/unassign-table/${tableId}`);
       alert(response.data.message);
-      await Promise.all([
-        fetchMyAssignedTables(), 
-        fetchAvailableTables(), 
-        fetchMyTables()
-      ]);
+      await Promise.all([fetchMyAssignedTables(), fetchAvailableTables(), fetchMyTables()]);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to unassign table');
     }
   }, [fetchMyAssignedTables, fetchAvailableTables, fetchMyTables]);
 
-  // ========== INITIAL LOAD ==========
   useEffect(() => {
     const loadInitialData = async () => {
       await Promise.all([
@@ -229,39 +197,31 @@ const TableGrid = () => {
     };
     loadInitialData();
 
-    const handleOrderStatusUpdate = () => {
+    socket.on('order_status_updated', () => {
       fetchMyActiveOrders();
       fetchMyTables(true);
       fetchMyPendingConfirmations();
       fetchMyAssignedTables();
       fetchAvailableTables();
-    };
-    
-    const handleNewOrder = () => {
+    });
+    socket.on('new_order', () => {
       fetchMyActiveOrders();
       fetchMyPendingConfirmations();
-    };
-    
-    const handleNewPendingOrder = () => {
+    });
+    socket.on('new_pending_order', () => {
       fetchMyPendingConfirmations();
       try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
+        new Audio('/notification.mp3').play().catch(() => {});
       } catch(e) {}
-    };
-
-    socket.on('order_status_updated', handleOrderStatusUpdate);
-    socket.on('new_order', handleNewOrder);
-    socket.on('new_pending_order', handleNewPendingOrder);
+    });
     
     return () => {
-      socket.off('order_status_updated', handleOrderStatusUpdate);
-      socket.off('new_order', handleNewOrder);
-      socket.off('new_pending_order', handleNewPendingOrder);
+      socket.off('order_status_updated');
+      socket.off('new_order');
+      socket.off('new_pending_order');
     };
   }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift, fetchMyAssignedTables, fetchAvailableTables]);
 
-  // ========== POLLING ==========
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       fetchMyTables(true);
@@ -270,12 +230,9 @@ const TableGrid = () => {
       fetchMyAssignedTables();
       fetchAvailableTables();
     }, 15000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyAssignedTables, fetchAvailableTables]);
 
-  // ========== HANDLERS ==========
   const manualRefresh = useCallback(() => {
     setRefreshing(true);
     Promise.all([
@@ -288,9 +245,7 @@ const TableGrid = () => {
     ]).finally(() => setRefreshing(false));
   }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift, fetchMyAssignedTables, fetchAvailableTables]);
 
-  const generateQRCode = useCallback((tableNumber) => {
-    return `${window.location.origin}/qr-menu?table=${tableNumber}`;
-  }, []);
+  const generateQRCode = useCallback((tableNumber) => `${window.location.origin}/qr-menu?table=${tableNumber}`, []);
 
   const openQRModal = useCallback((table, e) => {
     e.stopPropagation();
@@ -300,8 +255,7 @@ const TableGrid = () => {
 
   const copyQRUrl = useCallback(() => {
     if (qrTable) {
-      const qrUrl = generateQRCode(qrTable.table_number);
-      navigator.clipboard.writeText(qrUrl);
+      navigator.clipboard.writeText(generateQRCode(qrTable.table_number));
       alert('QR URL copied!');
     }
   }, [qrTable, generateQRCode]);
@@ -362,10 +316,7 @@ const TableGrid = () => {
     setIsSubmitting(true);
     try {
       const response = await API.post(`/orders/${selectedTableOrder.id}/add-items`, {
-        items: addItemsCart.map(item => ({
-          product_id: item.id,
-          quantity: item.quantity
-        }))
+        items: addItemsCart.map(item => ({ product_id: item.id, quantity: item.quantity }))
       });
       if (response.data.success) {
         alert(`${t('itemsAdded')} #${selectedTableOrder.order_number}!`);
@@ -399,19 +350,9 @@ const TableGrid = () => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price }
-            : item
-        );
+        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price } : item);
       }
-      return [...prev, {
-        id: product.id,
-        name: product.name,
-        price: price,
-        quantity: 1,
-        total: price
-      }];
+      return [...prev, { id: product.id, name: product.name, price: price, quantity: 1, total: price }];
     });
   }, []);
 
@@ -420,14 +361,8 @@ const TableGrid = () => {
       const item = prev.find(i => i.id === productId);
       if (!item) return prev;
       const newQuantity = item.quantity + delta;
-      if (newQuantity <= 0) {
-        return prev.filter(i => i.id !== productId);
-      }
-      return prev.map(i =>
-        i.id === productId
-          ? { ...i, quantity: newQuantity, total: newQuantity * i.price }
-          : i
-      );
+      if (newQuantity <= 0) return prev.filter(i => i.id !== productId);
+      return prev.map(i => i.id === productId ? { ...i, quantity: newQuantity, total: newQuantity * i.price } : i);
     });
   }, []);
 
@@ -439,10 +374,7 @@ const TableGrid = () => {
     setIsSubmitting(true);
     try {
       const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: item.quantity
-        })),
+        items: cart.map(item => ({ product_id: item.id, quantity: item.quantity })),
         table_id: selectedTable.id,
         order_type: 'dine_in',
         notes: orderNotes
@@ -469,11 +401,7 @@ const TableGrid = () => {
       const response = await API.put(`/orders/confirm/${orderId}`);
       if (response.data.success) {
         alert('Order confirmed! Sent to kitchen.');
-        await Promise.all([
-          fetchMyActiveOrders(),
-          fetchMyPendingConfirmations(),
-          fetchMyTables()
-        ]);
+        await Promise.all([fetchMyActiveOrders(), fetchMyPendingConfirmations(), fetchMyTables()]);
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to confirm order');
@@ -489,11 +417,7 @@ const TableGrid = () => {
       setShowCancelModal(false);
       setCancelReason('');
       setOrderToCancel(null);
-      await Promise.all([
-        fetchMyTables(),
-        fetchMyActiveOrders(),
-        fetchMyPendingConfirmations()
-      ]);
+      await Promise.all([fetchMyTables(), fetchMyActiveOrders(), fetchMyPendingConfirmations()]);
     } catch (err) {
       alert(err.response?.data?.error || t('failedToCancelOrder'));
     }
@@ -529,7 +453,6 @@ const TableGrid = () => {
             </p>
           </div>
           
-          {/* Stats Cards */}
           <div className="flex flex-wrap gap-2 md:gap-3">
             <div className="bg-emerald-500/10 rounded-xl px-3 md:px-5 py-2 md:py-3 border border-emerald-500/20">
               <p className="text-emerald-400 text-xs font-semibold">{t('available')}</p>
@@ -549,73 +472,47 @@ const TableGrid = () => {
                 <p className="text-xl md:text-2xl font-bold text-white">{pendingConfirmationsCount}</p>
               </div>
             )}
-            <button
-              onClick={manualRefresh}
-              disabled={refreshing}
-              className="bg-gray-700/50 rounded-xl px-3 md:px-4 py-2 md:py-3 hover:bg-gray-700"
-            >
+            <button onClick={manualRefresh} disabled={refreshing} className="bg-gray-700/50 rounded-xl px-3 md:px-4 py-2 md:py-3 hover:bg-gray-700">
               <RefreshCw size={isMobile ? 16 : 20} className={`text-gray-400 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
 
-        {/* SELF-ASSIGNMENT PANEL - BUILT INLINE */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden mb-6">
+        {/* SELF ASSIGNMENT PANEL */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
           <div className="px-4 md:px-5 py-3 md:py-4 bg-gray-800/80 border-b border-gray-700">
-            <div className="flex justify-between items-center flex-wrap gap-2">
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center">
                   <span className="text-white text-sm font-bold">+</span>
                 </div>
-                <div>
-                  <h3 className="text-white font-semibold text-sm md:text-base">
-                    Assign Yourself to Tables
-                  </h3>
-                  <p className="text-gray-400 text-xs">Pick available tables to serve (max 5 tables)</p>
-                </div>
+                <h3 className="text-white font-semibold">Assign Yourself to Tables</h3>
               </div>
               <button onClick={() => { fetchAvailableTables(); fetchMyAssignedTables(); }} className="p-1.5 rounded-lg bg-gray-700 hover:bg-gray-600">
                 <RefreshCw size={14} className="text-gray-400" />
               </button>
             </div>
+            <p className="text-gray-400 text-xs mt-1">Pick available tables to serve (max 5 tables)</p>
           </div>
 
           <div className="p-4 md:p-5">
-            {/* My Tables */}
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-400" />
-                  <h4 className="text-white font-semibold text-sm">
-                    My Tables ({myAssignedTables.length}/5)
-                  </h4>
-                </div>
-                {myAssignedTables.length === 5 && (
-                  <span className="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full">Max reached</span>
-                )}
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle size={16} className="text-green-400" />
+                <h4 className="text-white font-semibold text-sm">My Tables ({myAssignedTables.length}/5)</h4>
               </div>
-              
               {myAssignedTables.length === 0 ? (
                 <div className="bg-gray-700/30 rounded-lg p-4 text-center border border-dashed border-gray-600">
                   <Users size={24} className="mx-auto text-gray-500 mb-1" />
                   <p className="text-gray-500 text-sm">No tables assigned yet</p>
-                  <p className="text-gray-600 text-xs">Click on available tables below to assign</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {myAssignedTables.map(table => (
-                    <div key={table.id} className="bg-gradient-to-r from-gray-700 to-gray-800 rounded-lg p-2 flex items-center justify-between border border-gray-600">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1">
-                          <span className="text-white font-bold text-sm">Table {table.table_number}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${table.status === 'occupied' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                            {table.status}
-                          </span>
-                        </div>
-                        <p className="text-gray-500 text-[10px]">Cap: {table.capacity}</p>
-                      </div>
+                    <div key={table.id} className="bg-gray-700 rounded-lg p-2 flex justify-between items-center">
+                      <span className="text-white font-bold text-sm">Table {table.table_number}</span>
                       {table.status !== 'occupied' && (
-                        <button onClick={() => unassignTable(table.id)} className="text-red-400 hover:text-red-300 p-1">
+                        <button onClick={() => unassignTable(table.id)} className="text-red-400">
                           <XCircle size={16} />
                         </button>
                       )}
@@ -625,55 +522,38 @@ const TableGrid = () => {
               )}
             </div>
 
-            {/* Available Tables */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <PlusCircle size={16} className="text-emerald-400" />
-                <h4 className="text-white font-semibold text-sm">
-                  Available Tables ({availableTablesList.length})
-                </h4>
+                <h4 className="text-white font-semibold text-sm">Available Tables ({availableTablesList.length})</h4>
               </div>
-              
               {availableTablesList.length === 0 ? (
                 <div className="bg-gray-700/30 rounded-lg p-4 text-center">
-                  <p className="text-gray-500 text-sm">No available tables at the moment</p>
+                  <p className="text-gray-500 text-sm">No available tables</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {availableTablesList.map(table => (
                     <button
                       key={table.id}
                       onClick={() => assignTableToSelf(table.id)}
                       disabled={myAssignedTables.length >= 5}
-                      className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600 hover:to-teal-600 border border-emerald-500/30 rounded-lg p-2 text-center transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed group"
+                      className="bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 rounded-lg p-2 text-center transition disabled:opacity-50"
                     >
-                      <div className="flex flex-col items-center">
-                        <span className="text-white font-bold text-base">Table {table.table_number}</span>
-                        <span className="text-gray-400 text-xs">Cap: {table.capacity}</span>
-                        <span className="text-emerald-400 text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          Click to assign
-                        </span>
-                      </div>
+                      <span className="text-white font-bold text-sm">Table {table.table_number}</span>
+                      <p className="text-gray-400 text-xs">Cap: {table.capacity}</p>
                     </button>
                   ))}
                 </div>
               )}
             </div>
-
-            {myAssignedTables.length >= 5 && availableTablesList.length > 0 && (
-              <div className="mt-4 p-2 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
-                <p className="text-yellow-400 text-xs text-center flex items-center justify-center gap-1">
-                  <span>⚠️</span> You have reached the maximum of 5 tables.
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Pending Confirmations */}
         {pendingConfirmations.length > 0 && (
           <div className="bg-blue-500/10 rounded-xl border border-blue-500/30 overflow-hidden">
-            <div className="px-4 md:px-5 py-3 md:py-4 bg-blue-500/20 border-b border-blue-500/30">
+            <div className="px-4 py-3 bg-blue-500/20 border-b border-blue-500/30">
               <div className="flex items-center gap-2">
                 <Bell size={isMobile ? 16 : 18} className="text-blue-400 animate-pulse" />
                 <h3 className="text-white font-semibold">Pending Confirmations ({pendingConfirmations.length})</h3>
@@ -681,20 +561,16 @@ const TableGrid = () => {
             </div>
             <div className="divide-y divide-blue-500/20">
               {pendingConfirmations.map(order => (
-                <div key={order.id} className="p-3 md:p-4 hover:bg-blue-500/10">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div className="flex-1">
+                <div key={order.id} className="p-3 hover:bg-blue-500/10">
+                  <div className="flex justify-between items-center">
+                    <div>
                       <p className="text-white font-bold">#{order.order_number}</p>
                       <p className="text-gray-400 text-sm">Table {order.table_number}</p>
                       <p className="text-emerald-400 font-bold">Br {parseFloat(order.total_amount).toFixed(2)}</p>
                     </div>
-                    <button
-                      onClick={() => confirmOrder(order.id)}
-                      disabled={confirmingOrderId === order.id}
-                      className="px-4 md:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold"
-                    >
+                    <button onClick={() => confirmOrder(order.id)} disabled={confirmingOrderId === order.id} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
                       {confirmingOrderId === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                      Confirm Order
+                      Confirm
                     </button>
                   </div>
                 </div>
@@ -706,21 +582,19 @@ const TableGrid = () => {
         {/* Active Orders */}
         {regularActiveOrders.length > 0 && (
           <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="px-4 md:px-5 py-3 md:py-4 bg-gray-800/80 border-b border-gray-700 flex justify-between">
+            <div className="px-4 py-3 bg-gray-800/80 border-b border-gray-700 flex justify-between">
               <div className="flex items-center gap-2">
                 <Bell size={isMobile ? 16 : 18} className="text-amber-400" />
-                <h3 className="text-white font-semibold">
-                  {showActiveOrders ? t('activeOrders') : t('activeOrdersHidden')} ({regularActiveOrders.length})
-                </h3>
+                <h3 className="text-white font-semibold">Active Orders ({regularActiveOrders.length})</h3>
               </div>
-              <button onClick={() => setShowActiveOrders(!showActiveOrders)} className="text-gray-400 hover:text-white text-sm">
-                {showActiveOrders ? t('hide') : t('showOrders')}
+              <button onClick={() => setShowActiveOrders(!showActiveOrders)} className="text-gray-400 text-sm">
+                {showActiveOrders ? 'Hide' : 'Show'}
               </button>
             </div>
             {showActiveOrders && (
               <div className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
                 {regularActiveOrders.map(order => (
-                  <div key={order.id} className="p-3 md:p-4 hover:bg-gray-700/30">
+                  <div key={order.id} className="p-3 hover:bg-gray-700/30">
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-white font-bold">#{order.order_number}</p>
@@ -728,7 +602,7 @@ const TableGrid = () => {
                         <p className="text-emerald-400 font-bold">Br {parseFloat(order.total_amount).toFixed(2)}</p>
                       </div>
                       <button onClick={() => openCancelModal(order)} className="px-3 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg text-sm">
-                        {t('cancel')}
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -739,48 +613,28 @@ const TableGrid = () => {
         )}
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-2 md:gap-4 bg-gray-800/30 rounded-xl p-3 md:p-4 border border-gray-700">
-          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div><span className="text-gray-300 text-xs">{t('available')}</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-rose-500 rounded-full"></div><span className="text-gray-300 text-xs">{t('occupied')}</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-amber-500 rounded-full"></div><span className="text-gray-300 text-xs">{t('reserved')}</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-slate-500 rounded-full"></div><span className="text-gray-300 text-xs">{t('cleaning')}</span></div>
-          <div className="flex items-center gap-1"><QrCode size={12} className="text-blue-400" /><span className="text-gray-300 text-xs">{t('qrCodeAvailable')}</span></div>
+        <div className="flex flex-wrap gap-2 md:gap-4 bg-gray-800/30 rounded-xl p-3 border border-gray-700">
+          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div><span className="text-gray-300 text-xs">Available</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-rose-500 rounded-full"></div><span className="text-gray-300 text-xs">Occupied</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-amber-500 rounded-full"></div><span className="text-gray-300 text-xs">Reserved</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 bg-slate-500 rounded-full"></div><span className="text-gray-300 text-xs">Cleaning</span></div>
+          <div className="flex items-center gap-1"><QrCode size={12} className="text-blue-400" /><span className="text-gray-300 text-xs">QR Code</span></div>
         </div>
-
-        {/* No Tables Message */}
-        {tables.length === 0 && !loading && (
-          <div className="bg-yellow-500/10 rounded-xl p-6 text-center border border-yellow-500/30">
-            <Utensils size={48} className="mx-auto text-yellow-400 mb-3" />
-            <h3 className="text-yellow-400 font-semibold">No Tables Assigned</h3>
-            <p className="text-gray-400 mt-2">Use the panel above to assign yourself to tables.</p>
-          </div>
-        )}
 
         {/* Floor Plan */}
         {tables.length > 0 && (
-          <div className="bg-gray-800/30 rounded-xl p-4 md:p-6 border border-gray-700">
-            <h2 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-teal-400 rounded-full"></div>
-              {t('floorPlan')} - Your Assigned Tables
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700">
+            <h2 className="text-lg font-semibold text-white mb-4">Your Assigned Tables</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {tables.map(table => (
                 <div key={table.id} className="relative">
-                  <button
-                    onClick={() => handleTableClick(table)}
-                    className={`relative w-full bg-gradient-to-br ${getTableGradient(table.status)} rounded-xl p-3 md:p-4 text-center transition hover:scale-105 active:scale-95`}
-                  >
-                    {table.status === 'occupied' && (
-                      <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1 shadow-lg animate-pulse">
-                        <PlusCircle size={12} className="text-white" />
-                      </div>
-                    )}
+                  <button onClick={() => handleTableClick(table)} className={`w-full bg-gradient-to-br ${getTableGradient(table.status)} rounded-xl p-3 text-center transition hover:scale-105`}>
                     <div className="mb-2">{getStatusIcon(table.status)}</div>
-                    <p className="text-white font-bold text-sm md:text-base">Table {table.table_number}</p>
-                    <p className="text-white/70 text-[10px] mt-1">Cap: {table.capacity}</p>
-                    <div className="mt-1"><span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 text-white">{getStatusText(table.status)}</span></div>
+                    <p className="text-white font-bold">Table {table.table_number}</p>
+                    <p className="text-white/70 text-xs">Cap: {table.capacity}</p>
+                    <div className="mt-1"><span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">{getStatusText(table.status)}</span></div>
                   </button>
-                  <button onClick={(e) => openQRModal(table, e)} className="absolute -bottom-2 -right-2 bg-blue-600 rounded-full p-1.5 shadow-lg hover:scale-110 transition" title={t('getQRCode')}>
+                  <button onClick={(e) => openQRModal(table, e)} className="absolute -bottom-2 -right-2 bg-blue-600 rounded-full p-1.5 shadow-lg">
                     <QrCode size={14} className="text-white" />
                   </button>
                 </div>
@@ -846,7 +700,10 @@ const TableGrid = () => {
                     {cart.length > 0 && (
                       <>
                         <div className="border-t border-gray-600 mt-2 pt-2">
-                          <div className="flex justify-between text-white"><span>Total:</span><span className="text-emerald-400">Br {total.toFixed(2)}</span></div>
+                          <div className="flex justify-between text-white">
+                            <span>Total:</span>
+                            <span className="text-emerald-400">Br {total.toFixed(2)}</span>
+                          </div>
                         </div>
                         <button onClick={submitOrder} className="w-full mt-3 py-2 bg-emerald-600 text-white rounded-lg font-bold">Send to Kitchen</button>
                       </>
@@ -865,7 +722,7 @@ const TableGrid = () => {
               <div className="p-5">
                 <h2 className="text-xl font-bold text-white mb-4">Cancel Order</h2>
                 <p className="text-gray-300">Order #{orderToCancel.order_number}</p>
-                <textarea className="w-full mt-3 p-2 bg-gray-700 rounded-lg text-white" rows={3} placeholder="Reason for cancellation" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+                <textarea className="w-full mt-3 p-2 bg-gray-700 rounded-lg text-white" rows={3} placeholder="Reason" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
                 <div className="flex gap-3 mt-4">
                   <button onClick={() => cancelOrder(orderToCancel.id, cancelReason)} className="flex-1 py-2 bg-red-600 text-white rounded-lg">Yes, Cancel</button>
                   <button onClick={() => { setShowCancelModal(false); setCancelReason(''); setOrderToCancel(null); }} className="flex-1 py-2 bg-gray-700 text-white rounded-lg">No, Keep</button>

@@ -743,15 +743,14 @@ router.post('/', protect, allowWaiter, async (req, res) => {
         );
       }
       
-      // ==================== INVENTORY DEDUCTION WITH WASTAGE ====================
-      const stockDeductions = await processOrderStockDeduction(orderId, items, client);
-      
+      // ========== ADD THIS: Insert into kitchen_orders ==========
       await client.query(
         `INSERT INTO kitchen_orders (order_id, status, notes)
          VALUES ($1, 'pending', $2)`,
         [orderId, notes || null]
       );
       
+      // ========== ADD THIS: Update table status if dine_in ==========
       if (table_id && order_type === 'dine_in') {
         await client.query(
           `UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2`,
@@ -761,6 +760,7 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       
       await client.query('COMMIT');
       
+      // Emit socket event for kitchen
       const io = req.app.get('io');
       if (io) {
         io.emit('new_order', {
@@ -774,11 +774,7 @@ router.post('/', protect, allowWaiter, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Order created and sent to kitchen',
-        data: {
-          ...orderResult.rows[0],
-          stock_deductions: stockDeductions,  // Include wastage info in response
-          total_wastage_cost: stockDeductions.reduce((sum, d) => sum + d.wastage_cost, 0)
-        }
+        data: { order_id: orderId, order_number: orderNumber, total_amount: totalAmount }
       });
       
     } catch (err) {
@@ -793,7 +789,6 @@ router.post('/', protect, allowWaiter, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 // ==================== GET ACTIVE ORDER FOR TABLE ====================
 router.get('/table/:tableId/active-order', protect, allowWaiter, async (req, res) => {
   const { tableId } = req.params;

@@ -24,7 +24,7 @@ const TableGrid = () => {
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmingOrderId, setConfirmingOrderId] = useState(null); // FIXED: separate state
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null);
   const [showAddItemsModal, setShowAddItemsModal] = useState(false);
   const [selectedTableOrder, setSelectedTableOrder] = useState(null);
   const [addItemsCart, setAddItemsCart] = useState([]);
@@ -34,6 +34,10 @@ const TableGrid = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrTable, setQrTable] = useState(null);
   const [myShift, setMyShift] = useState(null);
+  
+  // ========== SELF-ASSIGNMENT STATES ==========
+  const [myAssignedTables, setMyAssignedTables] = useState([]);
+  const [availableTablesList, setAvailableTablesList] = useState([]);
   
   // Refs for cleanup
   const intervalRef = useRef(null);
@@ -162,6 +166,50 @@ const TableGrid = () => {
     }
   }, []);
 
+  // ========== SELF-ASSIGNMENT API CALLS ==========
+  const fetchMyAssignedTables = useCallback(async () => {
+    try {
+      const response = await API.get('/waiter/my-tables');
+      setMyAssignedTables(response.data.data || []);
+    } catch (err) {
+      console.error('Fetch my assigned tables error:', err);
+    }
+  }, []);
+
+  const fetchAvailableTables = useCallback(async () => {
+    try {
+      const response = await API.get('/waiter/available-tables');
+      setAvailableTablesList(response.data.data || []);
+    } catch (err) {
+      console.error('Fetch available tables error:', err);
+    }
+  }, []);
+
+  const assignTableToSelf = useCallback(async (tableId) => {
+    if (myAssignedTables.length >= 5) {
+      alert('You can only assign up to 5 tables');
+      return;
+    }
+    try {
+      const response = await API.post(`/waiter/assign-table/${tableId}`);
+      alert(response.data.message);
+      await Promise.all([fetchMyAssignedTables(), fetchAvailableTables(), fetchMyTables()]);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to assign table');
+    }
+  }, [myAssignedTables.length, fetchMyAssignedTables, fetchAvailableTables, fetchMyTables]);
+
+  const unassignTable = useCallback(async (tableId) => {
+    if (!confirm('Remove this table from your assignment?')) return;
+    try {
+      const response = await API.delete(`/waiter/unassign-table/${tableId}`);
+      alert(response.data.message);
+      await Promise.all([fetchMyAssignedTables(), fetchAvailableTables(), fetchMyTables()]);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to unassign table');
+    }
+  }, [fetchMyAssignedTables, fetchAvailableTables, fetchMyTables]);
+
   // ========== INITIAL DATA LOAD ==========
   useEffect(() => {
     const loadInitialData = async () => {
@@ -170,7 +218,9 @@ const TableGrid = () => {
         fetchProducts(),
         fetchMyActiveOrders(),
         fetchMyShift(),
-        fetchMyPendingConfirmations()
+        fetchMyPendingConfirmations(),
+        fetchMyAssignedTables(),
+        fetchAvailableTables()
       ]);
     };
     loadInitialData();
@@ -180,6 +230,8 @@ const TableGrid = () => {
       fetchMyActiveOrders();
       fetchMyTables(true);
       fetchMyPendingConfirmations();
+      fetchMyAssignedTables();
+      fetchAvailableTables();
     };
     
     const handleNewOrder = () => {
@@ -204,7 +256,7 @@ const TableGrid = () => {
       socket.off('new_order', handleNewOrder);
       socket.off('new_pending_order', handleNewPendingOrder);
     };
-  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift]);
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift, fetchMyAssignedTables, fetchAvailableTables]);
 
   // ========== POLLING INTERVAL ==========
   useEffect(() => {
@@ -212,6 +264,8 @@ const TableGrid = () => {
       fetchMyTables(true);
       fetchMyActiveOrders();
       fetchMyPendingConfirmations();
+      fetchMyAssignedTables();
+      fetchAvailableTables();
     }, 10000);
     
     return () => {
@@ -219,7 +273,7 @@ const TableGrid = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations]);
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyAssignedTables, fetchAvailableTables]);
 
   // ========== HANDLERS ==========
   const manualRefresh = useCallback(() => {
@@ -228,9 +282,11 @@ const TableGrid = () => {
       fetchMyTables(false),
       fetchMyActiveOrders(),
       fetchMyPendingConfirmations(),
-      fetchMyShift()
+      fetchMyShift(),
+      fetchMyAssignedTables(),
+      fetchAvailableTables()
     ]).finally(() => setRefreshing(false));
-  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift]);
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift, fetchMyAssignedTables, fetchAvailableTables]);
 
   const generateQRCode = useCallback((tableNumber) => {
     return `${window.location.origin}/qr-menu?table=${tableNumber}`;
@@ -515,6 +571,86 @@ const TableGrid = () => {
           </div>
         </div>
 
+        {/* ========== WAITER SELF-ASSIGNMENT PANEL ========== */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
+          <div className="px-4 py-3 bg-gray-800/80 border-b border-gray-700">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">+</span>
+                </div>
+                <h3 className="text-white font-semibold">Assign Yourself to Tables</h3>
+              </div>
+              <button onClick={() => { fetchAvailableTables(); fetchMyAssignedTables(); }} className="text-gray-400 hover:text-white">
+                <RefreshCw size={14} />
+              </button>
+            </div>
+            <p className="text-gray-400 text-xs mt-1">Pick available tables to serve (max 5 tables)</p>
+          </div>
+
+          <div className="p-4">
+            {/* My Tables */}
+            <div className="mb-6">
+              <h4 className="text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                <CheckCircle size={14} className="text-green-400" />
+                My Tables ({myAssignedTables.length}/5)
+              </h4>
+              {myAssignedTables.length === 0 ? (
+                <p className="text-gray-500 text-sm">No tables assigned yet.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {myAssignedTables.map(table => (
+                    <div key={table.id} className="bg-gray-700 rounded-lg p-2 flex justify-between items-center">
+                      <div>
+                        <span className="text-white font-bold text-sm">Table {table.table_number}</span>
+                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${table.status === 'occupied' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                          {table.status}
+                        </span>
+                      </div>
+                      {table.status !== 'occupied' && (
+                        <button onClick={() => unassignTable(table.id)} className="text-red-400 hover:text-red-300">
+                          <XCircle size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Available Tables */}
+            <div>
+              <h4 className="text-white text-sm font-semibold mb-2 flex items-center gap-2">
+                <PlusCircle size={14} className="text-blue-400" />
+                Available Tables ({availableTablesList.length})
+              </h4>
+              {availableTablesList.length === 0 ? (
+                <p className="text-gray-500 text-sm">No available tables at the moment.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {availableTablesList.map(table => (
+                    <button
+                      key={table.id}
+                      onClick={() => assignTableToSelf(table.id)}
+                      disabled={myAssignedTables.length >= 5}
+                      className="bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 rounded-lg p-2 text-center transition disabled:opacity-50"
+                    >
+                      <span className="text-white font-bold text-sm">Table {table.table_number}</span>
+                      <p className="text-gray-400 text-xs">Cap: {table.capacity}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {myAssignedTables.length >= 5 && (
+              <div className="mt-3 p-2 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                <p className="text-yellow-400 text-xs text-center">⚠️ You have reached the maximum of 5 tables.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Pending Confirmations Section (QR Orders) */}
         {pendingConfirmations.length > 0 && (
           <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-blue-500/30 overflow-hidden">
@@ -547,7 +683,7 @@ const TableGrid = () => {
                     <button
                       onClick={() => confirmOrder(order.id)}
                       disabled={confirmingOrderId === order.id}
-                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {confirmingOrderId === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
                       Confirm Order
@@ -656,7 +792,7 @@ const TableGrid = () => {
             <Utensils size={48} className="mx-auto text-yellow-400 mb-3" />
             <h3 className="text-yellow-400 font-semibold text-lg">No Tables Assigned</h3>
             <p className="text-gray-400 mt-2">
-              You don't have any tables assigned for today. Please contact your manager.
+              Use the panel above to assign yourself to tables.
             </p>
           </div>
         )}

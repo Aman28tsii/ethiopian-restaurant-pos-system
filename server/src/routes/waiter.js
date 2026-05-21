@@ -4,7 +4,7 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// ==================== GET WAITER'S ASSIGNED TABLES ====================
+// ==================== WAITER'S ASSIGNED TABLES ====================
 router.get('/my-tables', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -25,7 +25,7 @@ router.get('/my-tables', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET AVAILABLE TABLES FOR SELF-ASSIGNMENT ====================
+// ==================== AVAILABLE TABLES FOR SELF-ASSIGNMENT ====================
 router.get('/available-tables', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -56,7 +56,6 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
   try {
     await client.query('BEGIN');
     
-    // Check if table exists and is available
     const tableCheck = await client.query(
       `SELECT id, table_number, status, assigned_waiter_id 
        FROM tables 
@@ -79,7 +78,6 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
       });
     }
     
-    // Check if waiter already has too many tables (limit 5)
     const currentAssignments = await client.query(
       `SELECT COUNT(*) as count 
        FROM tables 
@@ -96,7 +94,6 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
       });
     }
     
-    // Assign table to waiter
     await client.query(
       `UPDATE tables 
        SET assigned_waiter_id = $1, 
@@ -109,7 +106,6 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
       [waiterId, tableId]
     );
     
-    // Record self-assignment history (if table exists)
     await client.query(
       `INSERT INTO waiter_self_assignments (waiter_id, table_id, status)
        VALUES ($1, $2, 'active')`,
@@ -221,7 +217,7 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
   }
 });
 
-// ==================== GET WAITER'S CURRENT SHIFT ====================
+// ==================== WAITER'S CURRENT SHIFT ====================
 router.get('/my-shift', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -241,7 +237,7 @@ router.get('/my-shift', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET WAITER'S ACTIVE ORDERS ====================
+// ==================== WAITER'S ACTIVE ORDERS ====================
 router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -278,7 +274,7 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET PENDING CONFIRMATIONS FOR WAITER'S TABLES ====================
+// ==================== PENDING CONFIRMATIONS ====================
 router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -316,31 +312,4 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== GET WAITER'S STATS ====================
-router.get('/my-stats', protect, allowWaiter, async (req, res) => {
-  const waiterId = req.user.id;
-  
-  try {
-    const stats = await pool.query(
-      `SELECT 
-         COUNT(*) as total_assigned,
-         COUNT(CASE WHEN status = 'occupied' THEN 1 END) as occupied_tables,
-         COUNT(CASE WHEN status = 'available' THEN 1 END) as available_tables,
-         COUNT(CASE WHEN self_assigned = true THEN 1 END) as self_assigned_count
-       FROM tables 
-       WHERE assigned_waiter_id = $1`,
-      [waiterId]
-    );
-    
-    res.json({ success: true, data: stats.rows[0] });
-  } catch (err) {
-    console.error('Get waiter stats error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-
-
-
-export default router; 
- 
+export default router;

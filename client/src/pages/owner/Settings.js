@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2, Globe, Moon, Sun } from 'lucide-react';
+import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2, Globe, Moon, Sun, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 

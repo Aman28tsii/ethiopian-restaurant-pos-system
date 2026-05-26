@@ -13,6 +13,7 @@
   --text-primary: 17, 24, 39;
   --text-secondary: 75, 85, 99;
   --border-color: 229, 231, 235;
+  --bg-card: 255, 255, 255;
 }
 
 /* Dark mode */
@@ -22,6 +23,7 @@
   --text-primary: 243, 244, 246;
   --text-secondary: 156, 163, 175;
   --border-color: 55, 65, 81;
+  --bg-card: 31, 41, 55;
 }
 
 body {
@@ -29,6 +31,7 @@ body {
   color: rgb(var(--text-primary));
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
 /* ============================================
    GLOBAL RESET & BASE STYLES
    ============================================ */
@@ -39,7 +42,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Base font size for responsive text */
 html {
   font-size: 16px;
 }
@@ -69,38 +71,6 @@ html {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
-/* Force dark mode background on all pages */
-.dark body {
-  background-color: #111827 !important;
-}
-
-.dark .bg-gray-800 {
-  background-color: #1f2937 !important;
-}
-
-.dark .bg-gray-900 {
-  background-color: #111827 !important;
-}
-
-.dark .text-white {
-  color: #f3f4f6 !important;
-}
-
-.dark .text-gray-300 {
-  color: #d1d5db !important;
-}
-
-.dark .text-gray-400 {
-  color: #9ca3af !important;
-}
-
-.dark .border-gray-700 {
-  border-color: #374151 !important;
-}
-
-.dark .bg-gray-700 {
-  background-color: #374151 !important;
-}
 
 /* Smooth transitions for theme switching */
 * {
@@ -111,7 +81,6 @@ html {
    TOUCH TARGETS & INTERACTIVITY
    ============================================ */
 
-/* Ensure all interactive elements have minimum touch target size */
 button, 
 a, 
 [role="button"],
@@ -122,26 +91,22 @@ input[type="button"],
   min-width: 44px;
 }
 
-/* Better touch feedback on mobile */
 @media (max-width: 768px) {
   button:active {
     transform: scale(0.97);
     transition: transform 0.05s ease;
   }
   
-  /* Prevent text size adjustment on orientation change */
   html {
     -webkit-text-size-adjust: 100%;
   }
   
-  /* Improve scrolling on mobile */
   .overflow-auto,
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Touch-friendly cards */
 .touch-card {
   transition: transform 0.2s;
 }
@@ -161,7 +126,6 @@ input[type="button"],
    CUSTOM SCROLLBARS
    ============================================ */
 
-/* Custom scrollbar for tables */
 .overflow-x-auto::-webkit-scrollbar {
   height: 6px;
 }
@@ -184,7 +148,6 @@ input[type="button"],
   background: #4b5563;
 }
 
-/* Hide scrollbar but keep functionality */
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -198,7 +161,6 @@ input[type="button"],
    MODAL STYLES
    ============================================ */
 
-/* Modal fullscreen on mobile */
 @media (max-width: 640px) {
   .modal-mobile-full {
     position: fixed !important;
@@ -218,7 +180,6 @@ input[type="button"],
    RESPONSIVE GRID SYSTEMS
    ============================================ */
 
-/* Responsive grid helpers */
 .responsive-grid {
   display: grid;
   gap: 1rem;
@@ -232,7 +193,6 @@ input[type="button"],
   }
 }
 
-/* Responsive Stats Cards */
 .stats-grid {
   display: grid;
   gap: 1rem;
@@ -249,7 +209,6 @@ input[type="button"],
    RESPONSIVE TABLES
    ============================================ */
 
-/* Responsive Table Wrapper */
 .responsive-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -274,7 +233,6 @@ input[type="button"],
    RESPONSIVE CARDS & FORMS
    ============================================ */
 
-/* Responsive Cards */
 .responsive-card {
   padding: 1rem;
 }
@@ -285,7 +243,6 @@ input[type="button"],
   }
 }
 
-/* Responsive Forms */
 .responsive-form {
   width: 100%;
 }
@@ -305,7 +262,6 @@ input[type="button"],
   }
 }
 
-/* Prevent zoom on iOS for form inputs */
 @media (max-width: 640px) {
   input, select, textarea {
     font-size: 16px !important;
@@ -316,7 +272,6 @@ input[type="button"],
    POS PRODUCT GRID
    ============================================ */
 
-/* POS Page - Product Grid */
 .pos-product-grid {
   display: grid;
   gap: 0.75rem;
@@ -341,7 +296,6 @@ input[type="button"],
   }
 }
 
-/* POS Cart Sidebar on mobile */
 @media (max-width: 768px) {
   .pos-cart-sidebar {
     position: fixed;
@@ -373,15 +327,10 @@ input[type="button"],
    RESPONSIVE TEXT & SPACING
    ============================================ */
 
-/* Responsive text */
 @media (max-width: 640px) {
   .text-responsive-sm {
     font-size: 0.875rem;
   }
-}
-
-/* Better spacing on mobile */
-@media (max-width: 640px) {
   .p-responsive {
     padding: 0.75rem !important;
   }
@@ -395,26 +344,21 @@ input[type="button"],
    ============================================ */
 
 @media (max-width: 640px) {
-  /* Dashboard stats cards */
   .stats-card {
     padding: 0.75rem !important;
   }
-  
   .stats-card .stat-value {
     font-size: 1.25rem !important;
   }
-  
   .stats-card .stat-label {
     font-size: 0.7rem !important;
   }
 }
 
-/* Fix for very small screens */
 @media (max-width: 480px) {
   .stats-card .stat-value {
     font-size: 1rem !important;
   }
-  
   .stats-grid {
     gap: 0.5rem !important;
   }
@@ -425,27 +369,23 @@ input[type="button"],
    ============================================ */
 
 @media (max-width: 640px) {
-  /* Expense table - prevent overlap */
   .expense-table td,
   .expense-table th {
     padding: 0.5rem !important;
     font-size: 0.75rem !important;
   }
   
-  /* Profit report tables */
   .profit-table td,
   .profit-table th {
     padding: 0.5rem !important;
     font-size: 0.7rem !important;
   }
   
-  /* Profit reports - make numbers smaller */
   .profit-numbers {
     font-size: 0.9rem !important;
     word-break: break-word !important;
   }
   
-  /* Make tables scroll horizontally on small screens */
   .responsive-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -455,12 +395,10 @@ input[type="button"],
     min-width: 500px;
   }
   
-  /* Fix number columns */
   .text-right {
     white-space: nowrap;
   }
   
-  /* Make currency values wrap properly */
   .currency-value {
     white-space: nowrap;
     overflow-x: auto;
@@ -473,7 +411,6 @@ input[type="button"],
    PWA & STANDALONE MODE
    ============================================ */
 
-/* Prevent pull-to-refresh on overscroll when in standalone mode */
 @media (display-mode: standalone) {
   body {
     overscroll-behavior: none;
@@ -484,7 +421,6 @@ input[type="button"],
    UTILITY CLASSES
    ============================================ */
 
-/* Add any additional utility classes here */
 .text-truncate {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -502,7 +438,6 @@ input[type="button"],
    CUSTOMER FACING PAGES - MODERN RESTAURANT STYLE
    ============================================ */
 
-/* QR Menu Page Styles */
 .qr-menu-container {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -537,7 +472,6 @@ input[type="button"],
   transform: translateY(0);
 }
 
-/* Category Tabs */
 .category-tab {
   position: relative;
   transition: all 0.2s ease;
@@ -565,7 +499,6 @@ input[type="button"],
   border-radius: 3px;
 }
 
-/* Cart Sidebar Animation */
 .cart-sidebar-enter {
   transform: translateX(100%);
 }
@@ -584,7 +517,6 @@ input[type="button"],
   transition: transform 300ms ease;
 }
 
-/* Floating Cart Button */
 .floating-cart-btn {
   animation: bounce 2s infinite;
 }
@@ -594,7 +526,6 @@ input[type="button"],
   50% { transform: translateY(-5px); }
 }
 
-/* Order Tracking Timeline */
 .timeline-step {
   position: relative;
   cursor: pointer;
@@ -624,7 +555,6 @@ input[type="button"],
   100% { box-shadow: 0 0 0 0 rgba(59, 130, 242, 0); }
 }
 
-/* Timer Animation */
 .timer-animation {
   animation: timer-pulse 1s ease-in-out infinite;
 }
@@ -634,7 +564,6 @@ input[type="button"],
   50% { opacity: 0.7; }
 }
 
-/* Order Success Animation */
 .order-success {
   animation: success-pop 0.5s ease-out;
 }
@@ -645,7 +574,6 @@ input[type="button"],
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Loading Skeleton */
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -661,7 +589,6 @@ input[type="button"],
   100% { background-position: -200% 0; }
 }
 
-/* Custom Scrollbar for Cart */
 .cart-items-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -680,7 +607,6 @@ input[type="button"],
   border-radius: 10px;
 }
 
-/* Price Highlight Animation */
 .price-update {
   animation: price-flash 0.3s ease-out;
 }
@@ -690,7 +616,6 @@ input[type="button"],
   100% { color: inherit; transform: scale(1); }
 }
 
-/* Quantity Button Hover Effects */
 .qty-btn {
   transition: all 0.2s ease;
 }
@@ -703,7 +628,6 @@ input[type="button"],
   transform: scale(0.95);
 }
 
-/* Restaurant Info Cards */
 .restaurant-info-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
   backdrop-filter: blur(10px);
@@ -715,26 +639,21 @@ input[type="button"],
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Responsive Improvements for Customer Pages */
 @media (max-width: 640px) {
   .qr-menu-card {
     margin-bottom: 12px;
   }
-  
   .category-tab {
     padding: 8px 16px;
     font-size: 14px;
   }
-  
   .cart-sidebar {
     width: 100%;
     max-width: 100%;
   }
-  
   .timeline-step .timeline-label {
     font-size: 10px;
   }
-  
   .floating-cart-btn {
     bottom: 16px;
     right: 16px;
@@ -742,7 +661,6 @@ input[type="button"],
   }
 }
 
-/* Glass Morphism Effects */
 .glass-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -755,7 +673,6 @@ input[type="button"],
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Gradient Text */
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -769,7 +686,6 @@ input[type="button"],
   background-clip: text;
 }
 
-/* Hover Lift Effect */
 .hover-lift {
   transition: all 0.3s ease;
 }
@@ -779,7 +695,6 @@ input[type="button"],
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* Skeleton Loader for Menu Items */
 .skeleton-card {
   background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -792,7 +707,6 @@ input[type="button"],
   background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
 }
 
-/* CSS Variables */
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -804,7 +718,6 @@ input[type="button"],
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -834,133 +747,38 @@ input[type="button"],
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
 /* ============================================
-   DARK MODE OVERRIDES - FORCE DARK MODE ON ALL PAGES
+   FORCE DARK MODE - SINGLE CLEAN VERSION
    ============================================ */
 
-/* Force dark mode on main containers */
-.dark main {
+.dark body {
   background-color: #111827 !important;
 }
 
-.dark .bg-gray-800 {
-  background-color: #1f2937 !important;
-}
-
-.dark .bg-gray-900 {
-  background-color: #111827 !important;
-}
-
-.dark .bg-gray-700 {
-  background-color: #374151 !important;
-}
-
-.dark .bg-gray-600 {
-  background-color: #4b5563 !important;
-}
-
-/* Text colors */
-.dark .text-white {
-  color: #f3f4f6 !important;
-}
-
-.dark .text-gray-300 {
-  color: #d1d5db !important;
-}
-
-.dark .text-gray-400 {
-  color: #9ca3af !important;
-}
-
-.dark .text-gray-500 {
-  color: #6b7280 !important;
-}
-
-.dark .text-gray-600 {
-  color: #9ca3af !important;
-}
-
-/* Border colors */
-.dark .border-gray-700 {
-  border-color: #374151 !important;
-}
-
-.dark .border-gray-600 {
-  border-color: #4b5563 !important;
-}
-
-.dark .border-gray-200 {
-  border-color: #374151 !important;
-}
-
-/* Hover states */
-.dark .hover\:bg-gray-700:hover {
-  background-color: #374151 !important;
-}
-
-.dark .hover\:bg-gray-600:hover {
-  background-color: #4b5563 !important;
-}
-
-/* Card backgrounds */
-.dark .card, 
-.dark .bg-white {
-  background-color: #1f2937 !important;
-}
-
-/* Table styles */
-.dark table tbody tr {
-  border-color: #374151 !important;
-}
-
-.dark table tbody tr:hover {
-  background-color: #374151 !important;
-}
-
-/* Input fields */
-.dark input,
-.dark select,
-.dark textarea {
-  background-color: #374151 !important;
-  border-color: #4b5563 !important;
-  color: #f3f4f6 !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #9ca3af !important;
-}
-
-/* Modal backgrounds */
-.dark .fixed.bg-black\/70,
-.dark .fixed.bg-black\/80 {
-  background-color: rgba(0, 0, 0, 0.9) !important;
-}
-/* FORCE DARK MODE STYLES - Override all components */
-.dark .bg-gray-50,
 .dark .bg-white,
+.dark .bg-gray-50,
 .dark .bg-gray-100 {
   background-color: #1f2937 !important;
 }
 
 .dark .bg-gray-200,
-.dark .bg-gray-300,
-.dark .bg-gray-400 {
+.dark .bg-gray-300 {
   background-color: #374151 !important;
 }
 
+.dark .bg-gray-400,
 .dark .bg-gray-500,
-.dark .bg-gray-600,
-.dark .bg-gray-700 {
+.dark .bg-gray-600 {
   background-color: #4b5563 !important;
 }
 
+.dark .bg-gray-700,
 .dark .bg-gray-800,
 .dark .bg-gray-900 {
   background-color: #111827 !important;
 }
 
-/* Text colors */
 .dark .text-gray-900,
 .dark .text-gray-800,
 .dark .text-gray-700 {
@@ -977,10 +795,9 @@ input[type="button"],
   color: #6b7280 !important;
 }
 
-/* Border colors */
+.dark .border-gray-100,
 .dark .border-gray-200,
-.dark .border-gray-300,
-.dark .border-gray-100 {
+.dark .border-gray-300 {
   border-color: #374151 !important;
 }
 
@@ -990,12 +807,6 @@ input[type="button"],
   border-color: #4b5563 !important;
 }
 
-/* Card backgrounds */
-.dark .bg-white {
-  background-color: #1f2937 !important;
-}
-
-/* Input fields */
 .dark input,
 .dark select,
 .dark textarea {
@@ -1009,7 +820,6 @@ input[type="button"],
   color: #9ca3af !important;
 }
 
-/* Table rows */
 .dark table tbody tr {
   border-color: #374151 !important;
 }
@@ -1018,33 +828,14 @@ input[type="button"],
   background-color: #374151 !important;
 }
 
-/* Modal backgrounds */
 .dark .fixed.bg-black\/50,
 .dark .fixed.bg-black\/70,
 .dark .fixed.bg-black\/80 {
   background-color: rgba(0, 0, 0, 0.9) !important;
 }
 
-/* Sidebar specific */
-.dark .bg-gray-800 {
-  background-color: #111827 !important;
-}
-
-.dark .border-gray-700 {
-  border-color: #1f2937 !important;
-}
-
-.dark .hover\:bg-gray-700:hover {
-  background-color: #1f2937 !important;
-}
-
-/* Dashboard cards */
-.dark .bg-gradient-to-r {
-  /* Keep gradients, they look good in dark mode too */
-}
-
-.dark .shadow-lg,
+.dark .shadow-sm,
 .dark .shadow-md,
-.dark .shadow-sm {
+.dark .shadow-lg {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
 }

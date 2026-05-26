@@ -10,33 +10,25 @@
 :root {
   --bg-primary: 249, 250, 251;
   --bg-secondary: 255, 255, 255;
-  --bg-card: 255, 255, 255;
   --text-primary: 17, 24, 39;
   --text-secondary: 75, 85, 99;
   --border-color: 229, 231, 235;
-  --gradient-start: #667eea;
-  --gradient-end: #764ba2;
 }
 
 /* Dark mode */
 .dark {
   --bg-primary: 17, 24, 39;
   --bg-secondary: 31, 41, 55;
-  --bg-card: 31, 41, 55;
   --text-primary: 243, 244, 246;
   --text-secondary: 156, 163, 175;
   --border-color: 55, 65, 81;
-  --gradient-start: #4f46e5;
-  --gradient-end: #7c3aed;
 }
 
-/* Apply theme variables */
 body {
   background-color: rgb(var(--bg-primary));
   color: rgb(var(--text-primary));
   transition: background-color 0.3s ease, color 0.3s ease;
 }
-
 /* ============================================
    GLOBAL RESET & BASE STYLES
    ============================================ */

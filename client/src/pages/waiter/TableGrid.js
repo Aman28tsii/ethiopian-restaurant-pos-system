@@ -8,6 +8,26 @@ import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
 import { QRCodeCanvas } from 'qrcode.react';
 
+// Helper function for product emojis
+const getProductEmoji = (category) => {
+  const emojis = {
+    'Main Course': '🍛',
+    'Beverage': '🥤',
+    'Drink': '🥤',
+    'Juice': '🧃',
+    'Coffee': '☕',
+    'Tea': '🍵',
+    'Dessert': '🍰',
+    'Appetizer': '🍢',
+    'Soup': '🍲',
+    'Salad': '🥗',
+    'Breakfast': '🍳',
+    'Traditional': '🇪🇹',
+    'Ethiopian': '🇪🇹'
+  };
+  return emojis[category] || '🍽️';
+};
+
 const TableGrid = () => {
   const { t } = useLanguage();
   
@@ -943,7 +963,7 @@ const TableGrid = () => {
           </div>
         )}
 
-        {/* NEW ORDER MODAL */}
+        {/* NEW ORDER MODAL - WITH EMOJI ICONS */}
         {showOrderModal && selectedTable && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
             <div className="bg-gray-800 rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden border border-gray-700 shadow-2xl flex flex-col">
@@ -1005,7 +1025,7 @@ const TableGrid = () => {
                           onClick={() => addToCart(product)}
                           className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105 hover:shadow-xl group"
                         >
-                          <div className="text-xl md:text-3xl mb-1 md:mb-2">🍽️</div>
+                          <div className="text-2xl md:text-3xl mb-1 md:mb-2">{getProductEmoji(product.category)}</div>
                           <p className="text-white font-semibold text-xs md:text-sm mb-0.5 md:mb-1 line-clamp-2">{product.name}</p>
                           <p className="text-emerald-400 font-bold text-sm md:text-base">Br {parseFloat(product.price).toFixed(2)}</p>
                           <div className="mt-1 md:mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1164,7 +1184,7 @@ const TableGrid = () => {
           </div>
         )}
 
-        {/* ADD ITEMS MODAL (Occupied Table) */}
+        {/* ADD ITEMS MODAL (Occupied Table) - WITH EMOJI ICONS */}
         {showAddItemsModal && selectedTableOrder && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-xl md:rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700 shadow-2xl flex flex-col">
@@ -1218,8 +1238,13 @@ const TableGrid = () => {
                           }}
                           className="bg-gray-700/50 hover:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105"
                         >
-                          <p className="text-white font-semibold text-sm md:text-base">{product.name}</p>
-                          <p className="text-emerald-400 font-bold text-xs md:text-sm mt-0.5 md:mt-1">Br {parseFloat(product.price).toFixed(2)}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="text-2xl">{getProductEmoji(product.category)}</div>
+                            <div>
+                              <p className="text-white font-semibold text-sm md:text-base">{product.name}</p>
+                              <p className="text-emerald-400 font-bold text-xs md:text-sm">Br {parseFloat(product.price).toFixed(2)}</p>
+                            </div>
+                          </div>
                         </button>
                       ))}
                     </div>

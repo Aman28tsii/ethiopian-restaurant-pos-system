@@ -18,11 +18,9 @@ const POS = ({ userRole = 'cashier' }) => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   
-  // NEW: Role-based mode detection
   const isWaiterMode = userRole === 'waiter';
   const isCashierMode = userRole === 'cashier' || userRole === 'manager' || userRole === 'owner';
 
-  // Fetch products
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -31,7 +29,6 @@ const POS = ({ userRole = 'cashier' }) => {
     try {
       setLoading(true);
       const response = await API.get('/products');
-      // Parse price as number for each product
       const productsData = (response.data.data || []).map(product => ({
         ...product,
         price: typeof product.price === 'string' ? parseFloat(product.price) : product.price
@@ -46,9 +43,7 @@ const POS = ({ userRole = 'cashier' }) => {
     }
   };
 
-  // Add to cart
   const addToCart = (product) => {
-    // Ensure price is a number
     const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
     
     setCart(prevCart => {
@@ -70,7 +65,6 @@ const POS = ({ userRole = 'cashier' }) => {
     });
   };
 
-  // Update quantity
   const updateQuantity = (productId, delta) => {
     setCart(prevCart => {
       const item = prevCart.find(i => i.id === productId);
@@ -89,12 +83,10 @@ const POS = ({ userRole = 'cashier' }) => {
     });
   };
 
-  // Remove from cart
   const removeFromCart = (productId) => {
     setCart(prev => prev.filter(item => item.id !== productId));
   };
 
-  // Clear cart
   const clearCart = () => {
     if (window.confirm('Clear entire cart?')) {
       setCart([]);
@@ -102,22 +94,18 @@ const POS = ({ userRole = 'cashier' }) => {
     }
   };
 
-  // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const tax = subtotal * 0.15; // 15% VAT
+  const tax = subtotal * 0.15;
   const total = subtotal + tax;
 
-  // Filter products
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  // Get unique categories
   const categories = ['all', ...new Set(products.map(p => p.category))];
 
-  // NEW: Send order to kitchen (for Waiter mode)
   const sendToKitchen = async () => {
     if (cart.length === 0) {
       setError('Cart is empty');
@@ -159,7 +147,6 @@ const POS = ({ userRole = 'cashier' }) => {
     }
   };
 
-  // Process order - Connect to real backend (for Cashier mode)
   const processOrder = async () => {
     if (cart.length === 0) {
       setError('Cart is empty');
@@ -219,7 +206,6 @@ const POS = ({ userRole = 'cashier' }) => {
     <div className="h-full flex flex-col lg:flex-row gap-4">
       {/* Left Panel - Products Grid */}
       <div className="flex-1 min-w-0">
-        {/* Role Badge */}
         <div className="mb-4 flex justify-end">
           <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
             isWaiterMode 
@@ -230,7 +216,6 @@ const POS = ({ userRole = 'cashier' }) => {
           </div>
         </div>
 
-        {/* Search and Categories */}
         <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 mb-4">
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
@@ -275,18 +260,17 @@ const POS = ({ userRole = 'cashier' }) => {
           </div>
         )}
 
-        {/* Products Grid */}
         <div className="h-[calc(100vh-280px)] overflow-y-auto">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredProducts.map(product => (
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-gray-800 border border-gray-700 rounded-xl p-3 hover:border-blue-500 hover:scale-105 transition-all duration-200 text-left"
+                className="bg-gray-800 border border-gray-700 rounded-xl p-3 hover:border-blue-500 hover:scale-105 transition-all duration-200 text-left w-full"
               >
-                <div className="text-3xl mb-2">🍽️</div>
-                <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-                <p className="text-blue-400 font-bold text-base">Br {typeof product.price === 'number' ? product.price.toFixed(2) : parseFloat(product.price).toFixed(2)}</p>
+                <div className="text-3xl mb-2 text-center">🍽️</div>
+                <h3 className="font-semibold text-white text-sm truncate">{product.name}</h3>
+                <p className="text-blue-400 font-bold text-base mt-1">Br {typeof product.price === 'number' ? product.price.toFixed(2) : parseFloat(product.price).toFixed(2)}</p>
                 <p className="text-xs text-gray-500 mt-1">Stock: {product.stock || 'N/A'}</p>
               </button>
             ))}
@@ -300,9 +284,8 @@ const POS = ({ userRole = 'cashier' }) => {
         </div>
       </div>
 
-      {/* Right Panel - Cart - Fixed width */}
+      {/* Right Panel - Cart */}
       <div className="w-96 flex-shrink-0 bg-gray-800 rounded-2xl border border-gray-700 flex flex-col h-[calc(100vh-120px)] sticky top-6">
-        {/* Cart Header */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -320,7 +303,6 @@ const POS = ({ userRole = 'cashier' }) => {
           )}
         </div>
 
-        {/* Cart Items - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.length === 0 ? (
             <div className="text-center py-12">
@@ -332,15 +314,15 @@ const POS = ({ userRole = 'cashier' }) => {
             cart.map(item => (
               <div key={item.id} className="bg-gray-700 rounded-xl p-3">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
+                  <div>
                     <h3 className="font-semibold text-white text-sm">{item.name}</h3>
                     <p className="text-blue-400 text-sm">Br {item.price.toFixed(2)}</p>
                   </div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-300 ml-2">
+                  <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-300">
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => updateQuantity(item.id, -1)}
@@ -363,7 +345,6 @@ const POS = ({ userRole = 'cashier' }) => {
           )}
         </div>
 
-        {/* Cart Summary - Fixed at bottom */}
         {cart.length > 0 && (
           <div className="border-t border-gray-700 p-4">
             {!showCheckout ? (
@@ -383,7 +364,6 @@ const POS = ({ userRole = 'cashier' }) => {
                   </div>
                 </div>
                 
-                {/* Role-based action button */}
                 {isWaiterMode ? (
                   <button
                     onClick={sendToKitchen}

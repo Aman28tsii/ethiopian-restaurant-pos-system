@@ -12,6 +12,7 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
   const [formData, setFormData] = useState({
     name: '',
     unit: '',
@@ -19,7 +20,10 @@ const Inventory = () => {
     min_stock: 0,
     unit_cost: 0,
     category: '',
-    supplier: ''
+    supplier: '',
+    price: 0,
+    description: '',
+    is_available: true
   });
 
   useEffect(() => {
@@ -52,6 +56,20 @@ const Inventory = () => {
         } else {
           await API.post('/ingredients', formData);
         }
+      } else {
+        const productData = {
+          name: formData.name,
+          price: formData.price,
+          category: formData.category,
+          description: formData.description,
+          is_available: formData.is_available
+        };
+        
+        if (editingItem) {
+          await API.put(`/products/${editingItem.id}`, productData);
+        } else {
+          await API.post('/products', productData);
+        }
       }
       resetModal();
       fetchData();
@@ -61,15 +79,51 @@ const Inventory = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, type) => {
     if (window.confirm(t('deleteConfirm'))) {
       try {
-        await API.delete(`/${activeTab}/${id}`);
+        if (type === 'ingredient') {
+          await API.delete(`/ingredients/${id}`);
+        } else {
+          await API.delete(`/products/${id}`);
+        }
         fetchData();
       } catch (err) {
         alert(err.response?.data?.error || t('deleteFailed'));
       }
     }
+  };
+
+  const handleEdit = (item, type) => {
+    if (type === 'ingredient') {
+      setFormData({
+        name: item.name,
+        unit: item.unit,
+        quantity: item.quantity,
+        min_stock: item.min_stock,
+        unit_cost: item.unit_cost,
+        category: item.category || '',
+        supplier: item.supplier || '',
+        price: 0,
+        description: '',
+        is_available: true
+      });
+    } else {
+      setFormData({
+        name: item.name,
+        unit: '',
+        quantity: 0,
+        min_stock: 0,
+        unit_cost: 0,
+        category: item.category || '',
+        supplier: '',
+        price: item.price,
+        description: item.description || '',
+        is_available: item.is_available
+      });
+    }
+    setEditingItem(item);
+    setShowModal(true);
   };
 
   const resetModal = () => {
@@ -82,18 +136,34 @@ const Inventory = () => {
       min_stock: 0,
       unit_cost: 0,
       category: '',
-      supplier: ''
+      supplier: '',
+      price: 0,
+      description: '',
+      is_available: true
     });
+  };
+
+  const toggleProductAvailability = async (product) => {
+    try {
+      await API.put(`/products/${product.id}`, {
+        ...product,
+        is_available: !product.is_available
+      });
+      fetchData();
+    } catch (err) {
+      console.error('Toggle availability error:', err);
+      alert('Failed to update product status');
+    }
   };
 
   const lowStockItems = ingredients.filter(i => i.quantity <= i.min_stock);
   const filteredIngredients = ingredients.filter(i =>
     i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    (i.category && i.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -122,13 +192,13 @@ const Inventory = () => {
       </div>
 
       {/* Low Stock Alert */}
-      {lowStockItems.length > 0 && (
+      {lowStockItems.length > 0 && activeTab === 'ingredients' && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <AlertTriangle size={20} className="text-yellow-400" />
             <div>
               <p className="text-yellow-400 font-semibold">{t('lowStockAlert')}</p>
-              <p className="text-gray-400 text-sm">{lowStockItems.length} {t('ingredientsBelowMinStock')}</p>
+              <p className="text-gray-400 text-sm">{lowStockItems.length} ingredients below minimum stock level</p>
             </div>
           </div>
         </div>
@@ -206,20 +276,10 @@ const Inventory = () => {
                     <td className="px-6 py-4 text-gray-300">{ing.category || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingItem(ing);
-                            setFormData(ing);
-                            setShowModal(true);
-                          }}
-                          className="text-blue-400 hover:text-blue-300"
-                        >
+                        <button onClick={() => handleEdit(ing, 'ingredient')} className="text-blue-400 hover:text-blue-300">
                           <Edit2 size={16} />
                         </button>
-                        <button
-                          onClick={() => handleDelete(ing.id)}
-                          className="text-red-400 hover:text-red-300"
-                        >
+                        <button onClick={() => handleDelete(ing.id, 'ingredient')} className="text-red-400 hover:text-red-300">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -238,7 +298,7 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Products Table */}
+      {/* Products Table - No Image Column */}
       {activeTab === 'products' && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -259,16 +319,23 @@ const Inventory = () => {
                     <td className="px-6 py-4 text-gray-300">Br {parseFloat(product.price).toFixed(2)}</td>
                     <td className="px-6 py-4 text-gray-300">{product.category || '-'}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${product.is_available ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <button
+                        onClick={() => toggleProductAvailability(product)}
+                        className={`px-2 py-1 rounded-full text-xs font-semibold transition ${
+                          product.is_available 
+                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                            : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                        }`}
+                      >
                         {product.is_available ? t('available') : t('unavailable')}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button className="text-blue-400 hover:text-blue-300">
+                        <button onClick={() => handleEdit(product, 'product')} className="text-blue-400 hover:text-blue-300">
                           <Edit2 size={16} />
                         </button>
-                        <button className="text-red-400 hover:text-red-300">
+                        <button onClick={() => handleDelete(product.id, 'product')} className="text-red-400 hover:text-red-300">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -287,153 +354,162 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - No Image Upload */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl w-full max-w-md border border-gray-700">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
+          <div className="bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="sticky top-0 bg-gray-800 p-6 border-b border-gray-700">
+              <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white">
                   {editingItem ? `${t('edit')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}` : `${t('addNew')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}`}
                 </h2>
                 <button onClick={resetModal} className="text-gray-400 hover:text-gray-300">
-                  <X size={20} />
+                  <X size={24} />
                 </button>
               </div>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('name')} *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Common fields */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('name')} *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-                {activeTab === 'ingredients' && (
-                  <>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')}</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Main Course, Beverage, Dessert"
+                />
+              </div>
+
+              {/* Ingredient-specific fields */}
+              {activeTab === 'ingredients' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('unit')} *</label>
+                    <select
+                      required
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">{t('selectUnit')}</option>
+                      <option value="kg">Kilogram (kg)</option>
+                      <option value="g">Gram (g)</option>
+                      <option value="L">Liter (L)</option>
+                      <option value="ml">Milliliter (ml)</option>
+                      <option value="pcs">Pieces (pcs)</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('unit')} *</label>
-                      <select
-                        required
-                        value={formData.unit}
-                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">{t('selectUnit')}</option>
-                        <option value="kg">{t('kilogram')}</option>
-                        <option value="g">{t('gram')}</option>
-                        <option value="L">{t('liter')}</option>
-                        <option value="ml">{t('milliliter')}</option>
-                        <option value="pcs">{t('pieces')}</option>
-                      </select>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('quantity')}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.quantity}
+                        onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('quantity')}</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.quantity}
-                          onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('minStock')}</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.min_stock}
-                          onChange={(e) => setFormData({ ...formData, min_stock: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('minStock')}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.min_stock}
+                        onChange={(e) => setFormData({ ...formData, min_stock: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('unitCost')}</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.unit_cost}
-                          onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')}</label>
-                        <input
-                          type="text"
-                          value={formData.category}
-                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder={t('egVegetables')}
-                        />
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('unitCost')}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.unit_cost}
+                        onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">{t('supplier')}</label>
                       <input
                         type="text"
                         value={formData.supplier}
                         onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                  </>
-                )}
+                  </div>
+                </>
+              )}
 
-                {activeTab === 'products' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('price')} *</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('category')}</label>
-                      <input
-                        type="text"
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('description')}</label>
-                      <textarea
-                        rows="3"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
+              {/* Product-specific fields */}
+              {activeTab === 'products' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('price')} *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                    {editingItem ? t('update') : t('create')}
-                  </button>
-                  <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition">
-                    {t('cancel')}
-                  </button>
-                </div>
-              </form>
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('description')}</label>
+                    <textarea
+                      rows="3"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Product description..."
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="is_available"
+                      checked={formData.is_available}
+                      onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="is_available" className="text-sm text-gray-300">
+                      Available for sale
+                    </label>
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
+                  {editingItem ? t('update') : t('create')}
+                </button>
+                <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold transition">
+                  {t('cancel')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

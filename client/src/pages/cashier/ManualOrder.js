@@ -5,6 +5,24 @@ import {
   CreditCard, Smartphone, DollarSign
 } from 'lucide-react';
 
+// Helper function for product emojis - MOVED TO TOP
+const getProductEmoji = (category) => {
+  const emojis = {
+    'Main Course': '🍛',
+    'Beverage': '🥤',
+    'Coffee': '☕',
+    'Tea': '🍵',
+    'Dessert': '🍰',
+    'Appetizer': '🍢',
+    'Soup': '🍲',
+    'Salad': '🥗',
+    'Breakfast': '🍳',
+    'Traditional': '🇪🇹',
+    'Ethiopian': '🇪🇹'
+  };
+  return emojis[category] || '🍽️';
+};
+
 const ManualOrder = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -313,28 +331,27 @@ const ManualOrder = () => {
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="h-[calc(100vh-500px)] overflow-y-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {filteredProducts.map(product => (
-              <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className="bg-gray-800 border border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:bg-gray-700"
-              >
-                <div className="text-2xl mb-1">🍽️</div>
-                <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-                <p className="text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
-                <span className="text-xs text-green-400 mt-1 inline-block">+ Add</span>
-              </button>
-            ))}
-          </div>
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No products found</p>
-            </div>
-          )}
+        {/* Products Grid with Emojis */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {filteredProducts.map(product => (
+            <button
+              key={product.id}
+              onClick={() => addToCart(product)}
+              className="bg-gray-800 border border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:bg-gray-700"
+            >
+              <div className="text-4xl text-center mb-2">{getProductEmoji(product.category)}</div>
+              <h3 className="font-semibold text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
+              <p className="text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
+              <span className="text-xs text-green-400 mt-1 inline-block">+ Add</span>
+            </button>
+          ))}
         </div>
+        
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No products found</p>
+          </div>
+        )}
       </div>
 
       {/* Right Panel - Cart */}

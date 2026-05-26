@@ -104,29 +104,29 @@ const Sidebar = ({ user, onLogout }) => {
     <>
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-700"
+        className="fixed top-4 left-4 z-50 md:hidden bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-colors duration-200"
       >
-        {isMobileOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
+        {isMobileOpen ? <X size={24} className="text-gray-900 dark:text-white" /> : <Menu size={24} className="text-gray-900 dark:text-white" />}
       </button>
 
       <MobileOverlay />
 
       <aside 
         className={`
-          fixed md:relative z-40 flex flex-col bg-gray-800 border-r border-gray-700 transition-all duration-300
+          fixed md:relative z-40 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           ${isCollapsed && !isMobile ? 'w-20' : 'w-72'}
           ${isMobile ? 'w-72' : ''}
           h-full
         `}
       >
-        <div className={`p-6 border-b border-gray-700 ${isCollapsed && !isMobile ? 'px-4' : ''}`}>
+        <div className={`p-6 border-b border-gray-200 dark:border-gray-800 ${isCollapsed && !isMobile ? 'px-4' : ''}`}>
           <div className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'}`}>
-            <Store className="text-blue-500 flex-shrink-0" size={32} />
+            <Store className="text-blue-600 dark:text-blue-500 flex-shrink-0" size={32} />
             {(!isCollapsed || isMobile) && (
               <div>
-                <h1 className="text-xl font-bold text-white">EthioPOS</h1>
-                <p className="text-xs text-gray-400 capitalize">{t(userRole)}</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">EthioPOS</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{t(userRole)}</p>
               </div>
             )}
           </div>
@@ -135,10 +135,10 @@ const Sidebar = ({ user, onLogout }) => {
         {!isMobile && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="absolute bg-gray-700 rounded-full p-1 hover:bg-gray-600 transition-all duration-200 z-10"
+            className="absolute bg-gray-200 dark:bg-gray-800 rounded-full p-1 hover:bg-gray-300 dark:hover:bg-gray-700 transition-all duration-200 z-10"
             style={{ left: isCollapsed ? '5rem' : '18rem', top: '5rem' }}
           >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {isCollapsed ? <ChevronRight size={16} className="text-gray-700 dark:text-gray-300" /> : <ChevronLeft size={16} className="text-gray-700 dark:text-gray-300" />}
           </button>
         )}
 
@@ -152,7 +152,7 @@ const Sidebar = ({ user, onLogout }) => {
                 `flex items-center ${isCollapsed && !isMobile ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
               title={isCollapsed && !isMobile ? item.label : ''}
@@ -163,12 +163,12 @@ const Sidebar = ({ user, onLogout }) => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
           {(!isCollapsed || isMobile) && (
-            <div className="mb-3 px-4 py-2 bg-gray-700 rounded-xl">
-              <p className="text-sm text-gray-400">{t('loggedInAs')}</p>
-              <p className="text-white font-semibold truncate">{user?.name || t('staff')}</p>
-              <p className="text-xs text-gray-400 capitalize">{t(user?.role || 'cashier')}</p>
+            <div className="mb-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('loggedInAs')}</p>
+              <p className="text-gray-900 dark:text-white font-semibold truncate">{user?.name || t('staff')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{t(user?.role || 'cashier')}</p>
             </div>
           )}
           <button

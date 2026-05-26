@@ -3,6 +3,41 @@
 @tailwind utilities;
 
 /* ============================================
+   DARK MODE VARIABLES
+   ============================================ */
+
+/* Light mode (default) */
+:root {
+  --bg-primary: 249, 250, 251;
+  --bg-secondary: 255, 255, 255;
+  --bg-card: 255, 255, 255;
+  --text-primary: 17, 24, 39;
+  --text-secondary: 75, 85, 99;
+  --border-color: 229, 231, 235;
+  --gradient-start: #667eea;
+  --gradient-end: #764ba2;
+}
+
+/* Dark mode */
+.dark {
+  --bg-primary: 17, 24, 39;
+  --bg-secondary: 31, 41, 55;
+  --bg-card: 31, 41, 55;
+  --text-primary: 243, 244, 246;
+  --text-secondary: 156, 163, 175;
+  --border-color: 55, 65, 81;
+  --gradient-start: #4f46e5;
+  --gradient-end: #7c3aed;
+}
+
+/* Apply theme variables */
+body {
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================
    GLOBAL RESET & BASE STYLES
    ============================================ */
 
@@ -23,11 +58,29 @@ html {
   }
 }
 
-/* Prevent white flash on dark mode */
-body {
-  background-color: #111827;
-  margin: 0;
-  padding: 0;
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 /* ============================================
@@ -90,13 +143,21 @@ input[type="button"],
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #e5e7eb;
   border-radius: 10px;
 }
 
+.dark .overflow-x-auto::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: #9ca3af;
   border-radius: 10px;
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #4b5563;
 }
 
 /* Hide scrollbar but keep functionality */
@@ -267,6 +328,7 @@ input[type="button"],
     max-height: 60vh;
     overflow-y: auto;
     border-radius: 1rem 1rem 0 0;
+    background: rgb(var(--bg-card));
   }
 }
 
@@ -411,6 +473,7 @@ input[type="button"],
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 /* ============================================
    CUSTOMER FACING PAGES - MODERN RESTAURANT STYLE
    ============================================ */
@@ -420,15 +483,25 @@ input[type="button"],
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+.dark .qr-menu-container {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+
 .qr-menu-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.dark .qr-menu-header {
+  background: rgba(31, 41, 55, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 .qr-menu-card {
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgb(var(--bg-card));
 }
 
 .qr-menu-card:hover {
@@ -450,6 +523,10 @@ input[type="button"],
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.dark .category-tab.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
 }
 
 .category-tab.active::after {
@@ -518,9 +595,9 @@ input[type="button"],
 }
 
 @keyframes pulse-current {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 242, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(59, 130, 242, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 242, 0); }
 }
 
 /* Timer Animation */
@@ -551,6 +628,10 @@ input[type="button"],
   animation: loading 1.5s infinite;
 }
 
+.dark .skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+}
+
 @keyframes loading {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -564,6 +645,10 @@ input[type="button"],
 .cart-items-container::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 10px;
+}
+
+.dark .cart-items-container::-webkit-scrollbar-track {
+  background: #374151;
 }
 
 .cart-items-container::-webkit-scrollbar-thumb {
@@ -601,6 +686,11 @@ input[type="button"],
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.dark .restaurant-info-card {
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Responsive Improvements for Customer Pages */
 @media (max-width: 640px) {
   .qr-menu-card {
@@ -636,12 +726,23 @@ input[type="button"],
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+.dark .glass-card {
+  background: rgba(31, 41, 55, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Gradient Text */
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* Hover Lift Effect */
@@ -662,6 +763,12 @@ input[type="button"],
   border-radius: 12px;
   height: 120px;
 }
+
+.dark .skeleton-card {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+}
+
+/* CSS Variables */
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -672,6 +779,8 @@ input[type="button"],
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
+
+/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -687,18 +796,6 @@ input[type="button"],
   animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes timer-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.timer-animation {
-  animation: timer-pulse 1s ease-in-out infinite;
-}
 @keyframes slide-up {
   from {
     opacity: 0;

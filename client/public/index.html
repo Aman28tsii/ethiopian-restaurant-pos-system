@@ -35,11 +35,40 @@
     
     <style>
       body {
-        background-color: #111827;
+        background-color: #f3f4f6;
         margin: 0;
         padding: 0;
+        transition: background-color 0.3s ease;
+      }
+      
+      /* Dark mode body style */
+      .dark body {
+        background-color: #111827 !important;
       }
     </style>
+    
+    <!-- IMMEDIATE DARK MODE SCRIPT - Runs before React loads -->
+    <script>
+      (function() {
+        // Get theme from localStorage
+        let theme = localStorage.getItem('theme');
+        
+        // Check system preference if no saved theme
+        if (!theme) {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          theme = prefersDark ? 'dark' : 'light';
+        }
+        
+        // Apply theme to HTML element immediately
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          console.log('Dark mode applied immediately');
+        } else {
+          document.documentElement.classList.remove('dark');
+          console.log('Light mode applied immediately');
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

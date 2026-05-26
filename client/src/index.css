@@ -69,6 +69,38 @@ html {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
+/* Force dark mode background on all pages */
+.dark body {
+  background-color: #111827 !important;
+}
+
+.dark .bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+.dark .text-white {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.dark .border-gray-700 {
+  border-color: #374151 !important;
+}
+
+.dark .bg-gray-700 {
+  background-color: #374151 !important;
+}
 
 /* Smooth transitions for theme switching */
 * {
@@ -801,4 +833,106 @@ input[type="button"],
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
+}
+/* ============================================
+   DARK MODE OVERRIDES - FORCE DARK MODE ON ALL PAGES
+   ============================================ */
+
+/* Force dark mode on main containers */
+.dark main {
+  background-color: #111827 !important;
+}
+
+.dark .bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+.dark .bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+.dark .bg-gray-600 {
+  background-color: #4b5563 !important;
+}
+
+/* Text colors */
+.dark .text-white {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.dark .text-gray-600 {
+  color: #9ca3af !important;
+}
+
+/* Border colors */
+.dark .border-gray-700 {
+  border-color: #374151 !important;
+}
+
+.dark .border-gray-600 {
+  border-color: #4b5563 !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-gray-700:hover {
+  background-color: #374151 !important;
+}
+
+.dark .hover\:bg-gray-600:hover {
+  background-color: #4b5563 !important;
+}
+
+/* Card backgrounds */
+.dark .card, 
+.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+/* Table styles */
+.dark table tbody tr {
+  border-color: #374151 !important;
+}
+
+.dark table tbody tr:hover {
+  background-color: #374151 !important;
+}
+
+/* Input fields */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Modal backgrounds */
+.dark .fixed.bg-black\/70,
+.dark .fixed.bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.9) !important;
 }

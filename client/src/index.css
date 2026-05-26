@@ -839,3 +839,60 @@ input[type="button"],
 .dark .shadow-lg {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
 }
+/* FORCE ALL COMPONENTS TO RESPECT DARK MODE */
+.dark .bg-gray-800,
+.dark .bg-gray-900,
+.dark .bg-gray-700 {
+  background-color: #1f2937 !important;
+}
+
+.dark .text-white,
+.dark .text-gray-100,
+.dark .text-gray-200 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-300,
+.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.dark .border-gray-700,
+.dark .border-gray-800 {
+  border-color: #374151 !important;
+}
+/* ============================================
+   FIX BLACK BACKGROUND ISSUE
+   ============================================ */
+
+/* Force white background in light mode */
+body {
+  background-color: #f3f4f6 !important;
+}
+
+/* Force dark background in dark mode */
+.dark body {
+  background-color: #111827 !important;
+}
+
+/* Fix any element with bg-black or bg-gray-900 that stays black */
+.dark .bg-black,
+.dark .bg-gray-900,
+.dark .bg-gray-950 {
+  background-color: #111827 !important;
+}
+
+/* In light mode, ensure these are light */
+.bg-black,
+.bg-gray-900 {
+  background-color: #f3f4f6 !important;
+}
+
+/* Fix text on dark backgrounds */
+.dark .text-white {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-black {
+  color: #f3f4f6 !important;
+}

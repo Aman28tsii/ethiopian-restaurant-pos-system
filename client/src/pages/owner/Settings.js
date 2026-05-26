@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2 } from 'lucide-react';
+import { Save, Building, Phone, Mail, Clock, Percent, Printer, Loader2, Globe, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const Settings = () => {
   const { t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [settings, setSettings] = useState({
@@ -46,48 +48,59 @@ const Settings = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t('settings')}</h1>
-          <p className="text-gray-400 mt-1">{t('configureRestaurantPreferences')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('settings')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('configureRestaurantPreferences')}</p>
         </div>
-        {saved && (
-          <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-xl text-sm">
-            {t('settingsSavedSuccessfully')}
-          </div>
-        )}
+        <div className="flex gap-3">
+          {/* Theme Toggle in Settings */}
+          <button
+            onClick={toggleTheme}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold flex items-center gap-2 transition"
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            {theme === 'dark' ? t('lightMode') : t('darkMode')}
+          </button>
+          {saved && (
+            <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-2 rounded-xl text-sm flex items-center gap-2">
+              <CheckCircle size={16} />
+              {t('settingsSavedSuccessfully')}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Settings Form */}
-      <form onSubmit={handleSubmit} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div className="p-6 space-y-6">
           {/* Restaurant Info Section */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Building size={20} className="text-blue-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Building size={20} className="text-blue-600 dark:text-blue-400" />
               {t('restaurantInformation')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t('restaurantName')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('restaurantName')}</label>
                 <input
                   type="text"
                   name="restaurantName"
                   value={settings.restaurantName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t('address')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('address')}</label>
                 <input
                   type="text"
                   name="address"
                   value={settings.address}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
                   <Phone size={14} /> {t('phone')}
                 </label>
                 <input
@@ -95,11 +108,11 @@ const Settings = () => {
                   name="phone"
                   value={settings.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
                   <Mail size={14} /> {t('email')}
                 </label>
                 <input
@@ -107,32 +120,32 @@ const Settings = () => {
                   name="email"
                   value={settings.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Business Settings Section */}
-          <div className="border-t border-gray-700 pt-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Percent size={20} className="text-green-400" />
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Percent size={20} className="text-green-600 dark:text-green-400" />
               {t('businessSettings')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t('taxRate')} (%)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('taxRate')} (%)</label>
                 <input
                   type="number"
                   name="taxRate"
                   value={settings.taxRate}
                   onChange={handleChange}
                   step="0.5"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
                   <Clock size={14} /> {t('workingHours')}
                 </label>
                 <input
@@ -141,33 +154,33 @@ const Settings = () => {
                   value={settings.workingHours}
                   onChange={handleChange}
                   placeholder="9:00 AM - 10:00 PM"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Receipt Settings Section */}
-          <div className="border-t border-gray-700 pt-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Printer size={20} className="text-purple-400" />
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Printer size={20} className="text-purple-600 dark:text-purple-400" />
               {t('receiptSettings')}
             </h2>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">{t('receiptFooter')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('receiptFooter')}</label>
               <textarea
                 name="receiptFooter"
                 value={settings.receiptFooter}
                 onChange={handleChange}
                 rows="2"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('thankYouForDining')}
               />
             </div>
           </div>
 
           {/* Save Button */}
-          <div className="border-t border-gray-700 pt-6">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <button
               type="submit"
               disabled={loading}
@@ -181,8 +194,9 @@ const Settings = () => {
       </form>
 
       {/* Info Card */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-        <p className="text-blue-400 text-sm">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+        <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
+          <Globe size={16} />
           💡 {t('settingsSaveInfo')}
         </p>
       </div>

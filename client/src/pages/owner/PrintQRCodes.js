@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Printer, Download, QrCode, Copy } from 'lucide-react';
+import { Printer, Download, QrCode, Copy, Utensils } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const PrintQRCodes = () => {
   const { t } = useLanguage();
@@ -13,7 +14,17 @@ const PrintQRCodes = () => {
 
   const copyUrl = (url) => {
     navigator.clipboard.writeText(url);
-    alert('URL copied!');
+    alert(t('urlCopied'));
+  };
+
+  const downloadQR = (tableNumber) => {
+    const canvas = document.getElementById(`qr-canvas-${tableNumber}`);
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = `table-${tableNumber}-qr.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    }
   };
 
   return (
@@ -21,8 +32,8 @@ const PrintQRCodes = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t('printQRCodes')}</h1>
-          <p className="text-gray-400 mt-1">{t('generateAndPrintQRCodes')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('printQRCodes')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('generateAndPrintQRCodes')}</p>
         </div>
         <button
           onClick={printPage}
@@ -38,21 +49,23 @@ const PrintQRCodes = () => {
         {tables.map(table => (
           <div 
             key={table} 
-            className="bg-white rounded-xl p-4 text-center print:shadow-none print:border print:border-gray-300"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all print:shadow-none print:border print:border-gray-300"
           >
-            {/* QR Code Image */}
-            <div className="bg-gray-100 p-3 rounded-lg mb-3">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${baseUrl}/qr-menu?table=${table}`)}`}
-                alt={`Table ${table} QR Code`}
+            {/* QR Code */}
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg mb-3">
+              <QRCodeCanvas
+                id={`qr-canvas-${table}`}
+                value={`${baseUrl}/qr-menu?table=${table}`}
+                size={150}
+                level="H"
+                includeMargin={true}
                 className="mx-auto"
-                style={{ width: '120px', height: '120px' }}
               />
             </div>
             
             {/* Table Info */}
-            <p className="font-bold text-gray-800 text-lg">{t('table')} {table}</p>
-            <p className="text-xs text-gray-500 mt-1 break-all hidden print:block">
+            <p className="font-bold text-gray-900 dark:text-white text-lg">{t('table')} {table}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all hidden print:block">
               {baseUrl}/qr-menu?table={table}
             </p>
             
@@ -60,19 +73,14 @@ const PrintQRCodes = () => {
             <div className="mt-3 flex gap-2 justify-center print:hidden">
               <button
                 onClick={() => copyUrl(`${baseUrl}/qr-menu?table=${table}`)}
-                className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded flex items-center gap-1 hover:bg-gray-300"
+                className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded flex items-center gap-1 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
               >
                 <Copy size={12} />
                 {t('copyUrl')}
               </button>
               <button
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.download = `table-${table}-qr.png`;
-                  link.href = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${baseUrl}/qr-menu?table=${table}`)}`;
-                  link.click();
-                }}
-                className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center gap-1 hover:bg-blue-200"
+                onClick={() => downloadQR(table)}
+                className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-1 rounded flex items-center gap-1 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition"
               >
                 <Download size={12} />
                 {t('download')}
@@ -83,16 +91,17 @@ const PrintQRCodes = () => {
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 print:hidden">
-        <p className="text-blue-400 text-sm">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 print:hidden">
+        <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
+          <QrCode size={16} />
           💡 {t('qrPrintInstructions')}
         </p>
       </div>
 
       {/* Print Instructions (visible only when printing) */}
       <div className="hidden print:block text-center mt-8">
-        <p className="text-gray-500 text-sm">
-          Cut along the lines and place on each table
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
+          {t('cutAndPlaceOnTables')}
         </p>
       </div>
     </div>

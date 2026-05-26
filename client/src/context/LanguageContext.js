@@ -11,34 +11,12 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
  *   - English (en) - Default
  *   - Amharic (am) - አማርኛ
  * 
- * HOW TO USE IN COMPONENTS:
- * ============================================================
- * 
- * 1. Import the hook:
- *    import { useLanguage } from '../context/LanguageContext';
- * 
- * 2. Destructure what you need:
- *    const { t, language, setLanguage } = useLanguage();
- * 
- * 3. Use translations:
- *    <h1>{t('dashboard')}</h1>
- *    <button onClick={() => setLanguage('am')}>አማርኛ</button>
- * 
- * 4. To add a new language:
- *    - Add new object inside translations{}
- *    - Copy all keys from 'en' object
- *    - Translate values to your language
- * 
  * ============================================================
  */
 
-// ============================================================
-// TRANSLATIONS OBJECT
-// ============================================================
 const translations = {
-  
   // ==========================================================
-  // ENGLISH TRANSLATIONS (Default)
+  // ENGLISH TRANSLATIONS
   // ==========================================================
   en: {
     // ---------- COMMON UI ----------
@@ -82,6 +60,13 @@ const translations = {
     print: 'Print',
     download: 'Download',
     upload: 'Upload',
+    yes: 'Yes',
+    no: 'No',
+    ok: 'OK',
+    error: 'Error',
+    success: 'Success',
+    warning: 'Warning',
+    info: 'Info',
 
     // ---------- USER ROLES ----------
     owner: 'Owner',
@@ -91,6 +76,11 @@ const translations = {
     kitchen: 'Kitchen',
     admin: 'Admin',
     staff: 'Staff',
+
+    // ---------- DARK MODE ----------
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    theme: 'Theme',
 
     // ---------- POS / CASHIER MODULE ----------
     posTerminal: 'POS Terminal',
@@ -117,6 +107,9 @@ const translations = {
     tapToAdd: 'Tap on menu items to add',
     manualOrder: 'Manual Order',
     walkInCustomer: 'Walk-in Customer',
+    proceedToCheckout: 'Proceed to Checkout',
+    clearCart: 'Clear Cart',
+    orderSent: 'Order sent to kitchen',
 
     // ---------- KITCHEN MODULE ----------
     kitchenDashboard: 'Kitchen Dashboard',
@@ -133,6 +126,10 @@ const translations = {
     cooking: 'Cooking',
     ordersToPrepare: 'Orders to prepare',
     active: 'Active',
+    noOrdersToDisplay: 'No orders to display',
+    ordersWillAppearHere: 'Orders will appear here when created',
+    kitchenStatus: 'Kitchen Status',
+    waitingTime: 'Waiting Time',
 
     // ---------- WAITER / TABLE MANAGEMENT ----------
     tableManagement: 'Table Management',
@@ -171,7 +168,7 @@ const translations = {
     adding: 'Adding...',
     isReserved: 'is reserved',
     isCleaning: 'is being cleaned',
-    orderSent: 'Order sent to kitchen',
+    orderSentKitchen: 'Order sent to kitchen',
     failedToSubmitOrder: 'Failed to submit order',
     orderCancelledSuccess: 'Order cancelled successfully!',
     failedToCancelOrder: 'Failed to cancel order',
@@ -185,6 +182,10 @@ const translations = {
     todaysShift: 'Today\'s Shift',
     toConfirm: 'To Confirm',
     awaitingConfirmation: 'Awaiting Confirmation',
+    assignSelf: 'Assign Yourself',
+    unassign: 'Unassign',
+    maxTablesReached: 'Maximum tables reached',
+    assignedTables: 'Assigned Tables',
 
     // ---------- QR CODE ORDERING ----------
     qrCodeAvailable: 'QR Code available',
@@ -205,6 +206,8 @@ const translations = {
     step2: 'Browse menu and add items',
     step3: 'Enter your details',
     step4: 'Place order - waiter confirms',
+    scanToOrder: 'Scan to Order',
+    viewMenu: 'View Menu',
 
     // ---------- INVENTORY MANAGEMENT ----------
     inventoryManagement: 'Inventory Management',
@@ -240,6 +243,8 @@ const translations = {
     milliliter: 'Milliliter (ml)',
     pieces: 'Pieces (pcs)',
     egVegetables: 'e.g., Vegetables',
+    stockValue: 'Stock Value',
+    reorderLevel: 'Reorder Level',
 
     // ---------- WASTAGE TRACKING ----------
     wastageTracking: 'Wastage Tracking',
@@ -300,6 +305,8 @@ const translations = {
     editExpense: 'Edit Expense',
     selectCategory: 'Select category',
     optionalDescription: 'Optional description...',
+    monthlyExpenses: 'Monthly Expenses',
+    expenseTrend: 'Expense Trend',
 
     // ---------- PROFIT REPORTS ----------
     profitReports: 'Profit Reports',
@@ -332,6 +339,9 @@ const translations = {
     salesReports: 'Sales Reports',
     performanceByDay: 'Performance by day',
     noSalesDataForPeriod: 'No sales data for selected period',
+    grossProfit: 'Gross Profit',
+    netProfit: 'Net Profit',
+    operatingExpenses: 'Operating Expenses',
 
     // ---------- STAFF MANAGEMENT ----------
     staffManagement: 'Staff Management',
@@ -451,6 +461,9 @@ const translations = {
     customerUpdated: 'Customer updated successfully',
     customerDeleted: 'Customer deleted successfully',
     deleteCustomerConfirm: 'Are you sure you want to delete this customer?',
+    loyaltyPoints: 'Loyalty Points',
+    lastVisit: 'Last Visit',
+    orderHistory: 'Order History',
 
     // ---------- SETTINGS / RECEIPT ----------
     receiptFooter: 'Receipt Footer Message',
@@ -466,6 +479,8 @@ const translations = {
     thankYouForDining: 'Thank you for dining with us!',
     saveSettings: 'Save Settings',
     settingsSaveInfo: 'Settings are saved to your browser.',
+    currencySymbol: 'Br',
+    currency: 'Birr',
 
     // ---------- REAL-TIME NOTIFICATIONS ----------
     lowStockAlert: 'Low Stock Alert',
@@ -476,6 +491,8 @@ const translations = {
     noNotifications: 'No notifications',
     newOrdersWaiting: 'new orders waiting for kitchen',
     isNow: 'is now',
+    orderStatusUpdated: 'Order status updated',
+    tableStatusUpdated: 'Table status updated',
 
     // ---------- ORDER CANCELLATION ----------
     cancelOrderTitle: 'Cancel Order',
@@ -607,6 +624,7 @@ const translations = {
     passwordMinLength: 'Password must be at least 6 characters',
     emailInvalid: 'Please enter a valid email address',
     stockInsufficient: 'Insufficient stock',
+    invalidEmailOrPassword: 'Invalid email or password',
 
     // ---------- TIME PERIODS ----------
     last7Days: 'Last 7 Days',
@@ -615,6 +633,9 @@ const translations = {
     week: 'Week',
     month: 'Month',
     year: 'Year',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    tomorrow: 'Tomorrow',
 
     // ---------- WEEK DAYS ----------
     monday: 'Monday',
@@ -644,20 +665,21 @@ const translations = {
     avgOrder: 'Avg Order',
     only: 'Only',
     customers: 'Customers',
-    orderHistory: 'Order History',
     enterPhoneToViewOrders: 'Enter your phone number to view your orders',
     enterPhoneNumber: 'Enter your phone number',
     viewOrders: 'View Orders',
     customerInfo: 'Customer Information',
     noOrdersFound: 'No orders found',
     recentOrders: 'Recent Orders',
+    orderDetails: 'Order Details',
+    viewDetails: 'View Details',
   },
 
   // ==========================================================
   // AMHARIC TRANSLATIONS (አማርኛ)
   // ==========================================================
   am: {
-    // ---------- COMMON UI (አጠቃላይ) ----------
+    // ---------- COMMON UI (የጋራ በይነገጽ) ----------
     dashboard: 'ዳሽቦርድ',
     logout: 'ውጣ',
     welcome: 'እንኳን ደህና መጡ',
@@ -670,8 +692,8 @@ const translations = {
     delete: 'አጥፋ',
     edit: 'አርትዕ',
     refresh: 'አድስ',
-    approve: 'ፍቀድ',
-    reject: 'አትፍቀድ',
+    approve: 'አጽድቅ',
+    reject: 'ውድቅ አድርግ',
     back: 'ተመለስ',
     confirm: 'አረጋግጥ',
     loading: 'በመጫን ላይ...',
@@ -686,7 +708,7 @@ const translations = {
     name: 'ስም',
     email: 'ኢሜይል',
     phone: 'ስልክ',
-    password: 'ይለፍ ቃል',
+    password: 'የይለፍ ቃል',
     role: 'ሚና',
     loggedInAs: 'ገብተዋል እንደ',
     submit: 'አስገባ',
@@ -697,7 +719,14 @@ const translations = {
     import: 'አምጣ',
     print: 'አትም',
     download: 'አውርድ',
-    upload: 'ጫን',
+    upload: 'ስቀል',
+    yes: 'አዎ',
+    no: 'አይ',
+    ok: 'እሺ',
+    error: 'ስህተት',
+    success: 'ተሳካ',
+    warning: 'ማስጠንቀቂያ',
+    info: 'መረጃ',
 
     // ---------- USER ROLES (የተጠቃሚ ሚናዎች) ----------
     owner: 'ባለቤት',
@@ -708,9 +737,14 @@ const translations = {
     admin: 'አስተዳዳሪ',
     staff: 'ሰራተኛ',
 
-    // ---------- POS / CASHIER (የሽያጭ ነጥብ) ----------
-    posTerminal: 'የሽያጭ ነጥብ',
-    currentOrder:'የአሁኑ ትዕዛዝ',
+    // ---------- DARK MODE ----------
+    darkMode: 'ጨለማ ሁነታ',
+    lightMode: 'ብርሃን ሁነታ',
+    theme: 'ገጽታ',
+
+    // ---------- POS / CASHIER (የሽያጭ መዝገብ) ----------
+    posTerminal: 'የሽያጭ መዝገብ',
+    currentOrder: 'የአሁኑ ትዕዛዝ',
     cartEmpty: 'ጋሪ ባዶ ነው',
     checkout: 'ክፈል',
     subtotal: 'ንዑስ ድምር',
@@ -718,10 +752,10 @@ const translations = {
     tax: 'ግብር',
     paymentMethod: 'የክፍያ ዘዴ',
     cash: 'ጥሬ ገንዘብ',
-    card:'ካርድ',
+    card: 'ካርድ',
     mobile: 'ሞባይል',
-    completeOrder: 'ትዕዛዝ አጠናቅቅ',
-    processPayment: 'ክፍያ አካሂድ',
+    completeOrder: 'ትዕዛዝ ይጠናቀቅ',
+    processPayment: 'ክፍያ አስኬድ',
     customerName: 'የደንበኛ ስም',
     customerPhone: 'የደንበኛ ስልክ',
     addToCart: 'ወደ ጋሪ ጨምር',
@@ -730,53 +764,60 @@ const translations = {
     salesHistory: 'የሽያጭ ታሪክ',
     readyForPayment: 'ለክፍያ ዝግጁ',
     addToOrder: '+ ወደ ትዕዛዝ ጨምር',
-    tapToAdd: 'ለመጨመር በምናሌ ላይ ይንኩ',
+    tapToAdd: 'ምግቦችን ለመጨመር ይንኩ',
     manualOrder: 'በእጅ ትዕዛዝ',
-    walkInCustomer: 'ያለቀጠሮ የመጣ ደንበኛ',
+    walkInCustomer: 'ያለቀጠሮ ደንበኛ',
+    proceedToCheckout: 'ወደ ክፍያ ሂድ',
+    clearCart: 'ጋሪ አጽዳ',
+    orderSent: 'ትዕዛዝ ወደ ኩሽና ተልኳል',
 
     // ---------- KITCHEN (ኩሽና) ----------
     kitchenDashboard: 'የኩሽና ዳሽቦርድ',
-    manageFoodPreparation: 'ምግብ ዝግጅት አስተዳድር',
-    pending: 'በመጠበቅ ላይ',
+    manageFoodPreparation: 'ምግብ ዝግጅት ያስተዳድሩ',
+    pending: 'በመጠባበቅ ላይ',
     preparing: 'በዝግጅት ላይ',
     ready: 'ዝግጁ',
-    completed: 'ተጠናቅቋል',
+    completed: 'ተጠናቋል',
     cancelled: 'ተሰርዟል',
     startCooking: 'ማብሰል ጀምር',
     markReady: 'ዝግጁ ምልክት አድርግ',
     readyForPickup: 'ለማንሳት ዝግጁ',
     newOrderReceived: 'አዲስ ትዕዛዝ ደርሷል',
     cooking: 'በማብሰል ላይ',
-    ordersToPrepare: 'ለማዘጋጀት ያሉ ትዕዛዞች',
+    ordersToPrepare: 'ለዝግጅት ያሉ ትዕዛዞች',
     active: 'ንቁ',
+    noOrdersToDisplay: 'ለማሳየት ምንም ትዕዛዞች የሉም',
+    ordersWillAppearHere: 'ትዕዛዞች ሲፈጠሩ እዚህ ይታያሉ',
+    kitchenStatus: 'የኩሽና ሁኔታ',
+    waitingTime: 'የጥበቃ ጊዜ',
 
     // ---------- WAITER / TABLE MANAGEMENT (አስተናጋጅ / ጠረጴዛ) ----------
-    tableManagement: 'የጠረጴዛ አስተዳደር',
-    selectTable: 'ትዕዛዝ ለመጀመር ጠረጴዛ ምረጥ',
-    floorPlan: 'የሬስቶራንቱ ወለል እቅድ',
-    available: 'ክፍት',
+    tableManagement: 'የጠረጴዛ አያያዝ',
+    selectTable: 'ትዕዛዝ ለመጀመር ጠረጴዛ ይምረጡ',
+    floorPlan: 'የሬስቶራንቱ እቅድ',
+    available: 'ነጻ',
     occupied: 'ተይዟል',
-    reserved: 'ተይዞል',
+    reserved: 'ተይዟል',
     cleaning: 'በጽዳት ላይ',
     capacity: 'አቅም',
     table: 'ጠረጴዛ',
-    orderForTable: 'የጠረጴዛ ትዕዛዝ',
+    orderForTable: 'ለጠረጴዛ ትዕዛዝ',
     specialInstructions: 'ልዩ መመሪያዎች',
     sendToKitchen: 'ወደ ኩሽና ላክ',
     activeOrders: 'ንቁ ትዕዛዞች',
     yourActiveOrders: 'የእርስዎ ንቁ ትዕዛዞች',
-    orderNumber: 'ትዕዛዝ ቁጥር',
+    orderNumber: 'የትዕዛዝ ቁጥር',
     cancelOrder: 'ትዕዛዝ ሰርዝ',
     addMoreItems: 'ተጨማሪ እቃዎች ጨምር',
     addItems: 'እቃዎች ጨምር',
     activeOrdersHidden: 'የተደበቁ ትዕዛዞች',
-    showOrders: 'ትዕዛዞችን አሳይ',
+    showOrders: 'ትዕዛዞች አሳይ',
     noActiveOrdersMessage: 'ምንም ንቁ ትዕዛዞች የሉም',
     myOrders: 'የኔ ትዕዛዞች',
-    manageTables: 'ጠረጴዛዎችን እና ትዕዛዞችን አስተዳድር',
+    manageTables: 'ጠረጴዛዎችዎን እና ትዕዛዞችዎን ያስተዳድሩ',
     hide: 'ደብቅ',
-    clickToCreateOrder: 'ትዕዛዝ ለመፍጠር ጠቅ አድርግ',
-    clickToAddItems: 'እቃዎች ለመጨመር ጠቅ አድርግ',
+    clickToCreateOrder: 'ትዕዛዝ ለመፍጠር ጠቅ ያድርጉ',
+    clickToAddItems: 'እቃዎችን ለመጨመር ጠቅ ያድርጉ',
     newOrderForTable: 'አዲስ ትዕዛዝ ለጠረጴዛ',
     seats: 'መቀመጫዎች',
     searchMenu: 'ምናሌ ፈልግ...',
@@ -787,44 +828,50 @@ const translations = {
     adding: 'በመጨመር ላይ...',
     isReserved: 'ተይዟል',
     isCleaning: 'በጽዳት ላይ ነው',
-    orderSent: 'ትዕዛዝ ወደ ኩሽና ተልኳል',
+    orderSentKitchen: 'ትዕዛዝ ወደ ኩሽና ተልኳል',
     failedToSubmitOrder: 'ትዕዛዙን ማስገባት አልተቻለም',
-    orderCancelledSuccess: 'ትዕዛዝ በሚገባ ተሰርዟል!',
+    orderCancelledSuccess: 'ትዕዛዝ በተሳካ ሁኔታ ተሰርዟል!',
     failedToCancelOrder: 'ትዕዛዙን መሰረዝ አልተቻለም',
-    pendingConfirmations: '�ዕዛዞችን አረጋግጥ',
+    pendingConfirmations: 'ትዕዛዞችን አረጋግጥ',
     tableStatus: 'የጠረጴዛ ሁኔታ',
-    manageTableAvailability: 'የጠረጴዛ መኖር፣ ቦታ ማስያዝ እና የጽዳት ሁኔታ አስተዳድር',
+    manageTableAvailability: 'የጠረጴዛ አቅርቦት እና ሁኔታ ያስተዳድሩ',
     changeStatus: 'ሁኔታ ቀይር',
     yourAssignedTables: 'የተመደቡልዎት ጠረጴዛዎች',
     noTablesAssigned: 'ምንም ጠረጴዛዎች አልተመደቡም',
     contactManager: 'እባክዎ አስተዳዳሪዎን ያነጋግሩ',
     todaysShift: 'የዛሬ ፈረቃ',
-    toConfirm: 'ማረጋገጥ',
-    awaitingConfirmation: 'ማረጋገጫ በመጠበቅ ላይ',
+    toConfirm: 'ለማረጋገጥ',
+    awaitingConfirmation: 'ማረጋገጫ በመጠባበቅ ላይ',
+    assignSelf: 'ራስዎን መድቡ',
+    unassign: 'አላስፈላጊ',
+    maxTablesReached: 'ከፍተኛ ጠረጴዛዎች ላይ ደርሰዋል',
+    assignedTables: 'የተመደቡ ጠረጴዛዎች',
 
     // ---------- QR CODE ORDERING (QR ኮድ ትዕዛዝ) ----------
-    qrCodeAvailable: 'QR ኮድ አለ',
+    qrCodeAvailable: 'QR ኮድ ይገኛል',
     getQRCode: 'QR ኮድ አግኝ',
-    qrCodeForTable: 'የጠረጴዛ QR ኮድ',
-    customersScanToOrder: 'ደንበኞች ምናሌውን ለማየት እና ለማዘዝ ይቃኛሉ',
-    qrCodeInstructions: 'ይህን አገናኝ ከደንበኞች ጋር ያጋሩ። ምናሌውን ለማየት እና ለማዘዝ QR ኮዱን መቃኘት ይችላሉ።',
+    qrCodeForTable: 'ለጠረጴዛ QR ኮድ',
+    customersScanToOrder: 'ደንበኞች ምናሌውን ለማየት እና ለማዘዝ ይቃኙ',
+    qrCodeInstructions: 'ይህን አገናኝ ከደንበኞች ጋር ያጋሩ። ምናሌውን ለማየት እና ትዕዛዞችን ከስልካቸው ለማዘዝ QR ኮዱን መቃኘት ይችላሉ።',
     qrUrl: 'QR አገናኝ',
     copyQrUrl: 'QR አገናኝ ቅዳ',
-    qrNote: 'ይህን አገናኝ በመጠቀም አካላዊ QR ኮድ ማመንጨት ይችላሉ።',
+    qrNote: 'ይህን አገናኝ በመጠቀም ማንኛውንም QR ኮድ ማመንጫ ድረ-ገጽ በመጠቀም አካላዊ QR ኮድ ማመንጨት ይችላሉ።',
     printQRCodes: 'QR ኮዶች አትም',
     generateAndPrintQRCodes: 'ለሁሉም ጠረጴዛዎች QR ኮዶች ፍጠር እና አትም',
     printAll: 'ሁሉንም አትም',
     copyUrl: 'አገናኝ ቅዳ',
-    qrPrintInstructions: 'ይህን ገጽ አትመው እያንዳንዱን QR ኮድ ይቁረጡ። በተዛማጅ ጠረጴዛዎች ላይ ያድርጓቸው።',
-    howQrWorks: 'QR ትዕዛዝ እንዴት ይሰራል',
+    qrPrintInstructions: 'ይህን ገጽ አትመው እያንዳንዱን QR ኮድ ይቁረጡ። በተዛማጅ ጠረጴዛዎች ላይ ያስቀምጡ።',
+    howQrWorks: 'QR ትዕዛዝ እንዴት እንደሚሰራ',
     step1: 'በጠረጴዛዎ ላይ QR ኮድ ይቃኙ',
-    step2: 'ምናሌውን ይመልከቱ እና እቃዎች ይጨምሩ',
+    step2: 'ምናሌውን ያስሱ እና እቃዎችን ይጨምሩ',
     step3: 'ዝርዝሮችዎን ያስገቡ',
-    step4: 'ትዕዛዝ ያስገቡ - አስተናጋጁ ያረጋግጣል',
+    step4: 'ትዕዛዝ ያስገቡ - አስተናጋጅ ያረጋግጣል',
+    scanToOrder: 'ለማዘዝ ቃኝ',
+    viewMenu: 'ምናሌ ይመልከቱ',
 
-    // ---------- INVENTORY MANAGEMENT (እቃ አስተዳደር) ----------
-    inventoryManagement: 'የእቃ አስተዳደር',
-    manageProductsAndIngredients: 'ምርቶችን እና ንጥረ ነገሮችን አስተዳድር',
+    // ---------- INVENTORY MANAGEMENT (የእቃ ዝርዝር አያያዝ) ----------
+    inventoryManagement: 'የእቃ ዝርዝር አያያዝ',
+    manageProductsAndIngredients: 'ምርቶችን እና ንጥረ ነገሮችን ያስተዳድሩ',
     ingredients: 'ንጥረ ነገሮች',
     products: 'ምርቶች',
     addIngredient: 'ንጥረ ነገር ጨምር',
@@ -839,46 +886,49 @@ const translations = {
     outOfStock: 'ክምችት የለም',
     inStock: 'ክምችት አለ',
     adjustStock: 'ክምችት አስተካክል',
-    currentStock: 'የአሁኑ ክምችት',
-    lowStockDescription: 'የሚከተሉት ንጥረ ነገሮች ከዝቅተኛ ክምችት ደረጃ በታች ናቸው:',
+    currentStock: 'አሁን ያለው ክምችት',
+    lowStockDescription: 'የሚከተሉት ንጥረ ነገሮች ከዝቅተኛ ክምችት በታች ናቸው:',
     left: 'ቀርቷል',
     min: 'ዝቅተኛ',
     moreItems: 'ተጨማሪ እቃዎች',
     noIngredientsFound: 'ምንም ንጥረ ነገሮች አልተገኙም',
     noProductsFound: 'ምንም ምርቶች አልተገኙም',
     deleteFailed: 'መሰረዝ አልተቻለም',
-    ingredientsBelowMinStock: 'ንጥረ ነገሮች ከዝቅተኛ ክምችት ደረጃ በታች ናቸው',
+    ingredientsBelowMinStock: 'ንጥረ ነገሮች ከዝቅተኛ ክምችት በታች ናቸው',
     addNew: 'አዲስ ጨምር',
     selectUnit: 'ክፍል ምረጥ',
-    kilogram: 'ኪሎግራም (ኪግ)',
-    gram: 'ግራም (ግ)',
-    liter: 'ሊትር (ሊ)',
-    milliliter: 'ሚሊሊትር (ሚሊ)',
-    pieces: 'ቁራጮች (ቁራጭ)',
+    kilogram: 'ኪሎግራም',
+    gram: 'ግራም',
+    liter: 'ሊትር',
+    milliliter: 'ሚሊሊትር',
+    pieces: 'ቁራጮች',
+    egVegetables: 'ለምሳሌ አትክልቶች',
+    stockValue: 'የክምችት ዋጋ',
+    reorderLevel: 'እንደገና የማዘዝ ደረጃ',
 
-    // ---------- WASTAGE TRACKING (የቆሻሻ መጠን ክትትል) ----------
-    wastageTracking: 'የቆሻሻ መጠን ክትትል',
-    trackIngredientWaste: 'ከመቁረጥ፣ መበላሸት እና ማብሰያ የሚጠፋውን ንጥረ ነገር መከታተል',
-    wastagePercentage: 'የቆሻሻ መጠን (%)',
-    cookingLoss: 'የማብሰያ ኪሳራ (%)',
+    // ---------- WASTAGE TRACKING (የቆሻሻ ክትትል) ----------
+    wastageTracking: 'የቆሻሻ ክትትል',
+    trackIngredientWaste: 'ከመግረዝ፣ ከመበላሸት እና ከማብሰል ኪሳራ የሚመጣውን የንጥረ ነገር ብክነት ይከታተሉ',
+    wastagePercentage: 'የብክነት መጠን (%)',
+    cookingLoss: 'የማብሰል ኪሳራ (%)',
     yieldPercentage: 'የምርት መጠን (%)',
     expectedUsage: 'የሚጠበቀው አጠቃቀም',
-    actualUsage: 'ትክክለኛ አጠቃቀም',
-    wastageAmount: 'የቆሻሻ መጠን',
-    wastageCost: 'የቆሻሻ ዋጋ',
-    totalWastageCost: 'ጠቅላላ የቆሻሻ ዋጋ',
-    wastageReport: 'የቆሻሻ ሪፖርት',
-    wastageByIngredient: 'በንጥረ ነገር የቆሻሻ መጠን',
-    dailyWastage: 'ቀን ቀን ቆሻሻ',
-    wastageDescription: 'ምግብ በሚሰራበት ጊዜ ሁሉም ንጥረ ነገሮች መቶ በመቶ አይጠቀሙም። የተወሰነው በመቁረጥ፣ በመበላሸት እና በማብሰያ ይጠፋል።',
-    wastageExample: 'ምሳሌ: 250g ሥጋ + 15% ቆሻሻ = 287.5g ከክምችት ይቀንሳል',
-    trimmingWaste: 'መቁረጥ እና መበላሸት',
-    cookingEvaporation: 'የማብሰያ ትነት',
-    batchCooking: 'የቡድን ማብሰያ ብቃት',
-    autoWastageLearning: 'ከታሪካዊ መረጃ ራስ-ተማሪ የቆሻሻ ምክንያቶች',
-    lowStockCritical: 'አደገኛ - አሁን እንደገና ያዘዙ',
-    wastageAlert: 'ከፍተኛ የቆሻሻ ማንቂያ',
-    wastageReductionTip: 'ምክር: ወጪን በ5-15% ለመቀነስ ቆሻሻን ይከታተሉ',
+    actualUsage: 'ትክክለኛው አጠቃቀም',
+    wastageAmount: 'የብክነት መጠን',
+    wastageCost: 'የብክነት ዋጋ',
+    totalWastageCost: 'ጠቅላላ የብክነት ዋጋ',
+    wastageReport: 'የብክነት ሪፖርት',
+    wastageByIngredient: 'በንጥረ ነገር የተከፋፈለ ብክነት',
+    dailyWastage: 'ዕለታዊ ብክነት',
+    wastageDescription: 'ምግብ በሚዘጋጅበት ጊዜ ሁሉም ንጥረ ነገሮች 100% አይጠቀሙም። አንዳንዶቹ በመግረዝ፣ በመበላሸት፣ በማፍሰስ እና በማብሰል ትነት ይጠፋሉ።',
+    wastageExample: 'ምሳሌ: 250g ሥጋ + 15% ብክነት = 287.5g ከክምችት ይቀንሳል',
+    trimmingWaste: 'መግረዝ እና መበላሸት',
+    cookingEvaporation: 'የማብሰል ትነት (እየቀነሰ)',
+    batchCooking: 'የቡድን ማብሰል ብቃት',
+    autoWastageLearning: 'ከታሪካዊ መረጃ ራስ-ሰር የብክነት ምክንያቶችን መማር',
+    lowStockCritical: 'ከባድ - አሁን እንደገና ይዘዙ',
+    wastageAlert: 'ከፍተኛ ብክነት ማስጠንቀቂያ',
+    wastageReductionTip: 'ምክር: ብክነትን ለመቀነስ እስከ 5-15% ወጪን ለመቀነስ ይከታተሉ',
     ingredientCostBreakdown: 'የንጥረ ነገር ወጪ ክፍፍል',
 
     // ---------- EXPENSE TRACKING (የወጪ ክትትል) ----------
@@ -895,16 +945,16 @@ const translations = {
     supplies: 'አቅርቦቶች',
     transport: 'ትራንስፖርት',
     insurance: 'ኢንሹራንስ',
-    taxes: 'ግብሮች',
+    taxes: 'ታክሶች',
     other: 'ሌላ',
-    recordedBy: 'የመዘገበው',
+    recordedBy: 'የተመዘገበው በ',
     expenseDate: 'የወጪ ቀን',
-    thisMonth: 'የዚህ ወር',
-    thisYear: 'የዚህ ዓመት',
+    thisMonth: 'በዚህ ወር',
+    thisYear: 'በዚህ ዓመት',
     from: 'ከ',
-    to: 'እስከ',
-    totalExpenses: 'ጠቅላላ ወጪ',
-    averageDaily: 'አማካይ ቀን',
+    to: 'ወደ',
+    totalExpenses: 'ጠቅላላ ወጪዎች',
+    averageDaily: 'አማካይ ዕለታዊ',
     perDay: 'በቀን',
     categories: 'ምድቦች',
     differentExpenseTypes: 'የተለያዩ የወጪ ዓይነቶች',
@@ -915,6 +965,8 @@ const translations = {
     editExpense: 'ወጪ አርትዕ',
     selectCategory: 'ምድብ ምረጥ',
     optionalDescription: 'አማራጭ መግለጫ...',
+    monthlyExpenses: 'ወርሃዊ ወጪዎች',
+    expenseTrend: 'የወጪ አዝማሚያ',
 
     // ---------- PROFIT REPORTS (የትርፍ ሪፖርቶች) ----------
     profitReports: 'የትርፍ ሪፖርቶች',
@@ -925,7 +977,7 @@ const translations = {
     profitMargin: 'የትርፍ ህዳግ',
     dailyBreakdown: 'ዕለታዊ ክፍፍል',
     topProducts: 'ከፍተኛ ምርቶች',
-    byProfitContribution: 'በትርፍ አስተዋጽኦ',
+    byProfitContribution: 'በትርፍ አስተዋጽዖ',
     sold: 'ተሽጧል',
     revenue: 'ገቢ',
     cost: 'ወጪ',
@@ -939,7 +991,7 @@ const translations = {
     product: 'ምርት',
     report: 'ሪፖርት',
     generated: 'ተፈጥሯል',
-    exportFailed: 'ወደ ውጭ መላክ አልተሳካም',
+    exportFailed: 'ወደ ውጭ መላክ አልተቻለም',
     pdfExportError: 'PDF የወጪ ስህተት',
     exportExcel: 'Excel ላክ',
     exportPDF: 'PDF ላክ',
@@ -947,39 +999,42 @@ const translations = {
     salesReports: 'የሽያጭ ሪፖርቶች',
     performanceByDay: 'አፈጻጸም በቀን',
     noSalesDataForPeriod: 'ለተመረጠው ጊዜ ምንም የሽያጭ ውሂብ የለም',
+    grossProfit: 'ጠቅላላ ትርፍ',
+    netProfit: 'የተጣራ ትርፍ',
+    operatingExpenses: 'የሥራ ወጪዎች',
 
-    // ---------- STAFF MANAGEMENT (የሰራተኛ አስተዳደር) ----------
-    staffManagement: 'የሰራተኛ አስተዳደር',
-    manageStaffAccountsAndPermissions: 'የሰራተኛ መለያዎችን እና ፈቃዶችን ያስተዳድሩ',
+    // ---------- STAFF MANAGEMENT (የሰራተኞች አያያዝ) ----------
+    staffManagement: 'የሰራተኞች አያያዝ',
+    manageStaffAccountsAndPermissions: 'የሰራተኞች መለያዎችን እና ፈቃዶችን ያስተዳድሩ',
     addStaff: 'ሰራተኛ ጨምር',
     editStaff: 'ሰራተኛ አርትዕ',
     deleteStaff: 'ሰራተኛ ሰርዝ',
     fullName: 'ሙሉ ስም',
     joinDate: 'የተቀላቀሉበት ቀን',
-    lastLogin: 'የመጨረሻ መግቢያ',
-    pendingApproval: 'በመጠባበቅ ላይ',
+    lastLogin: 'የመጨረሻ ግቤት',
+    pendingApproval: 'ማጽደቅ በመጠባበቅ ላይ',
     active: 'ንቁ',
     inactive: 'ንቁ ያልሆነ',
-    pendingApprovals: 'በመጠባበቅ ላይ ያሉ',
-    reviewAndApproveStaffAccounts: 'አዳዲስ የሰራተኛ መለያ ጥያቄዎችን ይገምግሙ እና ያፅድቁ',
+    pendingApprovals: 'በመጠባበቅ ላይ ያሉ ማጽደቆች',
+    reviewAndApproveStaffAccounts: 'አዲስ የሰራተኞች መለያ ጥያቄዎችን ይገምግሙ እና ያጽድቁ',
     defaultRole: 'ነባር ሚና',
-    userApproved: 'ተጠቃሚ በሚገባ ጸድቋል',
+    userApproved: 'ተጠቃሚ በተሳካ ሁኔታ ጸድቋል',
     userRejected: 'ተጠቃሚ ውድቅ ተደርጓል',
     waitingForApproval: 'የአስተዳዳሪ ማጽደቅ በመጠባበቅ ላይ',
-    staffPerformance: 'የሰራተኛ አፈጻጸም',
+    staffPerformance: 'የሰራተኞች አፈጻጸም',
     salesPerformance: 'የሽያጭ አፈጻጸም',
     moreStaff: 'ተጨማሪ ሰራተኞች',
     noSalesData: 'ለዚህ ጊዜ ምንም የሽያጭ ውሂብ የለም',
     topPerformer: '🏆 ከፍተኛ አፈጻጸም',
     noStaffMembersFound: 'ምንም ሰራተኞች አልተገኙም',
-    accessDeniedOnlyOwners: 'መዳረሻ ተከልክሏል። ባለቤቶች እና አስተዳዳሪዎች ብቻ ሰራተኞችን ማየት ይችላሉ።',
-    failedToLoadStaff: 'ሰራተኞችን ማግኘት አልተቻለም',
-    staffUpdatedSuccessfully: 'ሰራተኛ በሚገባ ተዘምኗል!',
-    staffCreatedSuccessfully: 'ሰራተኛ በሚገባ ተፈጥሯል!',
-    failedToSaveStaff: 'ሰራተኛን ማስቀመጥ አልተቻለም',
+    accessDeniedOnlyOwners: 'መድረስ አልተፈቀደም። ባለቤቶች እና አስተዳዳሪዎች ብቻ ሰራተኞችን ማየት ይችላሉ።',
+    failedToLoadStaff: 'ሰራተኞችን መጫን አልተቻለም',
+    staffUpdatedSuccessfully: 'ሰራተኛ በተሳካ ሁኔታ ዘምኗል!',
+    staffCreatedSuccessfully: 'ሰራተኛ በተሳካ ሁኔታ ተፈጥሯል!',
+    failedToSaveStaff: 'ሰራተኛውን ማስቀመጥ አልተቻለም',
     deleteStaffConfirm: 'ይህን ሰራተኛ መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?',
-    staffDeletedSuccessfully: 'ሰራተኛ በሚገባ ተሰርዟል!',
-    failedToDeleteStaff: 'ሰራተኛን መሰረዝ አልተቻለም',
+    staffDeletedSuccessfully: 'ሰራተኛ በተሳካ ሁኔታ ተሰርዟል!',
+    failedToDeleteStaff: 'ሰራተኛውን መሰረዝ አልተቻለም',
     roles: 'ሚናዎች',
     clickAddStaffToCreate: 'አዲስ መለያ ለመፍጠር "ሰራተኛ ጨምር" ን ጠቅ ያድርጉ',
     editStaffMember: 'ሰራተኛ አርትዕ',
@@ -988,7 +1043,7 @@ const translations = {
     enterEmailAddress: 'ኢሜይል አድራሻ ያስገቡ',
     minimum6Characters: 'ቢያንስ 6 ቁምፊዎች',
     fullAccess: 'ሙሉ መዳረሻ',
-    operationalAccess: 'የስራ መዳረሻ',
+    operationalAccess: 'የሥራ መዳረሻ',
     paymentOnly: 'ክፍያ ብቻ',
     orderTaking: 'ትዕዛዝ መውሰድ',
     foodPrepOnly: 'ምግብ ዝግጅት ብቻ',
@@ -996,15 +1051,15 @@ const translations = {
     optional: 'አማራጭ',
     updateStaff: 'ሰራተኛ አዘምን',
     createStaff: 'ሰራተኛ ፍጠር',
-    accessDeniedOnlyOwnersAndAdmins: 'መዳረሻ ተከልክሏል። ባለቤቶች እና አስተዳዳሪዎች ብቻ በመጠባበቅ ላይ ያሉትን ማየት ይችላሉ።',
-    failedToLoadPendingUsers: 'በመጠባበቅ ላይ ያሉ ተጠቃሚዎችን ማግኘት አልተቻለም',
-    userApprovedSuccessfully: 'ተጠቃሚ በሚገባ ጸድቋል! አሁን መግባት ይችላሉ።',
-    failedToApproveUser: 'ተጠቃሚን ማጽደቅ አልተቻለም',
+    accessDeniedOnlyOwnersAndAdmins: 'መድረስ አልተፈቀደም። በመጠባበቅ ላይ ያሉ ማጽደቆችን ማየት የሚችሉት ባለቤቶች እና አስተዳዳሪዎች ብቻ ናቸው።',
+    failedToLoadPendingUsers: 'በመጠባበቅ ላይ ያሉ ተጠቃሚዎችን መጫን አልተቻለም',
+    userApprovedSuccessfully: 'ተጠቃሚ በተሳካ ሁኔታ ጸድቋል! አሁን መግባት ይችላሉ።',
+    failedToApproveUser: 'ተጠቃሚውን ማጽደቅ አልተቻለም',
     rejectUserConfirm: 'ይህን ተጠቃሚ ውድቅ ማድረግ እንደሚፈልጉ እርግጠኛ ነዎት?',
-    userRejectedAndRemoved: 'ተጠቃሚ ውድቅ ተደርጓል እና ተወግዷል።',
-    failedToRejectUser: 'ተጠቃሚን ውድቅ ማድረግ አልተቻለም',
+    userRejectedAndRemoved: 'ተጠቃሚ ውድቅ ተደርጎ ተወግዷል።',
+    failedToRejectUser: 'ተጠቃሚውን ውድቅ ማድረግ አልተቻለም',
     usersWaiting: 'ተጠቃሚዎች በመጠባበቅ ላይ',
-    allStaffAccountsApproved: 'ሁሉም የሰራተኛ መለያዎች ጸድቀዋል',
+    allStaffAccountsApproved: 'ሁሉም የሰራተኞች መለያዎች ጸድቀዋል',
     newStaffWillAppearHere: 'አዲስ ሰራተኞች ሲመዘገቡ እዚህ ይታያሉ',
     notProvided: 'አልቀረበም',
     requested: 'የተጠየቀ',
@@ -1013,28 +1068,28 @@ const translations = {
     operations: 'ስራዎች',
     tipApprovedUsersWillReceiveEmail: 'የጸደቁ ተጠቃሚዎች የኢሜይል ማሳወቂያ ይቀበላሉ',
 
-    // ---------- RECIPE MANAGEMENT (የምግብ አዘገጃጀት አስተዳደር) ----------
-    recipeManagement: 'የምግብ አዘገጃጀት አስተዳደር',
-    defineProductRecipes: 'ለራስ-ሰር ክምችት መቀነስ የምርት የምግብ አዘገጃጀቶችን ይግለጹ',
-    howRecipesWork: 'የምግብ አዘገጃጀቶች እንዴት ይሰራሉ',
-    recipeDescription: 'እያንዳንዱ ምርት ሁሉንም ንጥረ ነገሮች እና መጠኖች የሚዘረዝር የምግብ አዘገጃጀት ይፈልጋል።',
+    // ---------- RECIPE MANAGEMENT (የምግብ አዘገጃጀት አያያዝ) ----------
+    recipeManagement: 'የምግብ አዘገጃጀት አያያዝ',
+    defineProductRecipes: 'ለራስ-ሰር የክምችት ቅነሳ የምርት አዘገጃጀቶችን ይግለጹ',
+    howRecipesWork: 'የምግብ አዘገጃጀት እንዴት እንደሚሰራ',
+    recipeDescription: 'እያንዳንዱ ምርት ሁሉንም ንጥረ ነገሮች እና መጠኖች የሚዘረዝር የምግብ አዘገጃጀት ያስፈልገዋል።',
     setupRecipe: 'የምግብ አዘገጃጀት አዘጋጅ',
-    viewRecipe: 'የምግብ አዘገጃጀት ተመልከት',
+    viewRecipe: 'የምግብ አዘገጃጀት ይመልከቱ',
     calculateCost: 'ወጪ አስላ',
     ingredientsNeeded: 'የሚፈለጉ ንጥረ ነገሮች',
     totalIngredientCost: 'ጠቅላላ የንጥረ ነገር ወጪ',
     profitSummary: 'የትርፍ ማጠቃለያ',
     sellingPrice: 'የሽያጭ ዋጋ',
-    ingredientCost: 'የንጥረ ነገር ወጪ',
-    recipeExists: 'የምግብ አዘገጃጀት ተዘጋጅቷል',
-    noRecipe: 'ምንም የምግብ አዘገጃጀት አልተዘጋጀም',
-    failedToLoadRecipe: 'የምግብ አዘገጃጀት ማግኘት አልተቻለም',
+    ingredientCost: 'የንጥረ ነገር ዋጋ',
+    recipeExists: 'የምግብ አዘገጃጀት ተዋቅሯል',
+    noRecipe: 'ምንም የምግብ አዘገጃጀት አልተዋቀረም',
+    failedToLoadRecipe: 'የምግብ አዘገጃጀት መጫን አልተቻለም',
     pleaseSelectIngredientAndQuantity: 'እባክዎ ንጥረ ነገር ይምረጡ እና መጠን ያስገቡ',
     pleaseAddAtLeastOneIngredient: 'እባክዎ ቢያንስ አንድ ንጥረ ነገር ይጨምሩ',
-    recipeSavedSuccessfully: 'የምግብ አዘገጃጀት በሚገባ ተቀምጧል!',
+    recipeSavedSuccessfully: 'የምግብ አዘገጃጀት በተሳካ ሁኔታ ተቀምጧል!',
     failedToSaveRecipe: 'የምግብ አዘገጃጀት ማስቀመጥ አልተቻለም',
     noRecipeFoundForProduct: 'ለዚህ ምርት ምንም የምግብ አዘገጃጀት አልተገኘም',
-    uncategorized: 'ምድብ ያልተደረገ',
+    uncategorized: 'ያልተመደበ',
     recipe: 'የምግብ አዘገጃጀት',
     noIngredientsAddedYet: 'እስካሁን ምንም ንጥረ ነገሮች አልተጨመሩም',
     selectIngredient: 'ንጥረ ነገር ምረጥ',
@@ -1042,16 +1097,16 @@ const translations = {
     saveRecipe: 'የምግብ አዘገጃጀት አስቀምጥ',
 
     // ---------- CUSTOMERS (ደንበኞች) ----------
-    customerManagement: 'የደንበኛ አስተዳደር',
-    manageCustomerAccounts: 'የደንበኛ መለያዎችን እና ታማኝነት ያስተዳድሩ',
+    customerManagement: 'የደንበኞች አያያዝ',
+    manageCustomerAccounts: 'የደንበኞች መለያዎችን እና ታማኝነትን ያስተዳድሩ',
     addCustomer: 'ደንበኛ ጨምር',
     editCustomer: 'ደንበኛ አርትዕ',
     deleteCustomer: 'ደንበኛ ሰርዝ',
     customerDetails: 'የደንበኛ ዝርዝሮች',
     totalCustomers: 'ጠቅላላ ደንበኞች',
     totalLoyaltyPoints: 'ጠቅላላ የታማኝነት ነጥቦች',
-    totalSpent: 'ጠቅላላ ወጪ ያደረገው',
-    avgSpentPerCustomer: 'አማካይ በአንድ ደንበኛ',
+    totalSpent: 'ጠቅላላ ወጪ',
+    avgSpentPerCustomer: 'አማካይ በእያንዳንዱ ደንበኛ',
     searchCustomers: 'ደንበኞችን ፈልግ...',
     noCustomersFound: 'ምንም ደንበኞች አልተገኙም',
     addYourFirstCustomer: 'የመጀመሪያ ደንበኛዎን ይጨምሩ',
@@ -1062,66 +1117,73 @@ const translations = {
     favoriteItems: 'ተወዳጅ እቃዎች',
     statistics: 'ስታቲስቲክስ',
     points: 'ነጥቦች',
-    customerCreated: 'ደንበኛ በሚገባ ተፈጥሯል',
-    customerUpdated: 'ደንበኛ በሚገባ ተዘምኗል',
-    customerDeleted: 'ደንበኛ በሚገባ ተሰርዟል',
+    customerCreated: 'ደንበኛ በተሳካ ሁኔታ ተፈጥሯል',
+    customerUpdated: 'ደንበኛ በተሳካ ሁኔታ ዘምኗል',
+    customerDeleted: 'ደንበኛ በተሳካ ሁኔታ ተሰርዟል',
     deleteCustomerConfirm: 'ይህን ደንበኛ መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?',
+    loyaltyPoints: 'የታማኝነት ነጥቦች',
+    lastVisit: 'የመጨረሻ ጉብኝት',
+    orderHistory: 'የትዕዛዝ ታሪክ',
 
     // ---------- SETTINGS / RECEIPT (ቅንብሮች / ደረሰኝ) ----------
-    receiptFooter: 'የደረሰኝ የግርጌ መልዕክት',
+    receiptFooter: 'የደረሰኝ የግርጌ መልእክት',
     restaurantName: 'የሬስቶራንት ስም',
     address: 'አድራሻ',
-    workingHours: 'የስራ ሰዓት',
+    workingHours: 'የስራ ሰዓታት',
     taxRate: 'የግብር መጠን',
     configureRestaurantPreferences: 'የሬስቶራንትዎን ምርጫዎች ያዋቅሩ',
-    settingsSavedSuccessfully: 'ቅንብሮች በሚገባ ተቀምጠዋል!',
+    settingsSavedSuccessfully: 'ቅንብሮች በተሳካ ሁኔታ ተቀምጠዋል!',
     restaurantInformation: 'የሬስቶራንት መረጃ',
     businessSettings: 'የንግድ ቅንብሮች',
     receiptSettings: 'የደረሰኝ ቅንብሮች',
-    thankYouForDining: 'እንደተመገቡ እናመሰግናለን!',
+    thankYouForDining: 'እንደበላችሁ እናመሰግናለን!',
     saveSettings: 'ቅንብሮችን አስቀምጥ',
     settingsSaveInfo: 'ቅንብሮች በአሳሽዎ ውስጥ ተቀምጠዋል።',
+    currencySymbol: 'ብር',
+    currency: 'ብር',
 
-    // ---------- REAL-TIME NOTIFICATIONS (የቅጽበታዊ ማሳወቂያዎች) ----------
-    lowStockAlert: 'ዝቅተኛ ክምችት ማንቂያ',
-    newOrderAlert: 'አዲስ ትዕዛዝ ማንቂያ',
-    orderReadyAlert: 'ትዕዛዝ ዝግጁ ማንቂያ',
+    // ---------- REAL-TIME NOTIFICATIONS (የቅጽበት ማሳወቂያዎች) ----------
+    lowStockAlert: 'ዝቅተኛ ክምችት ማስጠንቀቂያ',
+    newOrderAlert: 'አዲስ ትዕዛዝ ማስጠንቀቂያ',
+    orderReadyAlert: 'ትዕዛዝ ዝግጁ ማስጠንቀቂያ',
     salesReportReady: 'የሽያጭ ሪፖርት ዝግጁ',
     markAllRead: 'ሁሉንም እንደተነበበ ምልክት አድርግ',
     noNotifications: 'ምንም ማሳወቂያዎች የሉም',
-    newOrdersWaiting: 'አዲስ ትዕዛዞች ለኩሽና በመጠበቅ ላይ',
+    newOrdersWaiting: 'አዲስ ትዕዛዞች ለኩሽና በመጠባበቅ ላይ',
     isNow: 'አሁን ነው',
+    orderStatusUpdated: 'የትዕዛዝ ሁኔታ ዘምኗል',
+    tableStatusUpdated: 'የጠረጴዛ ሁኔታ ዘምኗል',
 
-    // ---------- ORDER CANCELLATION (ትዕዛዝ መሰረዝ) ----------
+    // ---------- ORDER CANCELLATION (የትዕዛዝ ስረዛ) ----------
     cancelOrderTitle: 'ትዕዛዝ ሰርዝ',
     voidOrderTitle: 'ትዕዛዝ ባዶ አድርግ',
     cancellationReasonPlaceholder: 'ይህ ትዕዛዝ የተሰረዘው ለምንድነው?',
     voidReasonPlaceholder: 'ይህ ትዕዛዝ ባዶ የሚደረገው ለምንድነው?',
-    voidDescription: 'ባዶ ማለት ይህ ትዕዛዝ ከሽያጭ መዝገቦች ሙሉ በሙሉ ይወገዳል እና ክምችት ይመለሳል።',
+    voidDescription: 'ባዶ ማድረግ ትዕዛዙን ከሽያጭ መዝገቦች ያስወግዳል እና ክምችትን ይመልሳል።',
     customerChangedMind: 'ደንበኛ ሀሳቡን ቀይሯል',
     customerLeft: 'ደንበኛ ሬስቶራንቱን ለቋል',
-    orderTooLong: 'ትዕዛዝ ብዙ ጊዜ ወስዷል',
+    orderTooLong: 'ትዕዛዝ ጊዜ ወስዷል',
     wrongItems: 'የተሳሳቱ እቃዎች ታዘዋል',
-    duplicateOrder: 'የተደገመ ትዕዛዝ',
+    duplicateOrder: 'የተደጋገመ ትዕዛዝ',
     paymentIssue: 'የክፍያ ችግር',
     kitchenCannotPrepare: 'ኩሽና ማዘጋጀት አይችልም',
-    systemError: 'የስርዓት ስህተት - ድርብ ክፍያ',
+    systemError: 'የሲስተም ስህተት - ድርብ ክፍያ',
     trainingError: 'የሰራተኛ ስልጠና ስህተት',
     testOrder: 'የሙከራ ትዕዛዝ',
     wrongTable: 'የተሳሳተ ጠረጴዛ ተከፍሏል',
     overcharged: 'ደንበኛ ከመጠን በላይ ተከፍሏል',
-    cancellationReason: 'የመሰረዝ ምክንያት',
-    yesCancel: 'አዎ, ሰርዝ',
-    noKeep: 'አይ, አትሰርዝ',
+    cancellationReason: 'የስረዛ ምክንያት',
+    yesCancel: 'አዎ፣ ሰርዝ',
+    noKeep: 'አይ፣ አትሰርዝ',
     noActiveOrder: 'ምንም ንቁ ትዕዛዝ አልተገኘም።',
     couldNotFetchOrder: 'ንቁ ትዕዛዝ ማግኘት አልተቻለም',
     pleaseAddItems: 'እባክዎ እቃዎችን ወደ ትዕዛዝ ይጨምሩ',
     itemsAdded: 'እቃዎች ወደ ትዕዛዝ ተጨምረዋል',
     failedToAddItems: 'እቃዎችን መጨመር አልተቻለም',
-    addItemsToOrder: 'ወደ ትዕዛዝ እቃዎች ጨምር',
-    currentTotal: 'የአሁኑ ጠቅላላ',
+    addItemsToOrder: 'እቃዎችን ወደ ትዕዛዝ ጨምር',
+    currentTotal: 'አሁን ያለው ጠቅላላ',
     newTotal: 'አዲስ ጠቅላላ',
-    addedSuccessfully: 'እቃዎች በሚገባ ተጨምረዋል',
+    addedSuccessfully: 'እቃዎች በተሳካ ሁኔታ ተጨምረዋል',
 
     // ---------- DASHBOARD (ዳሽቦርድ) ----------
     businessPerformance: 'የንግድ አፈጻጸም አጠቃላይ እይታ',
@@ -1132,7 +1194,7 @@ const translations = {
     netProfit: 'የተጣራ ትርፍ',
     weeklyTrend: 'ሳምንታዊ አዝማሚያ',
     monthlyTrend: 'ወርሃዊ አዝማሚያ',
-    yearlyTrend: 'ዓመታዊ አዝማሚያ',
+    yearlyTrend: 'አመታዊ አዝማሚያ',
     topSellingProducts: 'ከፍተኛ ሽያጭ ያላቸው ምርቶች',
     recentSales: 'የቅርብ ጊዜ ሽያጮች',
     paymentMethods: 'የክፍያ ዘዴዎች',
@@ -1140,10 +1202,10 @@ const translations = {
     dailyOrders: 'ዕለታዊ ትዕዛዞች',
     totalProducts: 'ጠቅላላ ምርቶች',
     needReorder: 'እንደገና ማዘዝ ያስፈልጋል',
-    critical: 'ወሳኝ',
+    critical: 'ከባድ',
     latestTransactions: 'የቅርብ ጊዜ ግብይቶች',
     cashier: 'ገንዘብ ተቀባይ',
-    system: 'ስርዓት',
+    system: 'ሲስተም',
     noSalesYet: 'እስካሁን ሽያጭ የለም',
     weekRevenue: 'የሳምንት ገቢ',
     gross: 'ጠቅላላ',
@@ -1151,7 +1213,7 @@ const translations = {
     quickSummary: 'ፈጣን ማጠቃለያ',
     avgOrderValue: 'አማካይ የትዕዛዝ ዋጋ',
     ownerDashboard: 'የባለቤት ዳሽቦርድ',
-    fullBusinessAnalytics: 'ሙሉ የንግድ ትንተና እና ቁጥጥር',
+    fullBusinessAnalytics: 'ሙሉ የንግድ ትንታኔ እና ቁጥጥር',
     totalStaff: 'ጠቅላላ ሰራተኞች',
     activeEmployees: 'ንቁ ሰራተኞች',
     totalOrders: 'ጠቅላላ ትዕዛዞች',
@@ -1159,14 +1221,14 @@ const translations = {
 
     // ---------- MANAGER DASHBOARD (የአስተዳዳሪ ዳሽቦርድ) ----------
     managerDashboard: 'የአስተዳዳሪ ዳሽቦርድ',
-    operationalOverview: 'የስራ አጠቃላይ እይታ',
+    operationalOverview: 'የሥራ አጠቃላይ እይታ',
     todaySales: "የዛሬ ሽያጭ",
     staffOnDuty: 'በስራ ላይ ያሉ ሰራተኞች',
-    ingredientsNeedReorder: 'ንጥረ ነገሮች እንደገና ማዘዝ ያስፈልጋቸዋል',
+    ingredientsNeedReorder: 'ንጥረ ነገሮች እንደገና ማዘዝ ያስፈልጋል',
     updateInventory: 'ክምችት አዘምን',
     addOrEditStockLevels: 'የክምችት ደረጃዎችን ይጨምሩ ወይም ያርትዑ',
-    viewReports: 'ሪፖርቶችን ተመልከት',
-    salesAndProfitAnalytics: 'የሽያጭ እና ትርፍ ትንተና',
+    viewReports: 'ሪፖርቶችን ይመልከቱ',
+    salesAndProfitAnalytics: 'የሽያጭ እና ትርፍ ትንታኔ',
     paymentSuccessful: 'ክፍያ ተሳክቷል!',
     paymentFailed: 'ክፍያ አልተሳካም',
     noOrdersReady: 'ለክፍያ ዝግጁ የሆኑ ምንም ትዕዛዞች የሉም',
@@ -1176,21 +1238,22 @@ const translations = {
     payment: 'ክፍያ',
     order: 'ትዕዛዝ',
     orderTotal: 'ጠቅላላ ትዕዛዝ',
-    complete: 'አጠናቅቅ',
+    complete: 'ጠናቅቅ',
     failedToUpdateOrderStatus: 'የትዕዛዝ ሁኔታ ማዘመን አልተቻለም',
     noOrdersToDisplay: 'ለማሳየት ምንም ትዕዛዞች የሉም',
     ordersWillAppearHere: 'ትዕዛዞች ሲፈጠሩ እዚህ ይታያሉ',
     more: 'ተጨማሪ',
     unavailable: 'አይገኝም',
-    dineIn: 'እዚህ ተመግበው',
-    takeaway: 'ይውሰዱ',
-    delivery: 'ማድረስ',
+    dineIn: 'እዚህ ብላ',
+    takeaway: 'ለማውጣት',
+    delivery: 'ለማድረስ',
     paid: 'ተከፍሏል',
     unpaid: 'አልተከፈለም',
-    pendingPayment: 'በመጠባበቅ ላይ',
+    pendingPayment: 'በመጠባበቅ ላይ ያለ ክፍያ',
+    itemsCount: 'የእቃዎች ብዛት',
 
     // ---------- AUTHENTICATION / LOGIN (ማረጋገጫ / መግቢያ) ----------
-    restaurantManagementSystem: 'የሬስቶራንት አስተዳደር ስርዓት',
+    restaurantManagementSystem: 'የሬስቶራንት አያያዝ ሲስተም',
     emailAddress: 'ኢሜይል አድራሻ',
     loggingIn: 'በመግባት ላይ...',
     signIn: 'ግባ',
@@ -1204,23 +1267,24 @@ const translations = {
     creatingAccount: 'መለያ በመፍጠር ላይ...',
     alreadyHaveAccount: 'አስቀድመው መለያ አለዎት?',
     accountCreated: 'መለያ ተፈጥሯል!',
-    accountPendingApproval: 'መለያዎ ተፈጥሯል እና በአስተዳዳሪ ማጽደቅ ላይ ነው።',
+    accountPendingApproval: 'መለያዎ ተፈጥሯል እና የአስተዳዳሪ ማጽደቅ በመጠባበቅ ላይ ነው።',
     goToLogin: 'ወደ መግቢያ ሂድ',
     signupFailed: 'ምዝገባ አልተሳካም',
-    emailPasswordRequired: 'ኢሜይል እና ይለፍ ቃል ያስፈልጋሉ',
-    loginFailed: 'መግባት አልተቻለም',
-    invalidCredentials: 'የተሳሳተ ኢሜይል ወይም ይለፍ ቃል',
-    accountPending: 'መለያ በማጽደቅ ላይ ነው። እባክዎ ይጠብቁ።',
-    accountDeactivated: 'መለያ ተሰርዟል። አስተዳዳሪን ያነጋግሩ።',
+    emailPasswordRequired: 'ኢሜይል እና የይለፍ ቃል ያስፈልጋሉ',
+    loginFailed: 'መግባት አልተሳካም',
+    invalidCredentials: 'የተሳሳተ ኢሜይል ወይም የይለፍ ቃል',
+    accountPending: 'መለያ በመጠባበቅ ላይ ነው። እባክዎ ይጠብቁ።',
+    accountDeactivated: 'መለያ ተቋርጧል። አስተዳዳሪ ያግኙ።',
     networkError: 'የአውታረ መረብ ስህተት። እባክዎ ግንኙነትዎን ያረጋግጡ።',
-    saveSuccess: 'በሚገባ ተቀምጧል',
+    saveSuccess: 'በተሳካ ሁኔታ ተቀምጧል',
     saveFailed: 'ማስቀመጥ አልተቻለም',
     deleteConfirm: 'ይህን መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?',
     cancelConfirm: 'መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?',
     requiredField: 'ይህ መስክ ያስፈልጋል',
-    passwordMinLength: 'ይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት',
+    passwordMinLength: 'የይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት',
     emailInvalid: 'እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ',
     stockInsufficient: 'በቂ ክምችት የለም',
+    invalidEmailOrPassword: 'የተሳሳተ ኢሜይል ወይም የይለፍ ቃል',
 
     // ---------- TIME PERIODS (የጊዜ ክልሎች) ----------
     last7Days: 'ያለፉት 7 ቀናት',
@@ -1229,6 +1293,9 @@ const translations = {
     week: 'ሳምንት',
     month: 'ወር',
     year: 'ዓመት',
+    today: 'ዛሬ',
+    yesterday: 'ትላንት',
+    tomorrow: 'ነገ',
 
     // ---------- WEEK DAYS (የሳምንቱ ቀናት) ----------
     monday: 'ሰኞ',
@@ -1258,36 +1325,37 @@ const translations = {
     avgOrder: 'አማካይ ትዕዛዝ',
     only: 'ብቻ',
     customers: 'ደንበኞች',
-    orderHistory: 'የትዕዛዝ ታሪክ',
     enterPhoneToViewOrders: 'ትዕዛዞችዎን ለማየት ስልክ ቁጥርዎን ያስገቡ',
     enterPhoneNumber: 'ስልክ ቁጥርዎን ያስገቡ',
     viewOrders: 'ትዕዛዞችን ይመልከቱ',
     customerInfo: 'የደንበኛ መረጃ',
     noOrdersFound: 'ምንም ትዕዛዞች አልተገኙም',
     recentOrders: 'የቅርብ ጊዜ ትዕዛዞች',
+    orderDetails: 'የትዕዛዝ ዝርዝሮች',
+    viewDetails: 'ዝርዝሮችን ይመልከቱ',
   },
 };
 
-// ============================================================
-// LANGUAGE CONTEXT PROVIDER
-// ============================================================
 const LanguageContext = createContext();
 
-export const useLanguage = () => useContext(LanguageContext);
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within LanguageProvider');
+  }
+  return context;
+};
 
 export const LanguageProvider = ({ children }) => {
-  // Initialize language from localStorage or default to English
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem('language') || 'en';
   });
 
-  // Save language preference to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('language', language);
+    document.documentElement.lang = language === 'am' ? 'am' : 'en';
   }, [language]);
 
-  // Translation function - returns the translated text for a given key
-  // Falls back to English if translation doesn't exist in current language
   const t = (key) => {
     return translations[language]?.[key] || translations.en[key] || key;
   };

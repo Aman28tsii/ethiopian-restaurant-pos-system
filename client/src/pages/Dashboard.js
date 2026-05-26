@@ -58,33 +58,33 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">{t('dashboard')}</h1>
-        <p className="text-gray-400 mt-1">{t('businessPerformance')}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('dashboard')}</h1>
+        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('businessPerformance')}</p>
       </div>
 
-      <div className="flex gap-2 bg-gray-800 rounded-xl p-1 w-fit">
+      <div className="flex gap-2 bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-xl p-1 w-fit">
         <button
           onClick={() => setPeriod('week')}
-          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'week' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'week' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-900 dark:text-white'}`}
         >
           {t('last7Days')}
         </button>
         <button
           onClick={() => setPeriod('month')}
-          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'month' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'month' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-900 dark:text-white'}`}
         >
           {t('last30Days')}
         </button>
         <button
           onClick={() => setPeriod('year')}
-          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'year' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'year' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-900 dark:text-white'}`}
         >
           {t('last365Days')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-gray-900 dark:text-white">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-blue-200 text-sm">{t('todayRevenue')}</p>
@@ -97,7 +97,7 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 text-gray-900 dark:text-white">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-green-200 text-sm">{t('todayProfit')}</p>
@@ -110,7 +110,7 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-gray-900 dark:text-white">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-purple-200 text-sm">{t('monthRevenue')}</p>
@@ -123,7 +123,7 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-2xl p-6 text-gray-900 dark:text-white">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-orange-200 text-sm">{t('monthNetProfit')}</p>
@@ -138,15 +138,15 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-white font-semibold mb-4">{t('revenueProfitTrend')}</h3>
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold mb-4">{t('revenueProfitTrend')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData?.sales || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="date" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
+                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
                 formatter={(value) => formatCurrency(value)}
               />
               <Legend />
@@ -156,15 +156,15 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-white font-semibold mb-4">{t('dailyOrders')}</h3>
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold mb-4">{t('dailyOrders')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData?.sales || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="date" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
+                contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
               />
               <Legend />
               <Bar dataKey="orders" fill="#8b5cf6" name={t('orders')} radius={[4, 4, 0, 0]} />
@@ -174,126 +174,126 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
-            <Package size={20} className="text-blue-400" />
-            <p className="text-gray-400">{t('totalProducts')}</p>
+            <Package size={20} className="text-blue-500 dark:text-blue-400" />
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalProducts')}</p>
           </div>
-          <p className="text-2xl font-bold text-white">{dashboardData.inventory.total_products}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{dashboardData.inventory.total_products}</p>
         </div>
         
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
-            <AlertTriangle size={20} className="text-yellow-400" />
-            <p className="text-gray-400">{t('lowStock')}</p>
+            <AlertTriangle size={20} className="text-yellow-500 dark:text-yellow-400" />
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('lowStock')}</p>
           </div>
-          <p className="text-2xl font-bold text-yellow-400">{dashboardData.inventory.low_stock}</p>
-          <p className="text-xs text-gray-500 mt-1">{t('needReorder')}</p>
+          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{dashboardData.inventory.low_stock}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{t('needReorder')}</p>
         </div>
         
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
-            <AlertTriangle size={20} className="text-red-400" />
-            <p className="text-gray-400">{t('outOfStock')}</p>
+            <AlertTriangle size={20} className="text-red-500 dark:text-red-400" />
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('outOfStock')}</p>
           </div>
-          <p className="text-2xl font-bold text-red-400">{dashboardData.inventory.out_of_stock}</p>
-          <p className="text-xs text-gray-500 mt-1">{t('critical')}</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400">{dashboardData.inventory.out_of_stock}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{t('critical')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <h3 className="text-white font-semibold">{t('topSellingProducts')}</h3>
-            <p className="text-gray-400 text-sm">{t('last30Days')}</p>
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold">{t('topSellingProducts')}</h3>
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('last30Days')}</p>
           </div>
-          <div className="divide-y divide-gray-700">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {dashboardData.top_products.map((product, idx) => (
-              <div key={idx} className="p-4 flex justify-between items-center hover:bg-gray-700/50 transition">
+              <div key={idx} className="p-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-100 dark:bg-gray-700/50 transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center font-bold text-white">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 flex items-center justify-center font-bold text-gray-700 dark:text-gray-900 dark:text-white">
                     {idx + 1}
                   </div>
                   <div>
-                    <p className="text-white font-medium">{product.name}</p>
-                    <p className="text-gray-400 text-sm">{product.quantity_sold} {t('sold')}</p>
+                    <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{product.name}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{product.quantity_sold} {t('sold')}</p>
                   </div>
                 </div>
-                <p className="text-green-400 font-semibold">{formatCurrency(product.revenue)}</p>
+                <p className="text-green-600 dark:text-green-400 font-semibold">{formatCurrency(product.revenue)}</p>
               </div>
             ))}
             {dashboardData.top_products.length === 0 && (
-              <div className="p-8 text-center text-gray-500">{t('noSalesData')}</div>
+              <div className="p-8 text-center text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noSalesData')}</div>
             )}
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <h3 className="text-white font-semibold">{t('recentSales')}</h3>
-            <p className="text-gray-400 text-sm">{t('latestTransactions')}</p>
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold">{t('recentSales')}</h3>
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('latestTransactions')}</p>
           </div>
-          <div className="divide-y divide-gray-700 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
             {dashboardData.recent_sales.map((sale) => (
-              <div key={sale.id} className="p-4 hover:bg-gray-700/50 transition">
+              <div key={sale.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-100 dark:bg-gray-700/50 transition">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-white font-medium">{sale.sale_number}</p>
-                    <p className="text-gray-400 text-sm">{new Date(sale.created_at).toLocaleString()}</p>
-                    <p className="text-xs text-gray-500 mt-1">{t('cashier')}: {sale.cashier_name || t('system')}</p>
+                    <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{sale.sale_number}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{new Date(sale.created_at).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{t('cashier')}: {sale.cashier_name || t('system')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-green-400 font-semibold">{formatCurrency(sale.total_amount)}</p>
-                    <p className="text-xs text-gray-500 capitalize mt-1">{t(sale.payment_method) || sale.payment_method}</p>
+                    <p className="text-green-600 dark:text-green-400 font-semibold">{formatCurrency(sale.total_amount)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 capitalize mt-1">{t(sale.payment_method) || sale.payment_method}</p>
                   </div>
                 </div>
               </div>
             ))}
             {dashboardData.recent_sales.length === 0 && (
-              <div className="p-8 text-center text-gray-500">{t('noSalesYet')}</div>
+              <div className="p-8 text-center text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noSalesYet')}</div>
             )}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-gray-400 text-sm">{t('weekRevenue')}</p>
-              <p className="text-xl font-bold text-white">{formatCurrency(dashboardData.week.revenue)}</p>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('weekRevenue')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(dashboardData.week.revenue)}</p>
             </div>
-            <div className={`flex items-center gap-1 ${dashboardData.week.revenue > dashboardData.today.revenue * 7 ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`flex items-center gap-1 ${dashboardData.week.revenue > dashboardData.today.revenue * 7 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
               {dashboardData.week.revenue > dashboardData.today.revenue * 7 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
               <span className="text-sm">{Math.abs(((dashboardData.week.revenue / 7) / dashboardData.today.revenue - 1) * 100).toFixed(1)}%</span>
             </div>
           </div>
         </div>
         
-        <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-gray-400 text-sm">{t('monthProfit')}</p>
-              <p className="text-xl font-bold text-white">{formatCurrency(dashboardData.month.profit)}</p>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('monthProfit')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(dashboardData.month.profit)}</p>
             </div>
-            <div className={`flex items-center gap-1 ${dashboardData.month.profit > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              <span className="text-sm">{t('gross')}</span>
+            <div className="p-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <TrendingUp size={16} className="text-green-500 dark:text-green-400" />
             </div>
           </div>
         </div>
         
-        <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-gray-400 text-sm">{t('netProfitMargin')}</p>
-              <p className="text-xl font-bold text-white">
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('netProfitMargin')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">
                 {dashboardData.month.revenue > 0 
                   ? ((dashboardData.month.net_profit / dashboardData.month.revenue) * 100).toFixed(1)
                   : 0}%
               </p>
             </div>
-            <div className="p-2 bg-gray-700 rounded-lg">
-              <TrendingUp size={16} className="text-green-400" />
+            <div className="p-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <TrendingUp size={16} className="text-green-500 dark:text-green-400" />
             </div>
           </div>
         </div>

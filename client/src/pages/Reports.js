@@ -44,24 +44,24 @@ const Reports = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('salesAndProfitAnalytics')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('reports')}</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('salesAndProfitAnalytics')}</p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-700">
-          <Calendar size={18} className="text-gray-400 dark:text-gray-500 ml-2" />
+        <div className="flex items-center gap-3 bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <Calendar size={18} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 ml-2" />
           <input
             type="date"
             value={dateRange.startDate}
             onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-            className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-900 dark:text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span className="text-gray-500 dark:text-gray-400">{t('to')}</span>
+          <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('to')}</span>
           <input
             type="date"
             value={dateRange.endDate}
             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-            className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-900 dark:text-white px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => {
@@ -72,7 +72,7 @@ const Reports = () => {
                 endDate: today.toISOString().split('T')[0]
               });
             }}
-            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm transition"
+            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm transition"
           >
             {t('thisMonth')}
           </button>
@@ -82,70 +82,70 @@ const Reports = () => {
       {reportData && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <DollarSign size={20} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">{t('totalRevenue')}</p>
+                <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{t('totalRevenue')}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(reportData.summary.total_revenue)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(reportData.summary.total_revenue)}</p>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                   <TrendingDown size={20} className="text-red-600 dark:text-red-400" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">{t('totalCost')}</p>
+                <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{t('totalCost')}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(reportData.summary.total_cost)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(reportData.summary.total_cost)}</p>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                   <TrendingUp size={20} className="text-green-600 dark:text-green-400" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">{t('totalProfit')}</p>
+                <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{t('totalProfit')}</p>
               </div>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(reportData.summary.total_profit)}</p>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <BarChart3 size={20} className="text-purple-600 dark:text-purple-400" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">{t('profitMargin')}</p>
+                <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{t('profitMargin')}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{reportData.summary.profit_margin || 0}%</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{reportData.summary.profit_margin || 0}%</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-gray-900 dark:text-white font-semibold">{t('dailyBreakdown')}</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">{t('performanceByDay')}</p>
+          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+              <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold">{t('dailyBreakdown')}</h3>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('performanceByDay')}</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50 dark:bg-gray-700/50">
+                <thead className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50">
                   <tr>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('date')}</th>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('orders')}</th>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('revenue')}</th>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('cost')}</th>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('profit')}</th>
-                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm">{t('margin')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('date')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('orders')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('revenue')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('cost')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('profit')}</th>
+                    <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{t('margin')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {reportData.daily_breakdown.map((day, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                      <td className="px-6 py-4 text-gray-900 dark:text-white">{new Date(day.date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{day.sales_count}</td>
-                      <td className="px-6 py-4 text-gray-700 dark:text-gray-300">{formatCurrency(day.revenue)}</td>
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-100 dark:bg-gray-700/50 transition">
+                      <td className="px-6 py-4 text-gray-900 dark:text-gray-900 dark:text-white">{new Date(day.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-gray-700 dark:text-gray-600 dark:text-gray-300">{day.sales_count}</td>
+                      <td className="px-6 py-4 text-gray-700 dark:text-gray-600 dark:text-gray-300">{formatCurrency(day.revenue)}</td>
                       <td className="px-6 py-4 text-red-600 dark:text-red-400">{formatCurrency(day.cost)}</td>
                       <td className="px-6 py-4 text-green-600 dark:text-green-400 font-semibold">{formatCurrency(day.profit)}</td>
                       <td className="px-6 py-4">
@@ -163,9 +163,9 @@ const Reports = () => {
       )}
 
       {reportData && reportData.summary.total_sales === 0 && (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <BarChart3 size={48} className="mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">{t('noSalesDataForPeriod')}</p>
+        <div className="text-center py-12 bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <BarChart3 size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noSalesDataForPeriod')}</p>
         </div>
       )}
     </div>

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import { CheckCircle, Clock, Users, Utensils, Loader2, Bell, RefreshCw } from 'lucide-react';
 import socket from '../../socket';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PendingConfirmations = () => {
+  const { t } = useLanguage();
   const [pendingOrders, setPendingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
@@ -14,7 +16,7 @@ const PendingConfirmations = () => {
     
     socket.on('new_pending_order', (data) => {
       fetchPendingOrders();
-      setNotification(`📱 New order from ${data.customer_name || 'Customer'}`);
+      setNotification(`📱 ${t('newOrderFrom')} ${data.customer_name || t('customer')}`);
       setTimeout(() => setNotification(''), 5000);
       const audio = new Audio('/notification.mp3');
       audio.play().catch(e => console.log('Audio not supported'));
@@ -42,12 +44,12 @@ const PendingConfirmations = () => {
     try {
       const response = await API.put(`/orders/confirm/${orderId}`);
       if (response.data.success) {
+        alert(`✅ ${t('orderConfirmed')} ${t('sentToKitchen')}`);
         setPendingOrders(prev => prev.filter(o => o.id !== orderId));
-        alert(`✅ Order confirmed! Sent to kitchen.`);
       }
     } catch (err) {
       console.error('Confirm order error:', err);
-      alert(err.response?.data?.error || 'Failed to confirm order');
+      alert(err.response?.data?.error || t('failedToConfirmOrder'));
     } finally {
       setProcessing(null);
     }
@@ -69,99 +71,99 @@ const PendingConfirmations = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-white">Pending Order Confirmations</h1>
-          <p className="text-gray-400 mt-1">Review and confirm customer orders from your assigned tables</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('pendingOrderConfirmations')}</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('reviewConfirmOrders')}</p>
         </div>
         <button
           onClick={fetchPendingOrders}
-          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition"
+          className="bg-gray-100 dark:bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl flex items-center gap-2 transition"
         >
           <RefreshCw size={18} />
-          Refresh
+          {t('refresh')}
         </button>
       </div>
 
       {notification && (
-        <div className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 text-blue-400 text-center animate-pulse">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-blue-700 dark:text-blue-400 text-center animate-pulse">
           <Bell size={18} className="inline mr-2" />
           {notification}
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
         <div className="flex items-center gap-3">
-          <Clock size={24} className="text-yellow-400" />
+          <Clock size={24} className="text-yellow-600 dark:text-yellow-400" />
           <div>
-            <p className="text-yellow-400 font-semibold">Pending Confirmations</p>
-            <p className="text-2xl font-bold text-white">{pendingOrders.length} order{pendingOrders.length !== 1 ? 's' : ''}</p>
+            <p className="text-yellow-700 dark:text-yellow-400 font-semibold">{t('pendingConfirmations')}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{pendingOrders.length} {pendingOrders.length !== 1 ? t('orders') : t('order')}</p>
           </div>
         </div>
       </div>
 
       {pendingOrders.length === 0 ? (
-        <div className="bg-gray-800 rounded-xl p-12 text-center border border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <CheckCircle size={48} className="mx-auto text-green-500 mb-3" />
-          <p className="text-gray-500 text-lg">No pending confirmations</p>
-          <p className="text-gray-600 text-sm mt-1">Customer orders from your tables will appear here</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-lg">{t('noPendingConfirmations')}</p>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm mt-1">{t('ordersWillAppearHere')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {pendingOrders.map(order => (
-            <div key={order.id} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-yellow-500/50 transition-all">
-              <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 p-4 border-b border-gray-700">
+            <div key={order.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-yellow-500/50 transition-all shadow-sm hover:shadow-md">
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Utensils size={18} className="text-yellow-400" />
-                      <span className="text-yellow-400 text-sm font-semibold">QR Order</span>
+                      <Utensils size={18} className="text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-yellow-700 dark:text-yellow-400 text-sm font-semibold">{t('qrOrder')}</span>
                     </div>
-                    <p className="text-white font-bold text-xl mt-1">{order.order_number}</p>
-                    <p className="text-gray-400 text-sm">Table: {order.table_number}</p>
+                    <p className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-xl mt-1">{order.order_number}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('table')}: {order.table_number}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-400 text-sm">Total</p>
-                    <p className="text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('total')}</p>
+                    <p className="text-green-600 dark:text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border-b border-gray-700 bg-gray-800/50">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 bg-white dark:bg-white dark:bg-gray-800/50">
                 <div className="flex items-center gap-4 flex-wrap">
                   <div>
-                    <p className="text-gray-400 text-xs">Customer</p>
-                    <p className="text-white font-medium">{order.customer_name || 'Walk-in Customer'}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p>
+                    <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{order.customer_name || t('walkInCustomer')}</p>
                   </div>
                   {order.customer_phone && (
                     <div>
-                      <p className="text-gray-400 text-xs">Phone</p>
-                      <p className="text-white font-medium">{order.customer_phone}</p>
+                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('phone')}</p>
+                      <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{order.customer_phone}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-gray-400 text-xs">Ordered at</p>
-                    <p className="text-white font-medium">{new Date(order.created_at).toLocaleTimeString()}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('orderedAt')}</p>
+                    <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{new Date(order.created_at).toLocaleTimeString()}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border-b border-gray-700">
-                <p className="text-gray-400 text-sm mb-2">Items:</p>
+              <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mb-2">{t('items')}:</p>
                 <div className="space-y-1">
                   {order.items && order.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
-                      <span className="text-gray-300">
-                        <span className="text-white font-bold">{item.quantity}x</span> {item.name}
+                      <span className="text-gray-700 dark:text-gray-600 dark:text-gray-300">
+                        <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">{item.quantity}x</span> {item.name}
                       </span>
-                      <span className="text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
+                      <span className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {order.notes && (
-                <div className="p-4 border-b border-gray-700 bg-yellow-500/5">
-                  <p className="text-yellow-400 text-xs mb-1">Special Instructions:</p>
-                  <p className="text-gray-300 text-sm italic">"{order.notes}"</p>
+                <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 bg-yellow-50 dark:bg-yellow-900/20">
+                  <p className="text-yellow-700 dark:text-yellow-400 text-xs mb-1">{t('specialInstructions')}:</p>
+                  <p className="text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm italic">"{order.notes}"</p>
                 </div>
               )}
 
@@ -169,10 +171,10 @@ const PendingConfirmations = () => {
                 <button
                   onClick={() => confirmOrder(order.id)}
                   disabled={processing === order.id}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
                 >
                   {processing === order.id ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
-                  Confirm Order
+                  {t('confirmOrder')}
                 </button>
               </div>
             </div>

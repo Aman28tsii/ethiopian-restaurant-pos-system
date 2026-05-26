@@ -936,3 +936,115 @@ input[type="button"],
 .dark .fixed.bg-black\/80 {
   background-color: rgba(0, 0, 0, 0.9) !important;
 }
+/* FORCE DARK MODE STYLES - Override all components */
+.dark .bg-gray-50,
+.dark .bg-white,
+.dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-200,
+.dark .bg-gray-300,
+.dark .bg-gray-400 {
+  background-color: #374151 !important;
+}
+
+.dark .bg-gray-500,
+.dark .bg-gray-600,
+.dark .bg-gray-700 {
+  background-color: #4b5563 !important;
+}
+
+.dark .bg-gray-800,
+.dark .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+/* Text colors */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-400,
+.dark .text-gray-300 {
+  color: #6b7280 !important;
+}
+
+/* Border colors */
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-100 {
+  border-color: #374151 !important;
+}
+
+.dark .border-gray-400,
+.dark .border-gray-500,
+.dark .border-gray-600 {
+  border-color: #4b5563 !important;
+}
+
+/* Card backgrounds */
+.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+/* Input fields */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Table rows */
+.dark table tbody tr {
+  border-color: #374151 !important;
+}
+
+.dark table tbody tr:hover {
+  background-color: #374151 !important;
+}
+
+/* Modal backgrounds */
+.dark .fixed.bg-black\/50,
+.dark .fixed.bg-black\/70,
+.dark .fixed.bg-black\/80 {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Sidebar specific */
+.dark .bg-gray-800 {
+  background-color: #111827 !important;
+}
+
+.dark .border-gray-700 {
+  border-color: #1f2937 !important;
+}
+
+.dark .hover\:bg-gray-700:hover {
+  background-color: #1f2937 !important;
+}
+
+/* Dashboard cards */
+.dark .bg-gradient-to-r {
+  /* Keep gradients, they look good in dark mode too */
+}
+
+.dark .shadow-lg,
+.dark .shadow-md,
+.dark .shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
+}

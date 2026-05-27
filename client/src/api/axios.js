@@ -24,22 +24,51 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// RETRY LOGIC - MAX 3 retries on network errors
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+// Response interceptor with retry logic
 API.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('API Error:', error.message);
+  async (error) => {
+    const { config, response, code } = error;
+    
+    // Don't retry if config doesn't exist or retry already attempted
+    if (!config || config._retryCount === undefined) {
+      if (config) config._retryCount = 0;
+    }
+
+    // Retry conditions: network errors (ECONNABORTED, ERR_NETWORK) or server errors (500+)
+    const shouldRetry = (
+      (code === 'ECONNABORTED' || code === 'ERR_NETWORK' || !response) ||
+      (response && response.status >= 500)
+    ) && config._retryCount < MAX_RETRIES;
+
+    if (shouldRetry) {
+      config._retryCount += 1;
+      console.log(`Retrying request (${config._retryCount}/${MAX_RETRIES})...`);
+      
+      // Exponential backoff
+      const delay = RETRY_DELAY * Math.pow(2, config._retryCount - 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      return API(config);
+    }
+    
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Only redirect to login for protected routes, not for QR orders
-      const isPublicRoute = error.config.url.includes('/qr-order') || 
-                           error.config.url.includes('/track') ||
-                           error.config.url.includes('/products');
+      const isPublicRoute = error.config?.url?.includes('/qr-order') || 
+                           error.config?.url?.includes('/track') ||
+                           error.config?.url?.includes('/products');
       if (!isPublicRoute) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
     }
+    
+    console.error('API Error:', error.message);
     return Promise.reject(error);
   }
 );

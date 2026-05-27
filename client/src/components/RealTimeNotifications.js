@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import API from '../api/axios';
 import socket from '../socket';
 import { Bell, AlertTriangle, ShoppingBag, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const RealTimeNotifications = () => {
+const RealTimeNotifications = memo(() => {
   const { t } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -14,13 +14,14 @@ const RealTimeNotifications = () => {
   const lastNotificationRef = useRef({});
   const isFetchingRef = useRef(false);
   const socketInitializedRef = useRef(false);
+  const intervalRef = useRef(null);
 
   // Format currency without decimals for notifications
-  const formatMoney = (value) => {
+  const formatMoney = useCallback((value) => {
     const num = parseFloat(value || 0);
     const rounded = Math.round(num * 100) / 100;
     return `Br ${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  }, []);
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
@@ -79,7 +80,7 @@ const RealTimeNotifications = () => {
         const existingIds = new Set(prev.map(n => n.id.split('-')[0]));
         const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id.split('-')[0]));
         const result = [...uniqueNew, ...prev].slice(0, 20);
-        setUnreadCount(result.filter(n => !n.read).length);
+        setUnreadCount(prevCount => result.filter(n => !n.read).length);
         return result;
       });
       
@@ -93,14 +94,16 @@ const RealTimeNotifications = () => {
   // Listen for real-time socket events
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    
+    // Set up polling interval
+    intervalRef.current = setInterval(fetchNotifications, 60000);
     
     // Initialize socket event listeners only once
     if (socket && socket.on && !socketInitializedRef.current) {
       socketInitializedRef.current = true;
       
       // Socket event for new orders (with debounce)
-      socket.on('new_order', (data) => {
+      const handleNewOrder = (data) => {
         const notificationKey = `new_order_${data.order_id || data.order_number || data.id}`;
         const now = Date.now();
         
@@ -123,7 +126,7 @@ const RealTimeNotifications = () => {
           const exists = prev.some(n => n.message === newNotif.message);
           if (exists) return prev;
           const result = [newNotif, ...prev].slice(0, 20);
-          setUnreadCount(prevCount => prevCount + 1);
+          setUnreadCount(prevCount => result.filter(n => !n.read).length);
           return result;
         });
         
@@ -134,10 +137,10 @@ const RealTimeNotifications = () => {
         } catch (e) {
           console.log('Sound error:', e);
         }
-      });
+      };
       
       // Socket event for order status updates (with debounce)
-      socket.on('order_status_updated', (data) => {
+      const handleOrderStatusUpdate = (data) => {
         const notificationKey = `status_${data.order_id}_${data.status}`;
         const now = Date.now();
         
@@ -159,14 +162,19 @@ const RealTimeNotifications = () => {
           const exists = prev.some(n => n.message === newNotif.message);
           if (exists) return prev;
           const result = [newNotif, ...prev].slice(0, 20);
-          setUnreadCount(prevCount => prevCount + 1);
+          setUnreadCount(prevCount => result.filter(n => !n.read).length);
           return result;
         });
-      });
+      };
+      
+      socket.on('new_order', handleNewOrder);
+      socket.on('order_status_updated', handleOrderStatusUpdate);
     }
     
     return () => {
-      clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
       if (socket && socket.off) {
         socket.off('new_order');
         socket.off('order_status_updated');
@@ -176,28 +184,28 @@ const RealTimeNotifications = () => {
     };
   }, [fetchNotifications, t]);
 
-  const markAsRead = (id) => {
+  const markAsRead = useCallback((id) => {
     setNotifications(prev => 
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
-  };
+  }, []);
 
-  const getIcon = (type) => {
+  const getIcon = useCallback((type) => {
     switch(type) {
       case 'warning': return <AlertTriangle size={16} className="text-yellow-400" />;
       case 'success': return <CheckCircle size={16} className="text-green-400" />;
       case 'info': return <ShoppingBag size={16} className="text-blue-400" />;
       default: return <Bell size={16} className="text-gray-500 dark:text-gray-400" />;
     }
-  };
+  }, []);
 
-  const getBgColor = (type, read) => {
+  const getBgColor = useCallback((type, read) => {
     if (read) return 'bg-gray-800';
     switch(type) {
       case 'warning': return 'bg-yellow-500/10';
@@ -205,7 +213,7 @@ const RealTimeNotifications = () => {
       case 'info': return 'bg-blue-500/10';
       default: return 'bg-gray-700';
     }
-  };
+  }, []);
 
   return (
     <div className="relative">
@@ -215,7 +223,7 @@ const RealTimeNotifications = () => {
       >
         <Bell size={20} className="text-gray-500 dark:text-gray-400" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-gray-900 dark:text-white text-xs rounded-full flex items-center justify-center">
+          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -270,6 +278,8 @@ const RealTimeNotifications = () => {
       )}
     </div>
   );
-};
+});
+
+RealTimeNotifications.displayName = 'RealTimeNotifications';
 
 export default RealTimeNotifications;

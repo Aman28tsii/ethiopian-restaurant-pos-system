@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import API from '../api/axios';
 import { Award, Loader2, Medal, Crown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const StaffPerformance = () => {
+const StaffPerformance = memo(() => {
   const { t } = useLanguage();
   const [performance, setPerformance] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,18 +11,22 @@ const StaffPerformance = () => {
   const intervalRef = useRef(null);
   const isMounted = useRef(true);
 
+  const formatCurrency = useCallback((value) => {
+    return `Br ${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, []);
+
   const fetchPerformance = useCallback(async () => {
     if (!isMounted.current) return;
     
     setLoading(true);
     try {
       const response = await API.get('/auth/performance', { params: { period } });
-      if (isMounted.current) {
+      if (isMounted.current && response.data?.data) {
         setPerformance(response.data.data);
-        setLoading(false);
       }
     } catch (err) {
       console.error('Fetch performance error:', err);
+    } finally {
       if (isMounted.current) {
         setLoading(false);
       }
@@ -47,24 +51,20 @@ const StaffPerformance = () => {
     };
   }, [fetchPerformance]);
 
-  const formatCurrency = (value) => {
-    return `Br ${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const getPeriodText = () => {
+  const getPeriodText = useCallback(() => {
     switch(period) {
       case 'week': return t('last7Days');
       case 'month': return t('last30Days');
       case 'year': return t('last365Days');
       default: return t('last30Days');
     }
-  };
+  }, [period, t]);
 
-  const getTopPerformer = () => {
+  const getTopPerformer = useCallback(() => {
     if (!performance?.sales_by_staff || performance.sales_by_staff.length === 0) return null;
     return performance.sales_by_staff.reduce((max, item) => 
       parseFloat(item.total_revenue) > parseFloat(max.total_revenue) ? item : max, performance.sales_by_staff[0]);
-  };
+  }, [performance]);
 
   const topPerformer = getTopPerformer();
 
@@ -143,7 +143,7 @@ const StaffPerformance = () => {
                   <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                     {idx === 0 && <Medal size={14} className="inline text-yellow-400 mr-1" />}
                     {staff.name}
-                   </td>
+                  </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize">{t(staff.role)}</td>
                   <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{staff.total_sales || 0}</td>
                   <td className="px-4 py-3 text-right text-green-400">{formatCurrency(staff.total_revenue)}</td>
@@ -166,6 +166,8 @@ const StaffPerformance = () => {
       )}
     </div>
   );
-};
+});
+
+StaffPerformance.displayName = 'StaffPerformance';
 
 export default StaffPerformance;

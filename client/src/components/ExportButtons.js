@@ -76,7 +76,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       {(type === 'excel' || type === 'both') && (
         <button
           onClick={exportToExcel}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition"
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileSpreadsheet size={16} />
           {t('exportExcel')}
@@ -85,7 +85,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       {(type === 'pdf' || type === 'both') && (
         <button
           onClick={exportToPDF}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition"
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-gray-900 dark:text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileText size={16} />
           {t('exportPDF')}

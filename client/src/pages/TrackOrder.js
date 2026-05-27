@@ -176,7 +176,7 @@ const TrackOrder = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400">Loading order...</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">Loading order...</p>
         </div>
       </div>
     );
@@ -187,24 +187,24 @@ const TrackOrder = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Track Your Order</h1>
-          <p className="text-gray-500 dark:text-gray-400">Enter your order number to see real-time status</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-900 dark:text-white mb-2">Track Your Order</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">Enter your order number to see real-time status</p>
         </div>
 
         {/* Search Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="Enter order number (e.g., QR-12345678)"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? <RefreshCw className="animate-spin" size={20} /> : <span>Track Order</span>}
             </button>
@@ -222,14 +222,14 @@ const TrackOrder = () => {
         {searched && order && (
           <div className="space-y-6">
             {/* Order Header Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Order Number</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{order.order_number}</p>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">Order Number</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{order.order_number}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Total Amount</p>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">Total Amount</p>
                   <p className="text-2xl font-bold text-green-400">{formatCurrency(order.total_amount)}</p>
                 </div>
               </div>
@@ -248,15 +248,15 @@ const TrackOrder = () => {
                   <div className="flex items-center gap-3">
                     <Clock className="text-blue-400" size={24} />
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">Time Elapsed</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{timer} min</p>
+                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">Time Elapsed</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{timer} min</p>
                     </div>
                   </div>
                   {estimatedTime > 0 && order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled' && (
                     <div className="flex items-center gap-3">
                       <ChefHat className="text-orange-400" size={24} />
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">Estimated Remaining</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">Estimated Remaining</p>
                         <p className="text-2xl font-bold text-orange-400">{estimatedTime} min</p>
                       </div>
                     </div>
@@ -265,7 +265,7 @@ const TrackOrder = () => {
                     <div className="flex items-center gap-3 animate-pulse">
                       <Coffee className="text-green-400" size={24} />
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">Status</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">Status</p>
                         <p className="text-xl font-bold text-green-400">Ready for Pickup!</p>
                       </div>
                     </div>
@@ -292,74 +292,74 @@ const TrackOrder = () => {
               </div>
 
               {/* Order Items - UPDATED SECTION */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h3 className="text-gray-900 dark:text-white font-semibold mb-3 flex items-center gap-2">
+              <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-4">
+                <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold mb-3 flex items-center gap-2">
                   <ShoppingBag size={18} className="text-blue-400" />
                   Order Items
                 </h3>
                 <div className="space-y-2">
                   {order.items && order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
+                    <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 last:border-0">
                       <div className="flex-1">
-                        <p className="text-gray-900 dark:text-white font-medium">
+                        <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">
                           <span className="text-blue-400">{item.quantity}x</span> {item.product_name}
                         </p>
                       </div>
-                      <p className="text-gray-900 dark:text-white font-bold">{formatCurrency(item.total_price || item.price * item.quantity)}</p>
+                      <p className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">{formatCurrency(item.total_price || item.price * item.quantity)}</p>
                     </div>
                   ))}
                 </div>
                 
                 {/* Price Breakdown */}
-                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-                    <span className="text-gray-900 dark:text-white">{formatCurrency(order.total_amount * 0.87)}</span>
+                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">Subtotal</span>
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(order.total_amount * 0.87)}</span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-gray-500 dark:text-gray-400">VAT (15%)</span>
-                    <span className="text-gray-900 dark:text-white">{formatCurrency(order.total_amount * 0.13)}</span>
+                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">VAT (15%)</span>
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(order.total_amount * 0.13)}</span>
                   </div>
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-900 dark:text-white font-bold text-lg">Total</span>
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg">Total</span>
                     <span className="text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Customer Info */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag size={16} className="text-gray-500 dark:text-gray-400" />
+                    <ShoppingBag size={16} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Customer</p>
-                      <p className="text-gray-900 dark:text-white font-medium">{order.customer_name || 'Walk-in Customer'}</p>
+                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Customer</p>
+                      <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{order.customer_name || 'Walk-in Customer'}</p>
                     </div>
                   </div>
                   {order.customer_phone && (
                     <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-500 dark:text-gray-400" />
+                      <Phone size={16} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Phone</p>
-                        <p className="text-gray-900 dark:text-white font-medium">{order.customer_phone}</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Phone</p>
+                        <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{order.customer_phone}</p>
                       </div>
                     </div>
                   )}
                   {order.table_number && (
                     <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-gray-500 dark:text-gray-400" />
+                      <MapPin size={16} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Table</p>
-                        <p className="text-gray-900 dark:text-white font-medium">Table {order.table_number}</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Table</p>
+                        <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">Table {order.table_number}</p>
                       </div>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-500 dark:text-gray-400" />
+                    <Calendar size={16} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">Ordered At</p>
-                      <p className="text-gray-900 dark:text-white font-medium">{formatDate(order.created_at)}</p>
+                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Ordered At</p>
+                      <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium">{formatDate(order.created_at)}</p>
                     </div>
                   </div>
                 </div>
@@ -368,9 +368,9 @@ const TrackOrder = () => {
 
             {/* Special Instructions */}
             {order.notes && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Special Instructions</h3>
-                <p className="text-gray-600 dark:text-gray-300 italic">"{order.notes}"</p>
+              <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-900 dark:text-white mb-2">Special Instructions</h3>
+                <p className="text-gray-600 dark:text-gray-600 dark:text-gray-300 italic">"{order.notes}"</p>
               </div>
             )}
 
@@ -385,7 +385,7 @@ const TrackOrder = () => {
 
         {/* No Order Found */}
         {searched && !order && !loading && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
             <AlertCircle size={48} className="mx-auto text-gray-600 mb-3" />
             <p className="text-gray-500 text-lg">Order Not Found</p>
             <p className="text-gray-600 text-sm mt-1">Please check your order number and try again</p>

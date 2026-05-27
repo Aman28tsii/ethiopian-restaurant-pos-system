@@ -198,7 +198,7 @@ const POS = ({ userRole = 'cashier' }) => {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">Loading products...</p>
+          <p className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Loading products...</p>
         </div>
       </div>
     );
@@ -218,20 +218,20 @@ const POS = ({ userRole = 'cashier' }) => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-700 mb-4">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 mb-4">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" size={18} />
             <input
               type="text"
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300"
               >
                 <X size={18} />
               </button>
@@ -268,31 +268,31 @@ const POS = ({ userRole = 'cashier' }) => {
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white dark:bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-200 dark:border-gray-700 rounded-xl p-3 hover:border-blue-500 hover:scale-105 transition-all duration-200 text-left w-full shadow-sm hover:shadow-md"
+                className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 rounded-xl p-3 hover:border-blue-500 hover:scale-105 transition-all duration-200 text-left w-full shadow-sm hover:shadow-md"
               >
                 <div className="text-3xl mb-2 text-center">🍽️</div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-white text-sm truncate">{product.name}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white text-sm truncate">{product.name}</h3>
                 <p className="text-blue-600 dark:text-blue-400 font-bold text-base mt-1">Br {typeof product.price === 'number' ? product.price.toFixed(2) : parseFloat(product.price).toFixed(2)}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">Stock: {product.stock || 'N/A'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">Stock: {product.stock || 'N/A'}</p>
               </button>
             ))}
           </div>
           
           {filteredProducts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">No products found</p>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">No products found</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="w-96 flex-shrink-0 bg-white dark:bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-120px)] sticky top-6 shadow-lg">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+      <div className="w-96 flex-shrink-0 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-120px)] sticky top-6 shadow-lg">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <ShoppingCart size={24} className="text-blue-500 dark:text-blue-400" />
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">Current Order</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">Current Order</h2>
             </div>
             {cart.length > 0 && (
               <button onClick={clearCart} className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm font-semibold">
@@ -308,16 +308,16 @@ const POS = ({ userRole = 'cashier' }) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.length === 0 ? (
             <div className="text-center py-12">
-              <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">Cart is empty</p>
-              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">Tap products to add</p>
+              <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Cart is empty</p>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">Tap products to add</p>
             </div>
           ) : (
             cart.map(item => (
               <div key={item.id} className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700 rounded-xl p-3">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-white text-sm">{item.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white text-sm">{item.name}</h3>
                     <p className="text-blue-600 dark:text-blue-400 text-sm">Br {item.price.toFixed(2)}</p>
                   </div>
                   <button onClick={() => removeFromCart(item.id)} className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300">
@@ -330,17 +330,17 @@ const POS = ({ userRole = 'cashier' }) => {
                       onClick={() => updateQuantity(item.id, -1)}
                       className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
                     >
-                      <Minus size={16} className="text-gray-700 dark:text-gray-900 dark:text-white" />
+                      <Minus size={16} className="text-gray-700 dark:text-gray-900 dark:text-gray-900 dark:text-white" />
                     </button>
-                    <span className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, 1)}
                       className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
                     >
-                      <Plus size={16} className="text-gray-700 dark:text-gray-900 dark:text-white" />
+                      <Plus size={16} className="text-gray-700 dark:text-gray-900 dark:text-gray-900 dark:text-white" />
                     </button>
                   </div>
-                  <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">Br {item.total.toFixed(2)}</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold">Br {item.total.toFixed(2)}</span>
                 </div>
               </div>
             ))
@@ -348,19 +348,19 @@ const POS = ({ userRole = 'cashier' }) => {
         </div>
 
         {cart.length > 0 && (
-          <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
+          <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
             {!showCheckout ? (
               <>
                 <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">
                     <span>Subtotal</span>
                     <span>Br {subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400">
+                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">
                     <span>VAT (15%)</span>
                     <span>Br {tax.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-white font-bold text-xl pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold text-xl pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
                     <span>Total</span>
                     <span className="text-green-600 dark:text-green-400">Br {total.toFixed(2)}</span>
                   </div>
@@ -370,14 +370,14 @@ const POS = ({ userRole = 'cashier' }) => {
                   <button
                     onClick={sendToKitchen}
                     disabled={processing}
-                    className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-gray-900 dark:text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50"
+                    className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-bold text-lg transition-all disabled:opacity-50"
                   >
                     {processing ? 'Sending...' : 'Send to Kitchen'}
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowCheckout(true)}
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-bold text-lg transition-all"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-bold text-lg transition-all"
                   >
                     Proceed to Checkout
                   </button>
@@ -390,7 +390,7 @@ const POS = ({ userRole = 'cashier' }) => {
                   placeholder="Customer name (optional)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
                 
                 <input
@@ -398,7 +398,7 @@ const POS = ({ userRole = 'cashier' }) => {
                   placeholder="Customer phone (optional)"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
                 
                 <div className="grid grid-cols-3 gap-2">
@@ -439,26 +439,26 @@ const POS = ({ userRole = 'cashier' }) => {
 
                 <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700 rounded-xl p-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-500 dark:text-gray-400">Items:</span>
-                    <span className="text-gray-900 dark:text-gray-900 dark:text-white">{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
+                    <span className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Items:</span>
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
                   </div>
                   <div className="flex justify-between text-lg mt-1">
-                    <span className="text-gray-600 dark:text-gray-500 dark:text-gray-400">Total:</span>
-                    <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">Br {total.toFixed(2)}</span>
+                    <span className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Total:</span>
+                    <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold">Br {total.toFixed(2)}</span>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowCheckout(false)}
-                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition"
+                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition"
                   >
                     Back
                   </button>
                   <button
                     onClick={processOrder}
                     disabled={processing}
-                    className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl font-bold transition disabled:opacity-50"
+                    className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-bold transition disabled:opacity-50"
                   >
                     {processing ? 'Processing...' : 'Complete Order'}
                   </button>

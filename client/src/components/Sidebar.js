@@ -104,9 +104,9 @@ const Sidebar = ({ user, onLogout }) => {
     <>
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-colors duration-200"
+        className="fixed top-4 left-4 z-50 md:hidden bg-white dark:bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-200 dark:border-gray-200 dark:border-gray-700 transition-colors duration-200"
       >
-        {isMobileOpen ? <X size={24} className="text-gray-900 dark:text-white" /> : <Menu size={24} className="text-gray-900 dark:text-white" />}
+        {isMobileOpen ? <X size={24} className="text-gray-900 dark:text-gray-900 dark:text-white" /> : <Menu size={24} className="text-gray-900 dark:text-gray-900 dark:text-white" />}
       </button>
 
       <MobileOverlay />
@@ -125,8 +125,8 @@ const Sidebar = ({ user, onLogout }) => {
             <Store className="text-blue-600 dark:text-blue-500 flex-shrink-0" size={32} />
             {(!isCollapsed || isMobile) && (
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">EthioPOS</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{t(userRole)}</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">EthioPOS</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 capitalize">{t(userRole)}</p>
               </div>
             )}
           </div>
@@ -135,10 +135,10 @@ const Sidebar = ({ user, onLogout }) => {
         {!isMobile && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="absolute bg-gray-200 dark:bg-gray-800 rounded-full p-1 hover:bg-gray-300 dark:hover:bg-gray-700 transition-all duration-200 z-10"
+            className="absolute bg-gray-200 dark:bg-white dark:bg-gray-800 rounded-full p-1 hover:bg-gray-300 dark:hover:bg-gray-700 transition-all duration-200 z-10"
             style={{ left: isCollapsed ? '5rem' : '18rem', top: '5rem' }}
           >
-            {isCollapsed ? <ChevronRight size={16} className="text-gray-700 dark:text-gray-300" /> : <ChevronLeft size={16} className="text-gray-700 dark:text-gray-300" />}
+            {isCollapsed ? <ChevronRight size={16} className="text-gray-700 dark:text-gray-600 dark:text-gray-300" /> : <ChevronLeft size={16} className="text-gray-700 dark:text-gray-600 dark:text-gray-300" />}
           </button>
         )}
 
@@ -165,10 +165,10 @@ const Sidebar = ({ user, onLogout }) => {
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-800">
           {(!isCollapsed || isMobile) && (
-            <div className="mb-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('loggedInAs')}</p>
-              <p className="text-gray-900 dark:text-white font-semibold truncate">{user?.name || t('staff')}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{t(user?.role || 'cashier')}</p>
+            <div className="mb-3 px-4 py-2 bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-xl">
+              <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('loggedInAs')}</p>
+              <p className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold truncate">{user?.name || t('staff')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 capitalize">{t(user?.role || 'cashier')}</p>
             </div>
           )}
           <button

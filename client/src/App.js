@@ -90,7 +90,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -165,7 +165,7 @@ function App() {
               <CashierLayout user={user} onLogout={handleLogout}>
                 <Routes>
                   <Route path="pos" element={<CashierPOS userRole={userRole} />} />
-                  <Route path="history" element={<div className="text-white p-6">Sales History</div>} />
+                  <Route path="history" element={<div className="text-gray-900 dark:text-white p-6">Sales History</div>} />
                   <Route path="*" element={<Navigate to="/cashier/pos" />} />
                   <Route path="manual-order" element={<ManualOrder />} />
                 </Routes>
@@ -179,7 +179,7 @@ function App() {
               <WaiterLayout user={user} onLogout={handleLogout}>
                 <Routes>
                   <Route path="tables" element={<TableGrid />} />
-                  <Route path="orders" element={<div className="text-white p-6">My Orders</div>} />
+                  <Route path="orders" element={<div className="text-gray-900 dark:text-white p-6">My Orders</div>} />
                   <Route path="my-orders" element={<MyOrders />} />
                   <Route path="table-status" element={<TableStatus />} />
                   <Route path="pending-confirmations" element={<PendingConfirmations />} />

@@ -103,13 +103,13 @@ const PendingApprovals = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('pendingApprovals')}</h1>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('reviewAndApproveStaffAccounts')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('pendingApprovals')}</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('reviewAndApproveStaffAccounts')}</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="bg-gray-100 dark:bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
+          className="bg-gray-100 dark:bg-white dark:bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
         >
           <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
           {t('refresh')}
@@ -129,16 +129,16 @@ const PendingApprovals = () => {
             <Clock size={28} className="text-yellow-600 dark:text-yellow-400" />
             <div>
               <p className="text-yellow-700 dark:text-yellow-400 font-semibold">{t('pendingApprovals')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{pendingUsers.length} {t('usersWaiting')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{pendingUsers.length} {t('usersWaiting')}</p>
             </div>
           </div>
           {pendingUsers.length > 0 && (
             <div className="flex items-center gap-3">
-              <label className="text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm">{t('defaultRole')}:</label>
+              <label className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm">{t('defaultRole')}:</label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="staff">{t('staff')}</option>
                 <option value="cashier">{t('cashier')}</option>
@@ -152,25 +152,25 @@ const PendingApprovals = () => {
       </div>
 
       {pendingUsers.length === 0 ? (
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <UserCheck size={48} className="mx-auto text-green-500 mb-3" />
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-lg">{t('noPendingApprovals')}</p>
-          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm mt-1">{t('allStaffAccountsApproved')}</p>
-          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs mt-2">{t('newStaffWillAppearHere')}</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-lg">{t('noPendingApprovals')}</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm mt-1">{t('allStaffAccountsApproved')}</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs mt-2">{t('newStaffWillAppearHere')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pendingUsers.map(user => (
-            <div key={user.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-300 dark:hover:border-gray-300 dark:border-gray-600 transition-all shadow-sm">
+            <div key={user.id} className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-gray-300 dark:hover:border-gray-300 dark:border-gray-600 transition-all shadow-sm">
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                      <Users size={24} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
+                      <Users size={24} className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-gray-900 dark:text-white text-lg">{user.name}</h3>
-                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{user.email}</p>
+                      <h3 className="font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white text-lg">{user.name}</h3>
+                      <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{user.email}</p>
                     </div>
                   </div>
                   <div className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -180,21 +180,21 @@ const PendingApprovals = () => {
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('phone')}:</span>
-                    <span className="text-gray-700 dark:text-gray-600 dark:text-gray-300">{user.phone || t('notProvided')}</span>
+                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('phone')}:</span>
+                    <span className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300">{user.phone || t('notProvided')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('requested')}:</span>
-                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{formatDate(user.created_at)}</span>
+                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('requested')}:</span>
+                    <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{formatDate(user.created_at)}</span>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-4">
-                  <label className="block text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-2">{t('assignRole')}:</label>
+                <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-4">
+                  <label className="block text-xs text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-2">{t('assignRole')}:</label>
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
                   >
                     <option value="staff">{t('staff')} ({t('basicAccess')})</option>
                     <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
@@ -207,7 +207,7 @@ const PendingApprovals = () => {
                     <button
                       onClick={() => approveUser(user.id)}
                       disabled={processing === user.id}
-                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {processing === user.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                       {t('approve')}
@@ -215,7 +215,7 @@ const PendingApprovals = () => {
                     <button
                       onClick={() => rejectUser(user.id)}
                       disabled={processing === user.id}
-                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-gray-900 dark:text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <XCircle size={14} />
                       {t('reject')}

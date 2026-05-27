@@ -79,14 +79,14 @@ const StaffPerformance = () => {
   if (!performance) return null;
 
   return (
-    <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-wrap gap-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h3 className="text-white font-semibold flex items-center gap-2">
+          <h3 className="text-gray-900 dark:text-white font-semibold flex items-center gap-2">
             <Award size={20} className="text-yellow-400" />
             {t('staffPerformance')}
           </h3>
-          <p className="text-gray-400 text-sm">{getPeriodText()}</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{getPeriodText()}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -116,8 +116,8 @@ const StaffPerformance = () => {
             <Crown size={28} className="text-yellow-400" />
             <div>
               <p className="text-yellow-400 text-xs font-semibold">{t('topPerformer')}</p>
-              <p className="text-white font-bold text-lg">{topPerformer.name}</p>
-              <p className="text-gray-400 text-sm">{topPerformer.role} • {formatCurrency(topPerformer.total_revenue)} {t('revenue')}</p>
+              <p className="text-gray-900 dark:text-white font-bold text-lg">{topPerformer.name}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{topPerformer.role} • {formatCurrency(topPerformer.total_revenue)} {t('revenue')}</p>
             </div>
           </div>
         </div>
@@ -125,30 +125,30 @@ const StaffPerformance = () => {
 
       {performance.sales_by_staff && performance.sales_by_staff.length > 0 ? (
         <div className="p-4 overflow-x-auto">
-          <h4 className="text-white font-medium mb-3">{t('salesPerformance')}</h4>
+          <h4 className="text-gray-900 dark:text-white font-medium mb-3">{t('salesPerformance')}</h4>
           <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-700/50">
               <tr>
-                <th className="px-4 py-2 text-left text-gray-400">{t('staff')}</th>
-                <th className="px-4 py-2 text-left text-gray-400">{t('role')}</th>
-                <th className="px-4 py-2 text-right text-gray-400">{t('sales')}</th>
-                <th className="px-4 py-2 text-right text-gray-400">{t('revenue')}</th>
-                <th className="px-4 py-2 text-right text-gray-400">{t('profit')}</th>
-                <th className="px-4 py-2 text-right text-gray-400">{t('avgOrder')}</th>
+                <th className="px-4 py-2 text-left text-gray-500 dark:text-gray-400">{t('staff')}</th>
+                <th className="px-4 py-2 text-left text-gray-500 dark:text-gray-400">{t('role')}</th>
+                <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{t('sales')}</th>
+                <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{t('revenue')}</th>
+                <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{t('profit')}</th>
+                <th className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{t('avgOrder')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {performance.sales_by_staff.slice(0, 5).map((staff, idx) => (
                 <tr key={staff.id} className="hover:bg-gray-700/50">
-                  <td className="px-4 py-3 text-white font-medium">
+                  <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                     {idx === 0 && <Medal size={14} className="inline text-yellow-400 mr-1" />}
                     {staff.name}
                    </td>
-                  <td className="px-4 py-3 text-gray-300 capitalize">{t(staff.role)}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">{staff.total_sales || 0}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize">{t(staff.role)}</td>
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{staff.total_sales || 0}</td>
                   <td className="px-4 py-3 text-right text-green-400">{formatCurrency(staff.total_revenue)}</td>
                   <td className="px-4 py-3 text-right text-blue-400">{formatCurrency(staff.total_profit)}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">{formatCurrency(staff.avg_order_value)}</td>
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{formatCurrency(staff.avg_order_value)}</td>
                 </tr>
               ))}
             </tbody>

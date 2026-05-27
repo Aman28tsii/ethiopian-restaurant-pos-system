@@ -19,15 +19,15 @@ export const RevenueChart = ({ data, title }) => {
   
   if (!data || data.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
         <p className="text-gray-500">{t('noData')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-      <h3 className="text-white font-semibold mb-4">{title || t('revenueProfitTrend')}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-gray-900 dark:text-white font-semibold mb-4">{title || t('revenueProfitTrend')}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -53,15 +53,15 @@ export const TopProductsChart = ({ data, title }) => {
   
   if (!data || data.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
         <p className="text-gray-500">{t('noData')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-      <h3 className="text-white font-semibold mb-4">{title || t('topSellingProducts')}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-gray-900 dark:text-white font-semibold mb-4">{title || t('topSellingProducts')}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ left: 80 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -85,7 +85,7 @@ export const PaymentMethodsChart = ({ data, title }) => {
   
   if (!data || data.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
         <p className="text-gray-500">{t('noData')}</p>
       </div>
     );
@@ -107,8 +107,8 @@ export const PaymentMethodsChart = ({ data, title }) => {
   }));
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-      <h3 className="text-white font-semibold mb-4">{title || t('paymentMethods')}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-gray-900 dark:text-white font-semibold mb-4">{title || t('paymentMethods')}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -143,7 +143,7 @@ export const HourlySalesChart = ({ data, title }) => {
   
   if (!data || data.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
         <p className="text-gray-500">{t('noData')}</p>
       </div>
     );
@@ -156,8 +156,8 @@ export const HourlySalesChart = ({ data, title }) => {
   }));
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-      <h3 className="text-white font-semibold mb-4">{title || t('hourlySalesTrend')}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-gray-900 dark:text-white font-semibold mb-4">{title || t('hourlySalesTrend')}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

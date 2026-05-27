@@ -42,14 +42,14 @@ const LowStockAlert = () => {
                 {lowStockItems.length} {t('items')}
               </span>
             </h3>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
               {t('lowStockDescription')}
             </p>
             <div className="mt-3 space-y-2">
               {lowStockItems.slice(0, 5).map(item => (
                 <div key={item.id} className="flex items-center gap-2 text-sm">
                   <Package size={14} className="text-gray-500" />
-                  <span className="text-white">{item.name}</span>
+                  <span className="text-gray-900 dark:text-white">{item.name}</span>
                   <span className="text-red-400">
                     {item.quantity} {item.unit} {t('left')}
                   </span>
@@ -68,7 +68,7 @@ const LowStockAlert = () => {
         </div>
         <button
           onClick={() => setShowAlert(false)}
-          className="text-gray-500 hover:text-gray-400"
+          className="text-gray-500 hover:text-gray-500 dark:text-gray-400"
         >
           <X size={16} />
         </button>

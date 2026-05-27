@@ -350,11 +350,11 @@ const TableGrid = () => {
   const getStatusIcon = useCallback((status) => {
     const size = isMobile ? 20 : 28;
     switch(status) {
-      case 'available': return <Utensils size={size} className="text-gray-900 dark:text-white/80" />;
-      case 'occupied': return <Users size={size} className="text-gray-900 dark:text-white/80" />;
-      case 'reserved': return <Clock size={size} className="text-gray-900 dark:text-white/80" />;
-      case 'cleaning': return <Coffee size={size} className="text-gray-900 dark:text-white/80" />;
-      default: return <Utensils size={size} className="text-gray-900 dark:text-white/80" />;
+      case 'available': return <Utensils size={size} className="text-gray-900 dark:text-gray-900 dark:text-white/80" />;
+      case 'occupied': return <Users size={size} className="text-gray-900 dark:text-gray-900 dark:text-white/80" />;
+      case 'reserved': return <Clock size={size} className="text-gray-900 dark:text-gray-900 dark:text-white/80" />;
+      case 'cleaning': return <Coffee size={size} className="text-gray-900 dark:text-gray-900 dark:text-white/80" />;
+      default: return <Utensils size={size} className="text-gray-900 dark:text-gray-900 dark:text-white/80" />;
     }
   }, [isMobile]);
 
@@ -541,7 +541,7 @@ const TableGrid = () => {
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
           <Loader2 className="animate-spin text-emerald-500 mx-auto mb-4" size={48} />
-          <p className="text-gray-500 dark:text-gray-400">{t('loading')}</p>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -557,7 +557,7 @@ const TableGrid = () => {
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
               {t('tableManagement')}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mt-1">
               {myShift ? `Today's Shift: ${myShift.shift_start} - ${myShift.shift_end}` : t('manageTables')}
             </p>
           </div>
@@ -566,20 +566,20 @@ const TableGrid = () => {
           <div className="flex flex-wrap gap-2 md:gap-3">
             <div className="bg-emerald-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl px-3 md:px-5 py-2 md:py-3 border border-emerald-500/20">
               <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wide">{t('available')}</p>
-              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{availableCount}</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{availableCount}</p>
             </div>
             <div className="bg-rose-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl px-3 md:px-5 py-2 md:py-3 border border-rose-500/20">
               <p className="text-rose-400 text-xs font-semibold uppercase tracking-wide">{t('occupied')}</p>
-              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{occupiedCount}</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{occupiedCount}</p>
             </div>
             <div className="bg-amber-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl px-3 md:px-5 py-2 md:py-3 border border-amber-500/20">
               <p className="text-amber-400 text-xs font-semibold uppercase tracking-wide">{t('pending')}</p>
-              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{pendingOrdersCount}</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{pendingOrdersCount}</p>
             </div>
             {pendingConfirmationsCount > 0 && (
               <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl md:rounded-2xl px-3 md:px-5 py-2 md:py-3 border border-blue-500/20 animate-pulse">
                 <p className="text-blue-400 text-xs font-semibold uppercase tracking-wide">To Confirm</p>
-                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{pendingConfirmationsCount}</p>
+                <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{pendingConfirmationsCount}</p>
               </div>
             )}
             <button
@@ -593,18 +593,18 @@ const TableGrid = () => {
         </div>
 
         {/* ========== SELF ASSIGNMENT PANEL ========== */}
-        <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-4 md:px-5 py-3 md:py-4 bg-white dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-4 md:px-5 py-3 md:py-4 bg-white dark:bg-white dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
-                  <span className="text-gray-900 dark:text-white text-sm font-bold">+</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-white text-sm font-bold">+</span>
                 </div>
                 <div>
-                  <h3 className="text-gray-900 dark:text-white font-semibold text-sm md:text-base">
+                  <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base">
                     Assign Yourself to Tables
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">Pick available tables to serve (max 5 tables)</p>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Pick available tables to serve (max 5 tables)</p>
                 </div>
               </div>
               <button
@@ -612,7 +612,7 @@ const TableGrid = () => {
                 className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 title="Refresh"
               >
-                <RefreshCw size={14} className="text-gray-500 dark:text-gray-400" />
+                <RefreshCw size={14} className="text-gray-500 dark:text-gray-500 dark:text-gray-400" />
               </button>
             </div>
           </div>
@@ -623,7 +623,7 @@ const TableGrid = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle size={16} className="text-green-400" />
-                  <h4 className="text-gray-900 dark:text-white font-semibold text-sm">
+                  <h4 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm">
                     My Tables ({mySelfTables.length}/5)
                   </h4>
                 </div>
@@ -649,7 +649,7 @@ const TableGrid = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-1">
-                          <span className="text-gray-900 dark:text-white font-bold text-sm">Table {table.table_number}</span>
+                          <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm">Table {table.table_number}</span>
                           <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                             table.status === 'occupied' 
                               ? 'bg-red-500/20 text-red-400' 
@@ -679,7 +679,7 @@ const TableGrid = () => {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <PlusCircle size={16} className="text-emerald-400" />
-                <h4 className="text-gray-900 dark:text-white font-semibold text-sm">
+                <h4 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm">
                   Available Tables ({availableSelfTables.length})
                 </h4>
               </div>
@@ -699,8 +699,8 @@ const TableGrid = () => {
                       className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600 hover:to-teal-600 border border-emerald-500/30 rounded-lg p-2 text-center transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 group"
                     >
                       <div className="flex flex-col items-center">
-                        <span className="text-gray-900 dark:text-white font-bold text-base">Table {table.table_number}</span>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs">Capacity: {table.capacity}</span>
+                        <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-base">Table {table.table_number}</span>
+                        <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">Capacity: {table.capacity}</span>
                         <span className="text-emerald-400 text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           Click to assign
                         </span>
@@ -728,7 +728,7 @@ const TableGrid = () => {
             <div className="px-4 md:px-5 py-3 md:py-4 bg-blue-500/20 border-b border-blue-500/30">
               <div className="flex items-center gap-2">
                 <Bell size={isMobile ? 16 : 18} className="text-blue-400 animate-pulse" />
-                <h3 className="text-gray-900 dark:text-white font-semibold text-sm md:text-base">
+                <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base">
                   Pending Confirmations ({pendingConfirmations.length})
                 </h3>
                 <span className="text-xs text-blue-400">QR Orders waiting for you</span>
@@ -740,21 +740,21 @@ const TableGrid = () => {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                        <p className="text-gray-900 dark:text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
+                        <p className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
                         <span className="px-2 py-0.5 md:py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400">
                           Awaiting Confirmation
                         </span>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number}</span>
+                        <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number}</span>
                       </div>
                       <p className="text-emerald-400 font-bold text-sm md:text-base mt-1">Br {parseFloat(order.total_amount).toFixed(2)}</p>
                       {order.customer_name && (
-                        <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">Customer: {order.customer_name}</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mt-1">Customer: {order.customer_name}</p>
                       )}
                     </div>
                     <button
                       onClick={() => confirmOrder(order.id)}
                       disabled={confirmingOrderId === order.id}
-                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl text-sm md:text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {confirmingOrderId === order.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
                       Confirm Order
@@ -768,11 +768,11 @@ const TableGrid = () => {
 
         {/* Active Orders Panel */}
         {regularActiveOrders.length > 0 && (
-          <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 md:px-5 py-3 md:py-4 bg-white dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-wrap gap-2">
+          <div className="bg-white dark:bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-4 md:px-5 py-3 md:py-4 bg-white dark:bg-white dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Bell size={isMobile ? 16 : 18} className="text-amber-400" />
-                <h3 className="text-gray-900 dark:text-white font-semibold text-sm md:text-base">
+                <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base">
                   {showActiveOrders ? t('activeOrders') : t('activeOrdersHidden')} ({regularActiveOrders.length})
                 </h3>
               </div>
@@ -780,7 +780,7 @@ const TableGrid = () => {
                 {!showActiveOrders && regularActiveOrders.length > 0 && (
                   <button
                     onClick={() => setShowActiveOrders(true)}
-                    className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-gray-900 dark:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200"
+                    className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-gray-900 dark:text-gray-900 dark:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200"
                   >
                     <Eye size={isMobile ? 14 : 16} />
                     <span>{t('showOrders')}</span>
@@ -789,7 +789,7 @@ const TableGrid = () => {
                 {showActiveOrders && regularActiveOrders.length > 0 && (
                   <button
                     onClick={() => setShowActiveOrders(false)}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white text-xs md:text-sm"
+                    className="text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-900 dark:text-white text-xs md:text-sm"
                   >
                     {t('hide')}
                   </button>
@@ -804,7 +804,7 @@ const TableGrid = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                          <p className="text-gray-900 dark:text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
+                          <p className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-lg">#{order.order_number}</p>
                           <span className={`px-2 py-0.5 md:py-1 rounded-full text-xs font-semibold ${
                             order.status === 'pending' 
                               ? 'bg-amber-500/20 text-amber-400' 
@@ -812,13 +812,13 @@ const TableGrid = () => {
                           }`}>
                             {order.status === 'pending' ? t('pending') : t('preparing')}
                           </span>
-                          <span className="text-gray-500 dark:text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number || 'N/A'}</span>
+                          <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number || 'N/A'}</span>
                         </div>
                         <p className="text-emerald-400 font-bold text-sm md:text-base mt-1">Br {parseFloat(order.total_amount).toFixed(2)}</p>
                       </div>
                       <button
                         onClick={() => openCancelModal(order)}
-                        className="w-full sm:w-auto px-3 md:px-4 py-1.5 md:py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-gray-900 dark:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-3 md:px-4 py-1.5 md:py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-gray-900 dark:text-gray-900 dark:text-white rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
                       >
                         <XCircle size={isMobile ? 14 : 16} />
                         {t('cancel')}
@@ -832,26 +832,26 @@ const TableGrid = () => {
         )}
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-2 md:gap-4 bg-white dark:bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap gap-2 md:gap-4 bg-white dark:bg-white dark:bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-1 md:gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('available')}</span>
+            <span className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('available')}</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-rose-500 to-rose-600 rounded-full"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('occupied')}</span>
+            <span className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('occupied')}</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('reserved')}</span>
+            <span className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('reserved')}</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-slate-500 to-slate-600 rounded-full"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('cleaning')}</span>
+            <span className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-xs md:text-sm">{t('cleaning')}</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-xs md:text-sm flex items-center gap-1">
+            <span className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-xs md:text-sm flex items-center gap-1">
               <QrCode size={12} /> {t('qrCodeAvailable')}
             </span>
           </div>
@@ -862,7 +862,7 @@ const TableGrid = () => {
           <div className="bg-yellow-500/10 backdrop-blur-sm rounded-xl p-6 text-center border border-yellow-500/30">
             <Utensils size={48} className="mx-auto text-yellow-400 mb-3" />
             <h3 className="text-yellow-400 font-semibold text-lg">No Tables Assigned</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-2">
               Use the panel above to assign yourself to tables.
             </p>
           </div>
@@ -870,8 +870,8 @@ const TableGrid = () => {
 
         {/* Floor Plan - Only show assigned tables */}
         {tables.length > 0 && (
-          <div className="bg-white dark:bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center gap-2">
+          <div className="bg-white dark:bg-white dark:bg-gray-800/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center gap-2">
               <div className="w-1 h-5 md:h-6 bg-gradient-to-b from-emerald-400 to-teal-400 rounded-full"></div>
               {t('floorPlan')} - Your Assigned Tables
             </h2>
@@ -884,19 +884,19 @@ const TableGrid = () => {
                   >
                     {table.status === 'occupied' && (
                       <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-blue-500 rounded-full p-1 md:p-1.5 shadow-lg animate-pulse">
-                        <PlusCircle size={isMobile ? 10 : 14} className="text-gray-900 dark:text-white" />
+                        <PlusCircle size={isMobile ? 10 : 14} className="text-gray-900 dark:text-gray-900 dark:text-white" />
                       </div>
                     )}
                     <div className="mb-2 md:mb-3">
                       {getStatusIcon(table.status)}
                     </div>
-                    <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">{t('table')} {table.table_number}</p>
-                    <p className="text-[10px] md:text-xs text-gray-900 dark:text-white/70 mt-1">
+                    <p className="text-base md:text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('table')} {table.table_number}</p>
+                    <p className="text-[10px] md:text-xs text-gray-900 dark:text-gray-900 dark:text-white/70 mt-1">
                       <Users size={isMobile ? 8 : 12} className="inline mr-0.5 md:mr-1" />
                       {t('capacity')} {table.capacity}
                     </p>
                     <div className="mt-2 md:mt-3">
-                      <span className="text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-white/20 text-gray-900 dark:text-white whitespace-nowrap">
+                      <span className="text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-white/20 text-gray-900 dark:text-gray-900 dark:text-white whitespace-nowrap">
                         {getStatusText(table.status)}
                       </span>
                     </div>
@@ -908,7 +908,7 @@ const TableGrid = () => {
                     className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 rounded-full p-1.5 md:p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
                     title={t('getQRCode')}
                   >
-                    <QrCode size={isMobile ? 14 : 18} className="text-gray-900 dark:text-white" />
+                    <QrCode size={isMobile ? 14 : 18} className="text-gray-900 dark:text-gray-900 dark:text-white" />
                   </button>
                 </div>
               ))}
@@ -919,28 +919,28 @@ const TableGrid = () => {
         {/* QR Code Modal */}
         {showQRModal && qrTable && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 shadow-2xl">
-              <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md border border-gray-200 dark:border-gray-200 dark:border-gray-700 shadow-2xl">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('qrCodeForTable')} {qrTable.table_number}</h2>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{t('customersScanToOrder')}</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('qrCodeForTable')} {qrTable.table_number}</h2>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mt-1">{t('customersScanToOrder')}</p>
                 </div>
-                <button onClick={() => setShowQRModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">✕</button>
+                <button onClick={() => setShowQRModal(false)} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:text-gray-300 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">✕</button>
               </div>
               <div className="p-6 text-center">
                 <div className="bg-white rounded-xl p-4 mb-4 inline-block mx-auto shadow-lg">
                   <QRCodeCanvas value={generateQRCode(qrTable.table_number)} size={180} level="H" includeMargin={true} className="mx-auto" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{t('qrCodeInstructions')}</p>
+                <p className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm mb-3">{t('qrCodeInstructions')}</p>
                 <div className="bg-emerald-500/10 rounded-lg p-2 mb-3">
                   <p className="text-emerald-400 text-sm font-semibold">{t('table')} {qrTable.table_number} - {t('capacity')}: {qrTable.capacity} {t('seats')}</p>
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">{t('qrUrl')}</p>
-                  <p className="text-gray-900 dark:text-white text-xs break-all font-mono">{generateQRCode(qrTable.table_number)}</p>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-1">{t('qrUrl')}</p>
+                  <p className="text-gray-900 dark:text-gray-900 dark:text-white text-xs break-all font-mono">{generateQRCode(qrTable.table_number)}</p>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={copyQRUrl} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                  <button onClick={copyQRUrl} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                     {t('copyQrUrl')}
                   </button>
@@ -952,7 +952,7 @@ const TableGrid = () => {
                       printWindow.document.close();
                       printWindow.print();
                     }
-                  }} className="flex-1 py-2.5 bg-gray-600 hover:bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                  }} className="flex-1 py-2.5 bg-gray-600 hover:bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                     {t('print')}
                   </button>
@@ -966,11 +966,11 @@ const TableGrid = () => {
         {/* NEW ORDER MODAL - WITH EMOJI ICONS */}
         {showOrderModal && selectedTable && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
-              <div className="flex-shrink-0 sticky top-0 bg-white dark:bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center z-10">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-hidden border border-gray-200 dark:border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+              <div className="flex-shrink-0 sticky top-0 bg-white dark:bg-white dark:bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center z-10">
                 <div>
-                  <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">{t('newOrderForTable')} {selectedTable.table_number}</h2>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm mt-0.5 md:mt-1">{t('capacity')}: {selectedTable.capacity} {t('seats')}</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('newOrderForTable')} {selectedTable.table_number}</h2>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm mt-0.5 md:mt-1">{t('capacity')}: {selectedTable.capacity} {t('seats')}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -980,7 +980,7 @@ const TableGrid = () => {
                     setSearchTerm('');
                     setSelectedCategory('all');
                   }}
-                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white flex items-center justify-center transition-all duration-200"
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-900 dark:text-white flex items-center justify-center transition-all duration-200"
                 >
                   ✕
                 </button>
@@ -998,7 +998,7 @@ const TableGrid = () => {
                           placeholder={t('searchMenu')}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-3 md:px-4 py-2 md:py-3 pl-9 md:pl-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-white text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
                       <div className="flex gap-1 md:gap-2 overflow-x-auto pb-2">
@@ -1026,7 +1026,7 @@ const TableGrid = () => {
                           className="bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-100 dark:bg-gray-700 rounded-lg md:rounded-xl p-2 md:p-4 text-left transition-all duration-200 hover:scale-105 hover:shadow-xl group"
                         >
                           <div className="text-2xl md:text-3xl mb-1 md:mb-2">{getProductEmoji(product.category)}</div>
-                          <p className="text-gray-900 dark:text-white font-semibold text-xs md:text-sm mb-0.5 md:mb-1 line-clamp-2">{product.name}</p>
+                          <p className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-xs md:text-sm mb-0.5 md:mb-1 line-clamp-2">{product.name}</p>
                           <p className="text-emerald-400 font-bold text-sm md:text-base">Br {parseFloat(product.price).toFixed(2)}</p>
                           <div className="mt-1 md:mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <span className="text-[10px] md:text-xs text-emerald-400">{t('addToOrder')}</span>
@@ -1038,7 +1038,7 @@ const TableGrid = () => {
 
                   {/* Cart Panel */}
                   <div className="w-full lg:w-96 bg-gray-100 dark:bg-gray-700/30 rounded-xl md:rounded-2xl p-3 md:p-4">
-                    <h3 className="text-gray-900 dark:text-white font-semibold text-sm md:text-base flex items-center gap-2 mb-3 md:mb-4">
+                    <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base flex items-center gap-2 mb-3 md:mb-4">
                       <CheckCircle size={isMobile ? 14 : 18} className="text-emerald-400" />
                       {t('currentOrder')}
                     </h3>
@@ -1052,10 +1052,10 @@ const TableGrid = () => {
                         </div>
                       ) : (
                         cart.map(item => (
-                          <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
+                          <div key={item.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
                             <div className="flex justify-between items-start mb-1 md:mb-2">
                               <div>
-                                <p className="text-gray-900 dark:text-white font-medium text-sm md:text-base">{item.name}</p>
+                                <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium text-sm md:text-base">{item.name}</p>
                                 <p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p>
                               </div>
                             </div>
@@ -1065,34 +1065,34 @@ const TableGrid = () => {
                                   onClick={() => updateQuantity(item.id, -1)}
                                   className="w-6 h-6 md:w-8 md:h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                                 >
-                                  <span className="text-gray-900 dark:text-white font-bold text-sm md:text-base">-</span>
+                                  <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-base">-</span>
                                 </button>
-                                <span className="text-gray-900 dark:text-white font-semibold text-base md:text-lg w-6 md:w-8 text-center">{item.quantity}</span>
+                                <span className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-base md:text-lg w-6 md:w-8 text-center">{item.quantity}</span>
                                 <button
                                   onClick={() => updateQuantity(item.id, 1)}
                                   className="w-6 h-6 md:w-8 md:h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                                 >
-                                  <span className="text-gray-900 dark:text-white font-bold text-sm md:text-base">+</span>
+                                  <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-base">+</span>
                                 </button>
                               </div>
-                              <span className="text-gray-900 dark:text-white font-bold text-sm md:text-base">Br {item.total.toFixed(2)}</span>
+                              <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-base">Br {item.total.toFixed(2)}</span>
                             </div>
                           </div>
                         ))
                       )}
                     </div>
 
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 md:pt-4">
+                    <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-3 md:pt-4">
                       <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
-                        <div className="flex justify-between text-gray-500 dark:text-gray-400 text-xs md:text-sm">
+                        <div className="flex justify-between text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm">
                           <span>{t('subtotal')}</span>
                           <span>Br {subtotal.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-gray-500 dark:text-gray-400 text-xs md:text-sm">
+                        <div className="flex justify-between text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm">
                           <span>{t('vat')}</span>
                           <span>Br {tax.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-gray-900 dark:text-white font-bold text-base md:text-xl pt-1 md:pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-white font-bold text-base md:text-xl pt-1 md:pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700">
                           <span>{t('total')}</span>
                           <span className="text-emerald-400">Br {total.toFixed(2)}</span>
                         </div>
@@ -1102,14 +1102,14 @@ const TableGrid = () => {
                         placeholder={t('specialInstructions')}
                         value={orderNotes}
                         onChange={(e) => setOrderNotes(e.target.value)}
-                        className="w-full px-3 md:px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl text-gray-900 dark:text-white text-xs md:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3 md:mb-4"
+                        className="w-full px-3 md:px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl text-gray-900 dark:text-gray-900 dark:text-white text-xs md:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3 md:mb-4"
                         rows={2}
                       />
 
                       <button
                         onClick={submitOrder}
                         disabled={cart.length === 0 || isSubmitting}
-                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-gray-900 dark:text-white rounded-lg md:rounded-xl font-bold text-sm md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg md:rounded-xl font-bold text-sm md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? (
                           <Loader2 className="animate-spin inline mr-2" size={isMobile ? 16 : 20} />
@@ -1129,34 +1129,34 @@ const TableGrid = () => {
         {/* Cancel Order Modal */}
         {showCancelModal && orderToCancel && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 shadow-2xl">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl w-full max-w-md border border-gray-200 dark:border-gray-200 dark:border-gray-700 shadow-2xl">
               <div className="p-4 md:p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">{t('cancelOrder')}</h2>
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('cancelOrder')}</h2>
                   <button
                     onClick={() => {
                       setShowCancelModal(false);
                       setCancelReason('');
                       setOrderToCancel(null);
                     }}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white"
+                    className="text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-900 dark:text-white"
                   >
                     ✕
                   </button>
                 </div>
 
                 <div className="mb-4 md:mb-6">
-                  <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">{t('orderNumber')}: #{orderToCancel.order_number}</p>
+                  <p className="text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm md:text-base">{t('orderNumber')}: #{orderToCancel.order_number}</p>
                   <p className="text-emerald-400 font-bold text-base md:text-lg mt-1">Br {parseFloat(orderToCancel.total_amount).toFixed(2)}</p>
                 </div>
 
                 <div className="mb-4 md:mb-6">
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">{t('cancellationReason')}</label>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-2">{t('cancellationReason')}</label>
                   <textarea
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
                     placeholder={t('cancellationPlaceholder')}
-                    className="w-full px-3 md:px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-full px-3 md:px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl text-gray-900 dark:text-gray-900 dark:text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
                     rows={3}
                   />
                 </div>
@@ -1164,7 +1164,7 @@ const TableGrid = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => cancelOrder(orderToCancel.id, cancelReason)}
-                    className="flex-1 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-gray-900 dark:text-white rounded-lg md:rounded-xl font-semibold transition-all"
+                    className="flex-1 py-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg md:rounded-xl font-semibold transition-all"
                   >
                     {t('yesCancel')}
                   </button>
@@ -1174,7 +1174,7 @@ const TableGrid = () => {
                       setCancelReason('');
                       setOrderToCancel(null);
                     }}
-                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg md:rounded-xl font-semibold transition-all"
+                    className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg md:rounded-xl font-semibold transition-all"
                   >
                     {t('noKeep')}
                   </button>
@@ -1187,11 +1187,11 @@ const TableGrid = () => {
         {/* ADD ITEMS MODAL (Occupied Table) - WITH EMOJI ICONS */}
         {showAddItemsModal && selectedTableOrder && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
-              <div className="flex-shrink-0 sticky top-0 bg-white dark:bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl md:rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col">
+              <div className="flex-shrink-0 sticky top-0 bg-white dark:bg-white dark:bg-gray-800/95 backdrop-blur-sm p-3 md:p-5 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white">{t('addItemsToOrder')} #{selectedTableOrder.order_number}</h2>
+                    <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('addItemsToOrder')} #{selectedTableOrder.order_number}</h2>
                     <p className="text-emerald-400 text-xs md:text-sm mt-0.5 md:mt-1">
                       {t('currentTotal')}: Br {parseFloat(selectedTableOrder.total_amount).toFixed(2)}
                     </p>
@@ -1202,7 +1202,7 @@ const TableGrid = () => {
                       setAddItemsCart([]);
                       setSelectedTableOrder(null);
                     }}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white flex items-center justify-center"
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-900 dark:text-white flex items-center justify-center"
                   >
                     ✕
                   </button>
@@ -1241,7 +1241,7 @@ const TableGrid = () => {
                           <div className="flex items-center gap-2">
                             <div className="text-2xl">{getProductEmoji(product.category)}</div>
                             <div>
-                              <p className="text-gray-900 dark:text-white font-semibold text-sm md:text-base">{product.name}</p>
+                              <p className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base">{product.name}</p>
                               <p className="text-emerald-400 font-bold text-xs md:text-sm">Br {parseFloat(product.price).toFixed(2)}</p>
                             </div>
                           </div>
@@ -1251,7 +1251,7 @@ const TableGrid = () => {
                   </div>
 
                   <div className="w-full lg:w-96 bg-gray-100 dark:bg-gray-700/30 rounded-xl md:rounded-2xl p-3 md:p-4">
-                    <h3 className="text-gray-900 dark:text-white font-semibold text-sm md:text-base mb-3 md:mb-4">{t('itemsToAdd')}</h3>
+                    <h3 className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base mb-3 md:mb-4">{t('itemsToAdd')}</h3>
 
                     <div className="max-h-[300px] md:max-h-[400px] overflow-y-auto space-y-2 md:space-y-3 mb-3 md:mb-4">
                       {addItemsCart.length === 0 ? (
@@ -1260,10 +1260,10 @@ const TableGrid = () => {
                         </div>
                       ) : (
                         addItemsCart.map(item => (
-                          <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
+                          <div key={item.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-2 md:p-3">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-900 dark:text-white font-medium text-sm md:text-base">{item.name}</p>
+                                <p className="text-gray-900 dark:text-gray-900 dark:text-white font-medium text-sm md:text-base">{item.name}</p>
                                 <p className="text-emerald-400 text-xs md:text-sm">Br {item.price.toFixed(2)}</p>
                               </div>
                               <div className="flex items-center gap-2 md:gap-3">
@@ -1285,7 +1285,7 @@ const TableGrid = () => {
                                 >
                                   -
                                 </button>
-                                <span className="text-gray-900 dark:text-white font-semibold text-sm md:text-base">{item.quantity}</span>
+                                <span className="text-gray-900 dark:text-gray-900 dark:text-white font-semibold text-sm md:text-base">{item.quantity}</span>
                                 <button
                                   onClick={() => {
                                     setAddItemsCart(prev =>
@@ -1307,15 +1307,15 @@ const TableGrid = () => {
                       )}
                     </div>
 
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 md:pt-4">
-                      <div className="flex justify-between text-gray-900 dark:text-white font-bold text-sm md:text-base mb-3 md:mb-4">
+                    <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-3 md:pt-4">
+                      <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-white font-bold text-sm md:text-base mb-3 md:mb-4">
                         <span>{t('subtotal')}</span>
                         <span className="text-emerald-400">Br {addItemsCart.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</span>
                       </div>
                       <button
                         onClick={addItemsToExistingOrder}
                         disabled={addItemsCart.length === 0 || isSubmitting}
-                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-gray-900 dark:text-white rounded-lg md:rounded-xl font-bold text-sm md:text-base transition-all disabled:opacity-50"
+                        className="w-full py-2 md:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg md:rounded-xl font-bold text-sm md:text-base transition-all disabled:opacity-50"
                       >
                         {isSubmitting ? t('adding') : t('addToOrder')}
                       </button>

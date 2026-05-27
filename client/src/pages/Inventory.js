@@ -179,12 +179,12 @@ const Inventory = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('inventoryManagement')}</h1>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('manageProductsAndIngredients')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('inventoryManagement')}</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('manageProductsAndIngredients')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
+          className="bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
         >
           <Plus size={18} />
           {activeTab === 'ingredients' ? t('addIngredient') : t('addProduct')}
@@ -198,14 +198,14 @@ const Inventory = () => {
             <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-500" />
             <div>
               <p className="text-yellow-700 dark:text-yellow-400 font-semibold">{t('lowStockAlert')}</p>
-              <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">{lowStockItems.length} {t('ingredientsBelowMinStock')}</p>
+              <p className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{lowStockItems.length} {t('ingredientsBelowMinStock')}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('ingredients')}
           className={`px-6 py-3 font-semibold transition-all ${
@@ -230,50 +230,50 @@ const Inventory = () => {
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-500" size={18} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" size={18} />
         <input
           type="text"
           placeholder={`${t('search')} ${activeTab}...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 bg-white dark:bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {searchTerm && (
           <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-            <X size={18} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300" />
+            <X size={18} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300" />
           </button>
         )}
       </div>
 
       {/* Ingredients Table */}
       {activeTab === 'ingredients' && (
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('unit')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('stock')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('minStock')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('unitCost')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('unit')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('stock')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('minStock')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('unitCost')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredIngredients.map(ing => (
                   <tr key={ing.id} className="hover:bg-gray-50 dark:hover:bg-gray-100 dark:bg-gray-700/50 transition">
-                    <td className="px-6 py-4 text-gray-900 dark:text-gray-900 dark:text-white">{ing.name}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">{ing.unit}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{ing.name}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{ing.unit}</td>
                     <td className="px-6 py-4">
                       <span className={`font-semibold ${ing.quantity <= ing.min_stock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                         {ing.quantity}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">{ing.min_stock}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">Br {parseFloat(ing.unit_cost).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">{ing.category || '-'}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{ing.min_stock}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Br {parseFloat(ing.unit_cost).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{ing.category || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button onClick={() => handleEdit(ing, 'ingredient')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
@@ -291,8 +291,8 @@ const Inventory = () => {
           </div>
           {filteredIngredients.length === 0 && (
             <div className="text-center py-12">
-              <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noIngredientsFound')}</p>
+              <Package size={48} className="mx-auto text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noIngredientsFound')}</p>
             </div>
           )}
         </div>
@@ -300,24 +300,24 @@ const Inventory = () => {
 
       {/* Products Table */}
       {activeTab === 'products' && (
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('price')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('status')}</th>
-                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('price')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('status')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredProducts.map(product => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-100 dark:bg-gray-700/50 transition">
-                    <td className="px-6 py-4 text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">Br {parseFloat(product.price).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-400">{product.category || '-'}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Br {parseFloat(product.price).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{product.category || '-'}</td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => toggleProductAvailability(product)}
@@ -347,8 +347,8 @@ const Inventory = () => {
           </div>
           {filteredProducts.length === 0 && (
             <div className="text-center py-12">
-              <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noProductsFound')}</p>
+              <Package size={48} className="mx-auto text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noProductsFound')}</p>
             </div>
           )}
         </div>
@@ -357,13 +357,13 @@ const Inventory = () => {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-            <div className="sticky top-0 bg-white dark:bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <div className="sticky top-0 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">
                   {editingItem ? `${t('edit')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}` : `${t('addNew')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}`}
                 </h2>
-                <button onClick={resetModal} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300">
+                <button onClick={resetModal} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300">
                   <X size={24} />
                 </button>
               </div>
@@ -372,23 +372,23 @@ const Inventory = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Common fields */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('name')} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('name')} *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('category')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('category')}</label>
                 <input
                   type="text"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Main Course, Beverage, Dessert"
                 />
               </div>
@@ -397,12 +397,12 @@ const Inventory = () => {
               {activeTab === 'ingredients' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('unit')} *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('unit')} *</label>
                     <select
                       required
                       value={formData.unit}
                       onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">{t('selectUnit')}</option>
                       <option value="kg">{t('kilogram')}</option>
@@ -415,45 +415,45 @@ const Inventory = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('quantity')}</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('quantity')}</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.quantity}
                         onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('minStock')}</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('minStock')}</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.min_stock}
                         onChange={(e) => setFormData({ ...formData, min_stock: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('unitCost')}</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('unitCost')}</label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.unit_cost}
                         onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('supplier')}</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('supplier')}</label>
                       <input
                         type="text"
                         value={formData.supplier}
                         onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -464,24 +464,24 @@ const Inventory = () => {
               {activeTab === 'products' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('price')} *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('price')} *</label>
                     <input
                       type="number"
                       step="0.01"
                       required
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-1">{t('description')}</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-1">{t('description')}</label>
                     <textarea
                       rows="3"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder={t('description')}
                     />
                   </div>
@@ -494,7 +494,7 @@ const Inventory = () => {
                       onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300 dark:border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor="is_available" className="text-sm text-gray-700 dark:text-gray-600 dark:text-gray-300">
+                    <label htmlFor="is_available" className="text-sm text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300">
                       {t('available')}
                     </label>
                   </div>
@@ -502,10 +502,10 @@ const Inventory = () => {
               )}
 
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold transition">
+                <button type="submit" className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition">
                   {editingItem ? t('update') : t('create')}
                 </button>
-                <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold transition">
+                <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold transition">
                   {t('cancel')}
                 </button>
               </div>

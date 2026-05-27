@@ -446,36 +446,36 @@ const QRMenu = () => {
   if (showOrderTracking && trackingOrder) {
     return (
       <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-          <div className="sticky top-0 bg-white dark:bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('trackYourOrder')}</h2>
-            <button onClick={() => setShowOrderTracking(false)} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300"><X size={24} /></button>
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <div className="sticky top-0 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('trackYourOrder')}</h2>
+            <button onClick={() => setShowOrderTracking(false)} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300"><X size={24} /></button>
           </div>
           <div className="p-4 space-y-4">
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center">
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('orderNumber')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{trackingOrder.order_number}</p>
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('orderNumber')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{trackingOrder.order_number}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('status')}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('status')}</span>
                 <span className={`font-semibold ${trackingOrder.status === 'pending_confirmation' ? 'text-yellow-600 dark:text-yellow-400' : trackingOrder.status === 'confirmed' ? 'text-blue-600 dark:text-blue-400' : trackingOrder.status === 'preparing' ? 'text-orange-600 dark:text-orange-400' : trackingOrder.status === 'ready' ? 'text-green-600 dark:text-green-400' : 'text-purple-600 dark:text-purple-400'}`}>
                   {getStatusText(trackingOrder.status)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalAmount')}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalAmount')}</span>
                 <span className="text-green-600 dark:text-green-400 font-bold">{formatCurrency(trackingOrder.total_amount)}</span>
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3">
               <div className="flex justify-between mb-3">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('timeElapsed')}</span>
-                <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">{timer} {t('min')}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('timeElapsed')}</span>
+                <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold">{timer} {t('min')}</span>
               </div>
               {estimatedTime > 0 && trackingOrder.status !== 'completed' && trackingOrder.status !== 'ready' && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('estimatedRemaining')}</span>
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('estimatedRemaining')}</span>
                   <span className="text-orange-600 dark:text-orange-400 font-bold">{estimatedTime} {t('min')}</span>
                 </div>
               )}
@@ -483,12 +483,12 @@ const QRMenu = () => {
                 <div className="text-center text-green-600 dark:text-green-400 font-semibold animate-pulse">✓ {t('readyForPickup')}</div>
               )}
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-3">
-              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mb-2">{t('orderItems')}:</p>
+            <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 pt-3">
+              <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mb-2">{t('orderItems')}:</p>
               {trackingOrder.items && trackingOrder.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-sm py-1">
-                  <span className="text-gray-700 dark:text-gray-600 dark:text-gray-300">{item.quantity}x {item.product_name}</span>
-                  <span className="text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(item.total_price)}</span>
+                  <span className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300">{item.quantity}x {item.product_name}</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(item.total_price)}</span>
                 </div>
               ))}
             </div>
@@ -501,7 +501,7 @@ const QRMenu = () => {
   // ==================== ADDING MORE ITEMS SCREEN ====================
   if (isAddingMoreItems) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
         <div className="sticky top-0 bg-yellow-100 dark:bg-yellow-900/20 backdrop-blur-sm p-3 text-center border-b border-yellow-200 dark:border-yellow-800">
           <p className="text-yellow-700 dark:text-yellow-400 text-sm">
             ➕ {t('addingMoreItemsToOrder')} #{orderNumber}
@@ -510,23 +510,23 @@ const QRMenu = () => {
         
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('addMoreItems')}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('addMoreItems')}</h2>
             <button
               onClick={finishAddingMoreItems}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-lg text-sm font-semibold"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg text-sm font-semibold"
             >
               {t('doneReturnToOrder')}
             </button>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600 dark:text-gray-600 dark:text-gray-300">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300">
           <div className="flex items-center gap-1"><MapPin size={14} /><span>{restaurantInfo.address}</span></div>
           <div className="flex items-center gap-1"><Phone size={14} /><span>{restaurantInfo.phone}</span></div>
           <div className="flex items-center gap-1"><Clock size={14} /><span>{restaurantInfo.hours}</span></div>
         </div>
 
-        <div className="bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 sticky top-[72px] z-20">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 sticky top-[72px] z-20">
           <div className="container mx-auto px-4">
             <div className="flex overflow-x-auto gap-2 py-3">
               {categories.map(cat => (
@@ -541,20 +541,20 @@ const QRMenu = () => {
         <div className="container mx-auto px-4 py-6 pb-32">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition shadow-sm hover:shadow-md">
+              <div key={product.id} className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition shadow-sm hover:shadow-md">
                 <div className="p-4">
                   <div className="flex gap-3">
                     <div className="w-16 h-16 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-3xl">
                       {getProductEmoji(product.category)}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{product.description || t('deliciousEthiopianDish')}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{product.description || t('deliciousEthiopianDish')}</p>
                       <p className="text-blue-600 dark:text-blue-400 font-bold mt-2">{formatCurrency(product.price)}</p>
                     </div>
                     <button 
                       onClick={() => addToCart(product)} 
-                      className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-full flex items-center justify-center transition transform hover:scale-105"
+                      className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-full flex items-center justify-center transition transform hover:scale-105"
                     >
                       <Plus size={20} />
                     </button>
@@ -569,25 +569,25 @@ const QRMenu = () => {
         {showCart && (
           <>
             <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowCart(false)} />
-            <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('itemsToAdd')}</h2>
-                <button onClick={() => setShowCart(false)} className="text-gray-900 dark:text-white"><X size={24} /></button>
+            <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-white dark:bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('itemsToAdd')}</h2>
+                <button onClick={() => setShowCart(false)} className="text-gray-900 dark:text-gray-900 dark:text-white"><X size={24} /></button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
                 {cart.length === 0 ? (
                   <div className="text-center py-12">
-                    <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noItemsToAdd')}</p>
-                    <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">{t('tapProductsToAdd')}</p>
+                    <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noItemsToAdd')}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">{t('tapProductsToAdd')}</p>
                   </div>
                 ) : (
                   cart.map(item => (
                     <div key={item.id} className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                       <div className="flex justify-between">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-900 dark:text-white">{item.name}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{item.name}</p>
                           <p className={`text-blue-600 dark:text-blue-400 text-sm ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.price)}</p>
                         </div>
                         <button onClick={() => removeFromCart(item.id)} className="text-red-500 dark:text-red-400"><Trash2 size={16} /></button>
@@ -595,7 +595,7 @@ const QRMenu = () => {
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center gap-3">
                           <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500">-</button>
-                          <span className="text-gray-900 dark:text-gray-900 dark:text-white w-6 text-center">{item.quantity}</span>
+                          <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white w-6 text-center">{item.quantity}</span>
                           <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500">+</button>
                         </div>
                         <span className={`font-bold text-gray-900 dark:text-gray-900 dark:text-white ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.total)}</span>
@@ -605,24 +605,24 @@ const QRMenu = () => {
                 )}
               </div>
 
-              <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
+              <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
                 <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400"><span>{t('subtotalToAdd')}</span><span>{formatCurrency(subtotal)}</span></div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400"><span>{t('vat')}</span><span>{formatCurrency(tax)}</span></div>
-                  <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700"><span>{t('totalToAdd')}</span><span className="text-green-600 dark:text-green-400">{formatCurrency(total)}</span></div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400"><span>{t('subtotalToAdd')}</span><span>{formatCurrency(subtotal)}</span></div>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400"><span>{t('vat')}</span><span>{formatCurrency(tax)}</span></div>
+                  <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700"><span>{t('totalToAdd')}</span><span className="text-green-600 dark:text-green-400">{formatCurrency(total)}</span></div>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={addMoreItemsToExistingOrder}
                     disabled={cart.length === 0 || loading}
-                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl font-bold transition disabled:opacity-50"
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-bold transition disabled:opacity-50"
                   >
                     {loading ? t('adding') : t('addToOrder')}
                   </button>
                   <button
                     onClick={() => setShowCart(false)}
-                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold"
+                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold"
                   >
                     {t('continueShopping')}
                   </button>
@@ -634,7 +634,7 @@ const QRMenu = () => {
 
         {/* Floating Cart Button */}
         {cart.length > 0 && !showCart && (
-          <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
+          <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
             <div className="relative">
               <ShoppingCart size={24} />
               <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -655,14 +655,14 @@ const QRMenu = () => {
     const canAddMore = orderStatus === 'pending_confirmation' || orderStatus === 'confirmed' || orderStatus === 'pending';
     
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-700 mb-6 shadow-lg">
+          <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 mb-6 shadow-lg">
             <div className="text-center mb-6">
               <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
                 {getStatusIcon(orderStatus || currentOrder.status)}
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('yourOrderStatus')}</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('yourOrderStatus')}</h2>
               <p className="text-sm mt-1 font-semibold text-blue-600 dark:text-blue-400">{statusText}</p>
             </div>
 
@@ -670,28 +670,28 @@ const QRMenu = () => {
               <div className="h-2 bg-gray-200 dark:bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500" style={{ width: `${progress}%` }} />
               </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">
                 <span>{t('placed')}</span><span>{t('confirm')}</span><span>{t('kitchen')}</span><span>{t('cooking')}</span><span>{t('ready')}</span><span>{t('done')}</span>
               </div>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 mb-4">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('orderNumber')}</span>
-                <span className="text-gray-900 dark:text-gray-900 dark:text-white font-bold">{currentOrder.order_number}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('orderNumber')}</span>
+                <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold">{currentOrder.order_number}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('timeElapsed')}</span>
-                <span className="text-gray-900 dark:text-gray-900 dark:text-white">{timer} {t('minutes')}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('timeElapsed')}</span>
+                <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{timer} {t('minutes')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalAmount')}</span>
+                <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalAmount')}</span>
                 <span className="text-green-600 dark:text-green-400 font-bold">{formatCurrency(currentOrder.total_amount)}</span>
               </div>
               {customerName && (
                 <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-300 dark:border-gray-600">
-                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('customer')}</span>
-                  <span className="text-gray-900 dark:text-gray-900 dark:text-white">{customerName}</span>
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('customer')}</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{customerName}</span>
                 </div>
               )}
             </div>
@@ -716,7 +716,7 @@ const QRMenu = () => {
                   setTrackingOrder(currentOrder);
                   setShowOrderTracking(true);
                 }} 
-                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold"
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold"
               >
                 {t('trackOrder')}
               </button>
@@ -724,7 +724,7 @@ const QRMenu = () => {
               {canAddMore && (
                 <button 
                   onClick={startAddingMoreItems}
-                  className="flex-1 py-2 bg-yellow-600 hover:bg-yellow-700 text-gray-900 dark:text-white rounded-xl font-semibold"
+                  className="flex-1 py-2 bg-yellow-600 hover:bg-yellow-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold"
                 >
                   + {t('addMoreItems')}
                 </button>
@@ -733,7 +733,7 @@ const QRMenu = () => {
               {isCompleted && (
                 <button 
                   onClick={clearSavedOrder} 
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl font-semibold"
+                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold"
                 >
                   {t('startNewOrder')}
                 </button>
@@ -741,7 +741,7 @@ const QRMenu = () => {
             </div>
           </div>
 
-          <div className="text-center text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">
+          <div className="text-center text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">
             <p>{t('needHelp')} {restaurantInfo.phone}</p>
           </div>
         </div>
@@ -752,10 +752,10 @@ const QRMenu = () => {
   // ==================== LOADING SCREEN ====================
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400">{t('loadingMenu')}</p>
+          <p className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('loadingMenu')}</p>
         </div>
       </div>
     );
@@ -764,12 +764,12 @@ const QRMenu = () => {
   // ==================== ERROR SCREEN ====================
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('error')}</h2>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-6">{error}</p>
-          <button onClick={fetchProducts} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold">{t('tryAgain')}</button>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('error')}</h2>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-6">{error}</p>
+          <button onClick={fetchProducts} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold">{t('tryAgain')}</button>
         </div>
       </div>
     );
@@ -777,11 +777,11 @@ const QRMenu = () => {
 
   if (products.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-          <Utensils size={48} className="text-gray-500 dark:text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('menuEmpty')}</h2>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-6">{t('noMenuItemsAvailable')}</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <Utensils size={48} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('menuEmpty')}</h2>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mb-6">{t('noMenuItemsAvailable')}</p>
         </div>
       </div>
     );
@@ -789,8 +789,8 @@ const QRMenu = () => {
 
   // ==================== MAIN MENU SCREEN ====================
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-gray-900 dark:text-white sticky top-0 z-30 shadow-lg">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900">
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-gray-900 dark:text-gray-900 dark:text-white sticky top-0 z-30 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
@@ -819,27 +819,27 @@ const QRMenu = () => {
         <>
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowQRGuide(false)} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 text-center border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-10 h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('howQrOrderingWorks')}</h3>
-              <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm mb-4">1. {t('step1')}<br />2. {t('step2')}<br />3. {t('step3')}<br />4. {t('step4')}</p>
-              <button onClick={() => setShowQRGuide(false)} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-lg font-semibold">{t('gotIt')}</button>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white mb-2">{t('howQrOrderingWorks')}</h3>
+              <p className="text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm mb-4">1. {t('step1')}<br />2. {t('step2')}<br />3. {t('step3')}<br />4. {t('step4')}</p>
+              <button onClick={() => setShowQRGuide(false)} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-lg font-semibold">{t('gotIt')}</button>
             </div>
           </div>
         </>
       )}
 
       {/* Restaurant Info Bar */}
-      <div className="bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600 dark:text-gray-600 dark:text-gray-300">
+      <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 py-2 px-4 flex overflow-x-auto gap-4 text-sm text-gray-600 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300">
         <div className="flex items-center gap-1"><MapPin size={14} /><span>{restaurantInfo.address}</span></div>
         <div className="flex items-center gap-1"><Phone size={14} /><span>{restaurantInfo.phone}</span></div>
         <div className="flex items-center gap-1"><Clock size={14} /><span>{restaurantInfo.hours}</span></div>
       </div>
 
       {/* Categories */}
-      <div className="bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 sticky top-[72px] z-20">
+      <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 sticky top-[72px] z-20">
         <div className="container mx-auto px-4">
           <div className="flex overflow-x-auto gap-2 py-3">
             {categories.map(cat => (
@@ -855,20 +855,20 @@ const QRMenu = () => {
       <div className="container mx-auto px-4 py-6 pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map(product => (
-            <div key={product.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition shadow-sm hover:shadow-md">
+            <div key={product.id} className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition shadow-sm hover:shadow-md">
               <div className="p-4">
                 <div className="flex gap-3">
                   <div className="w-16 h-16 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-3xl">
                     {getProductEmoji(product.category)}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{product.description || t('deliciousEthiopianDish')}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{product.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{product.description || t('deliciousEthiopianDish')}</p>
                     <p className="text-blue-600 dark:text-blue-400 font-bold mt-2">{formatCurrency(product.price)}</p>
                   </div>
                   <button 
                     onClick={() => addToCart(product)} 
-                    className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-full flex items-center justify-center transition transform hover:scale-105"
+                    className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-full flex items-center justify-center transition transform hover:scale-105"
                   >
                     <Plus size={20} />
                   </button>
@@ -881,7 +881,7 @@ const QRMenu = () => {
 
       {/* Floating Cart Button */}
       {cart.length > 0 && !showCart && (
-        <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
+        <button onClick={() => setShowCart(true)} className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-full p-4 shadow-lg transition transform hover:scale-105 z-40">
           <div className="relative">
             <ShoppingCart size={24} />
             <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -895,25 +895,25 @@ const QRMenu = () => {
       {showCart && (
         <>
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-40" onClick={() => setShowCart(false)} />
-          <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('yourOrder')}</h2>
-              <button onClick={() => setShowCart(false)} className="text-gray-900 dark:text-white"><X size={24} /></button>
+          <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-white dark:bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-purple-600">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('yourOrder')}</h2>
+              <button onClick={() => setShowCart(false)} className="text-gray-900 dark:text-gray-900 dark:text-white"><X size={24} /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
               {cart.length === 0 ? (
                 <div className="text-center py-12">
-                  <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
-                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('yourCartIsEmpty')}</p>
-                  <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">{t('tapItemsToAdd')}</p>
+                  <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-600 mb-3" />
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('yourCartIsEmpty')}</p>
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">{t('tapItemsToAdd')}</p>
                 </div>
               ) : (
                 cart.map(item => (
                   <div key={item.id} className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                     <div className="flex justify-between">
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-900 dark:text-white">{item.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{item.name}</p>
                         <p className={`text-blue-600 dark:text-blue-400 text-sm ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.price)}</p>
                       </div>
                       <button onClick={() => removeFromCart(item.id)} className="text-red-500 dark:text-red-400"><Trash2 size={16} /></button>
@@ -921,7 +921,7 @@ const QRMenu = () => {
                     <div className="flex justify-between items-center mt-2">
                       <div className="flex items-center gap-3">
                         <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500">-</button>
-                        <span className="text-gray-900 dark:text-gray-900 dark:text-white w-6 text-center">{item.quantity}</span>
+                        <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white w-6 text-center">{item.quantity}</span>
                         <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500">+</button>
                       </div>
                       <span className={`font-bold text-gray-900 dark:text-gray-900 dark:text-white ${priceUpdate === item.id ? 'animate-pulse' : ''}`}>{formatCurrency(item.total)}</span>
@@ -931,17 +931,17 @@ const QRMenu = () => {
               )}
             </div>
 
-            <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
+            <div className="border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 p-4">
               <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400"><span>{t('subtotal')}</span><span>{formatCurrency(subtotal)}</span></div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-400"><span>{t('vat')}</span><span>{formatCurrency(tax)}</span></div>
-                <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700"><span>{t('total')}</span><span className="text-green-600 dark:text-green-400">{formatCurrency(total)}</span></div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400"><span>{t('subtotal')}</span><span>{formatCurrency(subtotal)}</span></div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400"><span>{t('vat')}</span><span>{formatCurrency(tax)}</span></div>
+                <div className="flex justify-between text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700"><span>{t('total')}</span><span className="text-green-600 dark:text-green-400">{formatCurrency(total)}</span></div>
               </div>
-              <input type="text" placeholder={t('yourNameOptional')} value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-2 text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
-              <input type="tel" placeholder={t('yourPhoneOptional')} value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-2 text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
-              <textarea placeholder={t('specialInstructions')} value={specialInstructions} onChange={e => setSpecialInstructions(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-4 text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" rows={2} />
-              <button onClick={placeOrder} disabled={cart.length === 0 || loading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-bold transition">{loading ? t('placingOrder') : t('placeOrder')}</button>
-              <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 text-center mt-3">{t('waiterWillConfirm')}</p>
+              <input type="text" placeholder={t('yourNameOptional')} value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-2 text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
+              <input type="tel" placeholder={t('yourPhoneOptional')} value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-2 text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" />
+              <textarea placeholder={t('specialInstructions')} value={specialInstructions} onChange={e => setSpecialInstructions(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg mb-4 text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" rows={2} />
+              <button onClick={placeOrder} disabled={cart.length === 0 || loading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-bold transition">{loading ? t('placingOrder') : t('placeOrder')}</button>
+              <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-center mt-3">{t('waiterWillConfirm')}</p>
             </div>
           </div>
         </>

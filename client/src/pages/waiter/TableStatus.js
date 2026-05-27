@@ -144,10 +144,10 @@ const TableStatus = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('tableStatusManagement')}</h1>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('manageTableAvailability')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('tableStatusManagement')}</h1>
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('manageTableAvailability')}</p>
         </div>
-        <button onClick={fetchTables} className="bg-gray-100 dark:bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl flex items-center gap-2 transition">
+        <button onClick={fetchTables} className="bg-gray-100 dark:bg-white dark:bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl flex items-center gap-2 transition">
           <RefreshCw size={18} />
           {t('refresh')}
         </button>
@@ -195,12 +195,12 @@ const TableStatus = () => {
         {tables.map(table => {
           const statusStyle = getStatusStyle(table.status);
           return (
-            <div key={table.id} className="bg-white dark:bg-white dark:bg-gray-800 rounded-xl border-2 overflow-hidden transition-all border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <div key={table.id} className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border-2 overflow-hidden transition-all border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
               <div className={`p-4 ${statusStyle.textColor}/10 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700`}>
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('table')} {table.table_number}</h3>
-                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('capacity')}: {table.capacity} {t('seats')}</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('table')} {table.table_number}</h3>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('capacity')}: {table.capacity} {t('seats')}</p>
                   </div>
                   <div className={`px-3 py-1 rounded-full ${statusStyle.textColor}/20 ${statusStyle.textColor} text-sm font-semibold flex items-center gap-1`}>
                     {statusStyle.label}
@@ -211,11 +211,11 @@ const TableStatus = () => {
               <div className="p-4 space-y-3">
                 {isOwner && (
                   <div>
-                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-1">{t('assignedWaiter')}</p>
+                    <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-1">{t('assignedWaiter')}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Users size={14} className="text-gray-500 dark:text-gray-400 dark:text-gray-500" />
-                        <span className="text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm">
+                        <Users size={14} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm">
                           {table.waiter_name || t('notAssigned')}
                         </span>
                       </div>
@@ -225,7 +225,7 @@ const TableStatus = () => {
                           setSelectedWaiter(table.waiter_id || '');
                           setShowAssignModal(true);
                         }}
-                        className="text-xs bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition flex items-center gap-1"
+                        className="text-xs bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition flex items-center gap-1"
                       >
                         <UserCheck size={12} />
                         {t('change')}
@@ -238,8 +238,8 @@ const TableStatus = () => {
                   <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-lg p-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-1">{t('currentOrder')}</p>
-                        <p className="text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm font-mono">{table.current_order_number}</p>
+                        <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-1">{t('currentOrder')}</p>
+                        <p className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm font-mono">{table.current_order_number}</p>
                       </div>
                       <button
                         onClick={() => fetchOrderDetails(table.current_order_id)}
@@ -258,8 +258,8 @@ const TableStatus = () => {
                   </div>
                 )}
 
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-700">
-                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-2">{t('changeStatus')}:</p>
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mb-2">{t('changeStatus')}:</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => updateTableStatus(table.id, 'available')}
@@ -314,25 +314,25 @@ const TableStatus = () => {
       </div>
 
       {tables.length === 0 && (
-        <div className="text-center py-12 bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noTablesFound')}</p>
+        <div className="text-center py-12 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('noTablesFound')}</p>
         </div>
       )}
 
       {/* Assign Waiter Modal */}
       {isOwner && showAssignModal && selectedTableForAssign && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-            <div className="p-5 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('assignWaiterToTable')} {selectedTableForAssign.table_number}</h2>
-              <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300">✕</button>
+          <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('assignWaiterToTable')} {selectedTableForAssign.table_number}</h2>
+              <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300">✕</button>
             </div>
             <div className="p-5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-300 mb-2">{t('selectWaiter')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 mb-2">{t('selectWaiter')}</label>
               <select 
                 value={selectedWaiter} 
                 onChange={(e) => setSelectedWaiter(e.target.value)} 
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-50 dark:bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- {t('noWaiterAssigned')} --</option>
                 {waiters.map(waiter => (
@@ -340,8 +340,8 @@ const TableStatus = () => {
                 ))}
               </select>
               <div className="flex gap-3">
-                <button onClick={() => assignWaiter(selectedTableForAssign.id, selectedWaiter || null)} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-white rounded-xl font-semibold transition">{t('assign')}</button>
-                <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold transition">{t('cancel')}</button>
+                <button onClick={() => assignWaiter(selectedTableForAssign.id, selectedWaiter || null)} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-gray-900 dark:text-gray-900 dark:text-white rounded-xl font-semibold transition">{t('assign')}</button>
+                <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="flex-1 py-2 bg-gray-100 dark:bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 rounded-xl font-semibold transition">{t('cancel')}</button>
               </div>
             </div>
           </div>
@@ -351,17 +351,17 @@ const TableStatus = () => {
       {/* Order Details Modal */}
       {showOrderModal && selectedOrderDetails && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-700">
-            <div className="sticky top-0 bg-white dark:bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-white">{t('orderDetails')}</h2>
-              <button onClick={() => setShowOrderModal(false)} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-300">✕</button>
+          <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+            <div className="sticky top-0 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('orderDetails')}</h2>
+              <button onClick={() => setShowOrderModal(false)} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300">✕</button>
             </div>
             <div className="p-4 space-y-4">
-              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('orderNumber')}</p><p className="text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg">{selectedOrderDetails.order_number}</p></div>
-              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p><p className="text-gray-900 dark:text-gray-900 dark:text-white">{selectedOrderDetails.customer_name || t('walkInCustomer')}</p></div>
-              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('status')}</p><span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">{selectedOrderDetails.status}</span></div>
-              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('totalAmount')}</p><p className="text-green-600 dark:text-green-400 font-bold">{formatCurrency(selectedOrderDetails.total_amount)}</p></div>
-              {selectedOrderDetails.notes && (<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3"><p className="text-yellow-700 dark:text-yellow-400 text-xs">{t('specialInstructions')}</p><p className="text-gray-700 dark:text-gray-600 dark:text-gray-300 text-sm">{selectedOrderDetails.notes}</p></div>)}
+              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('orderNumber')}</p><p className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-bold text-lg">{selectedOrderDetails.order_number}</p></div>
+              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p><p className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{selectedOrderDetails.customer_name || t('walkInCustomer')}</p></div>
+              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('status')}</p><span className="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">{selectedOrderDetails.status}</span></div>
+              <div><p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs">{t('totalAmount')}</p><p className="text-green-600 dark:text-green-400 font-bold">{formatCurrency(selectedOrderDetails.total_amount)}</p></div>
+              {selectedOrderDetails.notes && (<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3"><p className="text-yellow-700 dark:text-yellow-400 text-xs">{t('specialInstructions')}</p><p className="text-gray-700 dark:text-gray-600 dark:text-gray-600 dark:text-gray-300 text-sm">{selectedOrderDetails.notes}</p></div>)}
             </div>
           </div>
         </div>

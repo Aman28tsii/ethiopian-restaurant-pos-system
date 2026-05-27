@@ -193,7 +193,7 @@ const RealTimeNotifications = () => {
       case 'warning': return <AlertTriangle size={16} className="text-yellow-400" />;
       case 'success': return <CheckCircle size={16} className="text-green-400" />;
       case 'info': return <ShoppingBag size={16} className="text-blue-400" />;
-      default: return <Bell size={16} className="text-gray-400" />;
+      default: return <Bell size={16} className="text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -213,18 +213,18 @@ const RealTimeNotifications = () => {
         onClick={() => setShowDropdown(!showDropdown)}
         className="p-2 hover:bg-gray-700 rounded-lg transition-colors relative"
       >
-        <Bell size={20} className="text-gray-400" />
+        <Bell size={20} className="text-gray-500 dark:text-gray-400" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-gray-900 dark:text-white text-xs rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
       
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50">
-          <div className="p-3 border-b border-gray-700 flex justify-between items-center">
-            <h3 className="font-semibold text-white">{t('notifications')}</h3>
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50">
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('notifications')}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}

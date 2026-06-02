@@ -60,13 +60,13 @@ const Staff = () => {
     
     try {
       if (editingStaff) {
-        // Only send station_type if role is kitchen
         const updateData = {
           name: formData.name,
           email: formData.email,
           role: formData.role,
           phone: formData.phone
         };
+        // Only send station_type if role is kitchen
         if (formData.role === 'kitchen') {
           updateData.station_type = formData.station_type;
         }
@@ -126,29 +126,35 @@ const Staff = () => {
       cashier: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
       waiter: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
       kitchen: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+      bar: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+      both: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
       staff: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
     };
     return colors[role?.toLowerCase()] || colors.staff;
   };
 
-  const getStationIcon = (stationType) => {
-    if (stationType === 'kitchen') return <ChefHat size={12} className="inline ml-1" />;
-    if (stationType === 'bar') return <Wine size={12} className="inline ml-1" />;
-    if (stationType === 'both') return <Layers size={12} className="inline ml-1" />;
+  const getRoleIcon = (role) => {
+    if (role === 'kitchen') return <ChefHat size={14} className="inline mr-1" />;
+    if (role === 'bar') return <Wine size={14} className="inline mr-1" />;
+    if (role === 'both') return <Layers size={14} className="inline mr-1" />;
     return null;
   };
 
   const getStationDisplay = (member) => {
-    // Only show station type for kitchen role
-    if (member.role !== 'kitchen') return '-';
-    if (!member.station_type) return 'Kitchen';
-    
-    const stationMap = {
-      kitchen: '🍳 Kitchen',
-      bar: '🍺 Bar',
-      both: '📋 Both'
-    };
-    return stationMap[member.station_type] || member.station_type;
+    // For both role, show Both Stations
+    if (member.role === 'both') return '📋 Both Stations';
+    // For bar role, always show Bar
+    if (member.role === 'bar') return '🍺 Bar';
+    // For kitchen role, show their station type
+    if (member.role === 'kitchen') {
+      const stationMap = {
+        kitchen: '🍳 Kitchen Only',
+        bar: '🍺 Bar Only',
+        both: '📋 Both Stations'
+      };
+      return stationMap[member.station_type] || '🍳 Kitchen Only';
+    }
+    return '-';
   };
 
   const getStatusBadge = (status, isActive) => {
@@ -262,8 +268,8 @@ const Staff = () => {
                     <Users size={40} className="mx-auto mb-3 text-gray-400" />
                     {t('noStaffMembersFound')}
                     <p className="text-sm text-gray-400 mt-1">{t('clickAddStaffToCreate')}</p>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               ) : (
                 filteredStaff.map(member => (
                   <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
@@ -272,8 +278,9 @@ const Staff = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.email}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize ${getRoleColor(member.role)}`}>
-                        {t(member.role)}
+                      <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 ${getRoleColor(member.role)}`}>
+                        {getRoleIcon(member.role)}
+                        {member.role === 'both' ? 'Both Stations' : t(member.role)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -386,22 +393,32 @@ const Staff = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('role')} *</label>
                   <select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value, station_type: e.target.value === 'kitchen' ? formData.station_type : 'kitchen' })}
+                    onChange={(e) => {
+                      const newRole = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        role: newRole,
+                        // Reset station_type if not kitchen
+                        station_type: newRole === 'kitchen' ? formData.station_type : 'kitchen'
+                      });
+                    }}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="owner">{t('owner')} ({t('fullAccess')})</option>
                     <option value="manager">{t('manager')} ({t('operationalAccess')})</option>
                     <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
                     <option value="waiter">{t('waiter')} ({t('orderTaking')})</option>
-                    <option value="kitchen">{t('kitchen')} ({t('foodPrepOnly')})</option>
+                    <option value="kitchen">🍳 {t('kitchen')} (Food Prep)</option>
+                    <option value="bar">🍺 Bar (Drinks Only)</option>
+                    <option value="both">📋 Both Stations (Food & Drinks)</option>
                   </select>
                 </div>
 
-                {/* Station Type Field - Only visible for kitchen role */}
+                {/* Station Type Dropdown - ONLY for Kitchen role */}
                 {formData.role === 'kitchen' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Station Type
+                      Kitchen Staff Type
                     </label>
                     <select
                       value={formData.station_type}
@@ -416,6 +433,26 @@ const Staff = () => {
                       {formData.station_type === 'kitchen' && 'This staff member will only see food orders'}
                       {formData.station_type === 'bar' && 'This staff member will only see drink orders'}
                       {formData.station_type === 'both' && 'This staff member will see both food and drink orders'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Bar role info message */}
+                {formData.role === 'bar' && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                    <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
+                      <Wine size={16} />
+                      Bar staff will only see drink orders in their dashboard
+                    </p>
+                  </div>
+                )}
+
+                {/* Both role info message */}
+                {formData.role === 'both' && (
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                    <p className="text-purple-700 dark:text-purple-400 text-sm flex items-center gap-2">
+                      <Layers size={16} />
+                      Both Stations staff can see and manage ALL orders (Food + Drinks)
                     </p>
                   </div>
                 )}

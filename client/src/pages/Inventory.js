@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import API from '../api/axios';
-import { Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2 } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2, ChefHat, Wine } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDebounce } from '../hooks/useDebounce';
 
-// Memoized table row component to prevent unnecessary re-renders
 const IngredientRow = memo(({ ingredient, onEdit, onDelete, formatCurrency }) => {
   const { t } = useLanguage();
   const isLowStock = ingredient.quantity <= ingredient.min_stock;
@@ -23,18 +22,10 @@ const IngredientRow = memo(({ ingredient, onEdit, onDelete, formatCurrency }) =>
       <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.category || '-'}</td>
       <td className="px-6 py-4">
         <div className="flex gap-2">
-          <button 
-            onClick={() => onEdit(ingredient, 'ingredient')} 
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
-            aria-label={t('edit')}
-          >
+          <button onClick={() => onEdit(ingredient, 'ingredient')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
             <Edit2 size={16} />
           </button>
-          <button 
-            onClick={() => onDelete(ingredient.id, 'ingredient')} 
-            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
-            aria-label={t('delete')}
-          >
+          <button onClick={() => onDelete(ingredient.id, 'ingredient')} className="text-red-600 dark:text-red-400 hover:text-red-700 transition">
             <Trash2 size={16} />
           </button>
         </div>
@@ -50,16 +41,30 @@ const ProductRow = memo(({ product, onEdit, onDelete, toggleAvailability, format
   
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-      <td className="px-6 py-4 text-gray-900 dark:text-white">{product.name}</td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          {product.item_type === 'drink' ? (
+            <Wine size={16} className="text-blue-500" />
+          ) : (
+            <ChefHat size={16} className="text-orange-500" />
+          )}
+          <span className="text-gray-900 dark:text-white">{product.name}</span>
+        </div>
+      </td>
       <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{formatCurrency(product.price)}</td>
       <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{product.category || '-'}</td>
+      <td className="px-6 py-4">
+        <span className={`text-xs px-2 py-1 rounded-full ${product.item_type === 'drink' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'}`}>
+          {product.item_type === 'drink' ? '🍺 Drink' : '🍳 Food'}
+        </span>
+      </td>
       <td className="px-6 py-4">
         <button
           onClick={() => toggleAvailability(product)}
           className={`px-2 py-1 rounded-full text-xs font-semibold transition ${
             product.is_available 
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800/50' 
-              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/50'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200' 
+              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200'
           }`}
         >
           {product.is_available ? t('available') : t('unavailable')}
@@ -67,18 +72,10 @@ const ProductRow = memo(({ product, onEdit, onDelete, toggleAvailability, format
       </td>
       <td className="px-6 py-4">
         <div className="flex gap-2">
-          <button 
-            onClick={() => onEdit(product, 'product')} 
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
-            aria-label={t('edit')}
-          >
+          <button onClick={() => onEdit(product, 'product')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
             <Edit2 size={16} />
           </button>
-          <button 
-            onClick={() => onDelete(product.id, 'product')} 
-            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
-            aria-label={t('delete')}
-          >
+          <button onClick={() => onDelete(product.id, 'product')} className="text-red-600 dark:text-red-400 hover:text-red-700 transition">
             <Trash2 size={16} />
           </button>
         </div>
@@ -100,23 +97,28 @@ const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Use debounced search to reduce filtering calculations
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const [formData, setFormData] = useState({
+  // Separate form data for ingredients vs products
+  const [ingredientForm, setIngredientForm] = useState({
     name: '',
     unit: '',
     quantity: 0,
     min_stock: 0,
     unit_cost: 0,
     category: '',
-    supplier: '',
+    supplier: ''
+  });
+  
+  const [productForm, setProductForm] = useState({
+    name: '',
     price: 0,
+    category: '',
     description: '',
-    is_available: true
+    is_available: true,
+    item_type: 'food'
   });
 
-  // Fetch data - memoized to prevent unnecessary re-fetches
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -138,7 +140,6 @@ const Inventory = () => {
     fetchData();
   }, [fetchData]);
 
-  // Memoized filtered data for better performance
   const filteredIngredients = useMemo(() => {
     if (!debouncedSearchTerm) return ingredients;
     const searchLower = debouncedSearchTerm.toLowerCase();
@@ -157,12 +158,10 @@ const Inventory = () => {
     );
   }, [products, debouncedSearchTerm]);
 
-  // Memoized low stock items
   const lowStockItems = useMemo(() => {
     return ingredients.filter(i => i.quantity <= i.min_stock);
   }, [ingredients]);
 
-  // Memoized handlers to prevent recreation on each render
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -170,23 +169,15 @@ const Inventory = () => {
     try {
       if (activeTab === 'ingredients') {
         if (editingItem) {
-          await API.put(`/ingredients/${editingItem.id}`, formData);
+          await API.put(`/ingredients/${editingItem.id}`, ingredientForm);
         } else {
-          await API.post('/ingredients', formData);
+          await API.post('/ingredients', ingredientForm);
         }
       } else {
-        const productData = {
-          name: formData.name,
-          price: formData.price,
-          category: formData.category,
-          description: formData.description,
-          is_available: formData.is_available
-        };
-        
         if (editingItem) {
-          await API.put(`/products/${editingItem.id}`, productData);
+          await API.put(`/products/${editingItem.id}`, productForm);
         } else {
-          await API.post('/products', productData);
+          await API.post('/products', productForm);
         }
       }
       resetModal();
@@ -197,7 +188,7 @@ const Inventory = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [activeTab, editingItem, formData, fetchData, t]);
+  }, [activeTab, editingItem, ingredientForm, productForm, fetchData, t]);
 
   const handleDelete = useCallback(async (id, type) => {
     if (window.confirm(t('deleteConfirm'))) {
@@ -216,30 +207,23 @@ const Inventory = () => {
 
   const handleEdit = useCallback((item, type) => {
     if (type === 'ingredient') {
-      setFormData({
+      setIngredientForm({
         name: item.name,
         unit: item.unit,
         quantity: item.quantity,
         min_stock: item.min_stock,
         unit_cost: item.unit_cost,
         category: item.category || '',
-        supplier: item.supplier || '',
-        price: 0,
-        description: '',
-        is_available: true
+        supplier: item.supplier || ''
       });
     } else {
-      setFormData({
+      setProductForm({
         name: item.name,
-        unit: '',
-        quantity: 0,
-        min_stock: 0,
-        unit_cost: 0,
-        category: item.category || '',
-        supplier: '',
         price: item.price,
+        category: item.category || '',
         description: item.description || '',
-        is_available: item.is_available
+        is_available: item.is_available,
+        item_type: item.item_type || 'food'
       });
     }
     setEditingItem(item);
@@ -262,17 +246,22 @@ const Inventory = () => {
   const resetModal = useCallback(() => {
     setShowModal(false);
     setEditingItem(null);
-    setFormData({
+    setIngredientForm({
       name: '',
       unit: '',
       quantity: 0,
       min_stock: 0,
       unit_cost: 0,
       category: '',
-      supplier: '',
+      supplier: ''
+    });
+    setProductForm({
+      name: '',
       price: 0,
+      category: '',
       description: '',
-      is_available: true
+      is_available: true,
+      item_type: 'food'
     });
     setIsSubmitting(false);
   }, []);
@@ -282,7 +271,6 @@ const Inventory = () => {
     return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }, []);
 
-  // Memoized empty state component
   const EmptyState = useMemo(() => (
     <div className="text-center py-12">
       <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
@@ -302,7 +290,6 @@ const Inventory = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('inventoryManagement')}</h1>
@@ -317,7 +304,6 @@ const Inventory = () => {
         </button>
       </div>
 
-      {/* Low Stock Alert */}
       {lowStockItems.length > 0 && activeTab === 'ingredients' && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
@@ -330,7 +316,6 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('ingredients')}
@@ -354,7 +339,6 @@ const Inventory = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
         <input
@@ -365,17 +349,12 @@ const Inventory = () => {
           className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')} 
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            aria-label="Clear search"
-          >
+          <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
             <X size={18} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
           </button>
         )}
       </div>
 
-      {/* Ingredients Table */}
       {activeTab === 'ingredients' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -408,7 +387,6 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Products Table */}
       {activeTab === 'products' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -418,6 +396,7 @@ const Inventory = () => {
                   <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
                   <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('price')}</th>
                   <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('type')}</th>
                   <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('status')}</th>
                   <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
                 </tr>
@@ -449,49 +428,44 @@ const Inventory = () => {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {editingItem ? `${t('edit')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}` : `${t('addNew')} ${activeTab === 'ingredients' ? t('ingredient') : t('product')}`}
                 </h2>
-                <button 
-                  onClick={resetModal} 
-                  className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  aria-label="Close"
-                >
+                <button onClick={resetModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                   <X size={24} />
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Common fields */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('egVegetables')}
-                />
-              </div>
-
-              {/* Ingredient-specific fields */}
+              {/* INGREDIENT FORM */}
               {activeTab === 'ingredients' && (
                 <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
+                    <input
+                      type="text"
+                      required
+                      value={ingredientForm.name}
+                      onChange={(e) => setIngredientForm({ ...ingredientForm, name: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
+                    <input
+                      type="text"
+                      value={ingredientForm.category}
+                      onChange={(e) => setIngredientForm({ ...ingredientForm, category: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder={t('egVegetables')}
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('unit')} *</label>
                     <select
                       required
-                      value={formData.unit}
-                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      value={ingredientForm.unit}
+                      onChange={(e) => setIngredientForm({ ...ingredientForm, unit: e.target.value })}
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">{t('selectUnit')}</option>
@@ -509,8 +483,8 @@ const Inventory = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={formData.quantity}
-                        onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
+                        value={ingredientForm.quantity}
+                        onChange={(e) => setIngredientForm({ ...ingredientForm, quantity: parseFloat(e.target.value) || 0 })}
                         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -519,8 +493,8 @@ const Inventory = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={formData.min_stock}
-                        onChange={(e) => setFormData({ ...formData, min_stock: parseFloat(e.target.value) || 0 })}
+                        value={ingredientForm.min_stock}
+                        onChange={(e) => setIngredientForm({ ...ingredientForm, min_stock: parseFloat(e.target.value) || 0 })}
                         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -532,8 +506,8 @@ const Inventory = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={formData.unit_cost}
-                        onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
+                        value={ingredientForm.unit_cost}
+                        onChange={(e) => setIngredientForm({ ...ingredientForm, unit_cost: parseFloat(e.target.value) || 0 })}
                         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -541,8 +515,8 @@ const Inventory = () => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('supplier')}</label>
                       <input
                         type="text"
-                        value={formData.supplier}
-                        onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                        value={ingredientForm.supplier}
+                        onChange={(e) => setIngredientForm({ ...ingredientForm, supplier: e.target.value })}
                         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -550,27 +524,67 @@ const Inventory = () => {
                 </>
               )}
 
-              {/* Product-specific fields */}
+              {/* PRODUCT FORM */}
               {activeTab === 'products' && (
                 <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
+                    <input
+                      type="text"
+                      value={productForm.category}
+                      onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Main Course, Beverage, Dessert"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('price')} *</label>
                     <input
                       type="number"
                       step="0.01"
                       required
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      value={productForm.price}
+                      onChange={(e) => setProductForm({ ...productForm, price: parseFloat(e.target.value) || 0 })}
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Type *</label>
+                    <select
+                      required
+                      value={productForm.item_type}
+                      onChange={(e) => setProductForm({ ...productForm, item_type: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="food">🍳 Food (Goes to Kitchen)</option>
+                      <option value="drink">🍺 Drink (Goes to Bar)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {productForm.item_type === 'food' 
+                        ? 'This item will appear in kitchen orders only' 
+                        : 'This item will appear in bar orders only'}
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('description')}</label>
                     <textarea
                       rows="3"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      value={productForm.description}
+                      onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder={t('description')}
                     />
@@ -580,8 +594,8 @@ const Inventory = () => {
                     <input
                       type="checkbox"
                       id="is_available"
-                      checked={formData.is_available}
-                      onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+                      checked={productForm.is_available}
+                      onChange={(e) => setProductForm({ ...productForm, is_available: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor="is_available" className="text-sm text-gray-700 dark:text-gray-300">
@@ -592,19 +606,11 @@ const Inventory = () => {
               )}
 
               <div className="flex gap-3 pt-4">
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isSubmitting && <Loader2 className="animate-spin" size={18} />}
                   {editingItem ? t('update') : t('create')}
                 </button>
-                <button 
-                  type="button" 
-                  onClick={resetModal} 
-                  className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition"
-                >
+                <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition">
                   {t('cancel')}
                 </button>
               </div>

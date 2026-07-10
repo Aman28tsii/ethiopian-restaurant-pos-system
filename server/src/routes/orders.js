@@ -94,7 +94,7 @@ const processOrderStockDeduction = async (orderId, items, client) => {
     COALESCE(i.cooking_loss_percentage, 0) as cooking_loss_percentage,
     i.quantity as current_stock,
     i.unit_cost
-  FROM recipes r   // <-- CORRECT TABLE NAME
+  FROM recipes r  
   JOIN ingredients i ON r.ingredient_id = i.id
   WHERE r.product_id = $1
 `;

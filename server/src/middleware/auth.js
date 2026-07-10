@@ -1,15 +1,17 @@
+// backend/src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// Role hierarchy (higher number = more access)
+// Role hierarchy
 const roleHierarchy = {
+  'staff': 0,
   'kitchen': 1,
   'waiter': 2,
   'cashier': 3,
   'manager': 4,
   'owner': 5,
-  'admin': 5  // admin same as owner
+  'admin': 5
 };
 
 // Verify token and attach user to request
@@ -23,6 +25,7 @@ export const protect = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
+    console.log('✅ Authenticated:', req.user.email, 'Role:', req.user.role);
     next();
   } catch (error) {
     return res.status(401).json({ success: false, error: 'Invalid or expired token.' });
@@ -32,7 +35,7 @@ export const protect = (req, res, next) => {
 // Check if user has required role or higher
 export const hasRole = (requiredRole) => {
   return (req, res, next) => {
-    const userRole = req.user?.role;
+    const userRole = req.user?.role || 'staff';
     const userLevel = roleHierarchy[userRole] || 0;
     const requiredLevel = roleHierarchy[requiredRole] || 0;
     
@@ -47,19 +50,27 @@ export const hasRole = (requiredRole) => {
   };
 };
 
-// Role-specific middleware (easy to use)
-export const allowOwner = hasRole('owner');
-export const allowManager = hasRole('manager');
-export const allowCashier = hasRole('cashier');
-export const allowWaiter = hasRole('waiter');
-export const allowKitchen = hasRole('kitchen');
-
-// Check exact role (not hierarchy)
+// RESTRICT TO - Fix for owner/admin
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (roles.includes(req.user.role)) {
+    const userRole = req.user?.role;
+    console.log(`🔍 User role: ${userRole}, Required: ${roles.join(', ')}`);
+    
+    // Check if user role is in allowed roles
+    if (roles.includes(userRole)) {
       return next();
     }
+    
+    // If 'owner' is required, also allow 'admin'
+    if (roles.includes('owner') && userRole === 'admin') {
+      return next();
+    }
+    
+    // If 'admin' is required, also allow 'owner'
+    if (roles.includes('admin') && userRole === 'owner') {
+      return next();
+    }
+    
     return res.status(403).json({ 
       success: false, 
       error: 'Access denied. You do not have permission for this action.' 
@@ -67,19 +78,74 @@ export const restrictTo = (...roles) => {
   };
 };
 
-// Get user role info
-export const getUserRole = (req) => {
-  return req.user?.role || null;
+// Owner middleware - allows both owner and admin
+export const allowOwner = (req, res, next) => {
+  const role = req.user?.role;
+  console.log(`🔍 allowOwner check: ${role}`);
+  
+  if (role === 'owner' || role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({ 
+    success: false, 
+    error: 'Access denied. Only owners and admins can perform this action.' 
+  });
 };
 
-// Check if user is owner or admin
+export const allowManager = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'owner' || role === 'admin' || role === 'manager') {
+    return next();
+  }
+  return res.status(403).json({ 
+    success: false, 
+    error: 'Access denied. Manager role or higher required.' 
+  });
+};
+
+export const allowCashier = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'owner' || role === 'admin' || role === 'manager' || role === 'cashier') {
+    return next();
+  }
+  return res.status(403).json({ 
+    success: false, 
+    error: 'Access denied. Cashier role or higher required.' 
+  });
+};
+
+export const allowWaiter = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'owner' || role === 'admin' || role === 'manager' || role === 'cashier' || role === 'waiter') {
+    return next();
+  }
+  return res.status(403).json({ 
+    success: false, 
+    error: 'Access denied. Waiter role or higher required.' 
+  });
+};
+
+export const allowKitchen = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'owner' || role === 'admin' || role === 'manager' || role === 'kitchen') {
+    return next();
+  }
+  return res.status(403).json({ 
+    success: false, 
+    error: 'Access denied. Kitchen role or higher required.' 
+  });
+};
+
 export const isOwner = (req) => {
   const role = req.user?.role;
   return role === 'owner' || role === 'admin';
 };
 
-// Check if user is manager or above
 export const isManagerOrAbove = (req) => {
   const role = req.user?.role;
   return role === 'owner' || role === 'admin' || role === 'manager';
+};
+
+export const getUserRole = (req) => {
+  return req.user?.role || null;
 };

@@ -84,20 +84,20 @@ const processOrderStockDeduction = async (orderId, items, client) => {
   
   for (const item of items) {
     // Fetch recipe for this product with wastage settings
-    const recipeQuery = `
-      SELECT 
-        ri.ingredient_id,
-        ri.quantity_required,
-        i.name,
-        i.unit,
-        i.wastage_percentage,
-        i.cooking_loss_percentage,
-        i.quantity as current_stock,
-        i.unit_cost
-      FROM recipe_ingredients ri
-      JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE ri.product_id = $1
-    `;
+   const recipeQuery = `
+  SELECT 
+    r.ingredient_id,
+    r.quantity_required,
+    i.name,
+    i.unit,
+    COALESCE(i.wastage_percentage, 0) as wastage_percentage,
+    COALESCE(i.cooking_loss_percentage, 0) as cooking_loss_percentage,
+    i.quantity as current_stock,
+    i.unit_cost
+  FROM recipes r   // <-- CORRECT TABLE NAME
+  JOIN ingredients i ON r.ingredient_id = i.id
+  WHERE r.product_id = $1
+`;
     
     const recipeResult = await client.query(recipeQuery, [item.product_id]);
     

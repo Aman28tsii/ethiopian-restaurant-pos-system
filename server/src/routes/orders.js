@@ -155,16 +155,15 @@ const processOrderStockDeduction = async (orderId, items, client) => {
   return allDeductions;
 };
 
-// ==================== PUBLIC ROUTES ====================
-
-// Track order by order number (Public - no authentication needed)
+// ==================== PUBLIC TRACK ORDER ====================
 // backend/src/routes/orders.js
 
-// ==================== PUBLIC TRACK ORDER ====================
+// ==================== PUBLIC TRACK ORDER (SHOWS BOTH QR AND WAITER ORDERS) ====================
 router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
   const { orderNumber } = req.params;
   
   try {
+    // Get order - works for both QR and waiter orders
     const orderResult = await pool.query(
       `SELECT 
         o.id, 
@@ -182,11 +181,17 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
         o.waiter_id,
         o.confirmed_at,
         o.source,
+        o.source AS order_source,
         t.table_number,
         u.name as waiter_name,
         ko.status as kitchen_status,
         ko.started_at,
-        ko.completed_at
+        ko.completed_at,
+        CASE 
+          WHEN o.source = 'qr_menu' THEN 'QR Code Order'
+          WHEN o.source = 'waiter' THEN 'Waiter Order'
+          ELSE 'Regular Order'
+        END as order_type_display
        FROM orders o
        LEFT JOIN tables t ON o.table_id = t.id
        LEFT JOIN users u ON o.waiter_id = u.id
@@ -224,7 +229,6 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     const now = new Date();
     const elapsedMinutes = Math.floor((now - createdTime) / 60000);
     
-    // Calculate estimated remaining time
     let estimatedRemaining = 0;
     let statusMessage = '';
     
@@ -258,7 +262,6 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
         statusMessage = 'Processing your order';
     }
     
-    // Calculate progress percentage
     const progressMap = {
       'pending_confirmation': 10,
       'confirmed': 25,
@@ -269,14 +272,29 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     };
     const progress = progressMap[order.status] || 0;
     
-    // Get order timeline
-    const timeline = [
-      { status: 'Order Placed', time: order.created_at, completed: true },
-      { status: 'Waiter Confirmation', time: order.confirmed_at, completed: order.status !== 'pending_confirmation' },
-      { status: 'Kitchen Preparation', time: order.started_at, completed: order.status === 'preparing' || order.status === 'ready' || order.status === 'completed' },
-      { status: 'Ready for Pickup', time: order.completed_at, completed: order.status === 'ready' || order.status === 'completed' },
-      { status: 'Order Completed', time: order.updated_at, completed: order.status === 'completed' }
-    ];
+    // Build timeline
+    const timeline = [];
+    if (order.created_at) {
+      timeline.push({ status: 'Order Placed', time: order.created_at, completed: true });
+    }
+    if (order.confirmed_at) {
+      timeline.push({ status: 'Waiter Confirmation', time: order.confirmed_at, completed: true });
+    } else if (order.status !== 'pending_confirmation') {
+      timeline.push({ status: 'Waiter Confirmation', time: null, completed: false });
+    }
+    if (order.started_at) {
+      timeline.push({ status: 'Kitchen Preparation', time: order.started_at, completed: true });
+    } else if (order.status === 'preparing' || order.status === 'ready' || order.status === 'completed') {
+      timeline.push({ status: 'Kitchen Preparation', time: null, completed: false });
+    }
+    if (order.completed_at) {
+      timeline.push({ status: 'Ready for Pickup', time: order.completed_at, completed: true });
+    } else if (order.status === 'ready') {
+      timeline.push({ status: 'Ready for Pickup', time: null, completed: false });
+    }
+    if (order.status === 'completed') {
+      timeline.push({ status: 'Order Completed', time: order.updated_at, completed: true });
+    }
     
     res.json({
       success: true,
@@ -289,7 +307,8 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
         status_message: statusMessage,
         progress_percentage: progress,
         timeline: timeline,
-        kitchen_status: order.kitchen_status || 'pending'
+        kitchen_status: order.kitchen_status || 'pending',
+        order_source: order.order_type_display || 'Regular Order'
       }
     });
     
@@ -1225,26 +1244,54 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
   try {
     await client.query('BEGIN');
     
+    // Check if order exists and is in a state where items can be added
     const orderCheck = await client.query(
-      'SELECT id, status, total_amount FROM orders WHERE id = $1 AND status = $2',
-      [orderId, 'pending_confirmation']
+      `SELECT id, status, total_amount, source, table_id 
+       FROM orders 
+       WHERE id = $1`,
+      [orderId]
     );
     
     if (orderCheck.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
-        error: 'Order not found or already confirmed' 
+        error: 'Order not found' 
       });
     }
     
     const order = orderCheck.rows[0];
+    
+    // Allow adding items if order is pending_confirmation OR confirmed AND not yet preparing
+    if (order.status === 'pending_confirmation' || order.status === 'confirmed') {
+      // OK - can add items
+    } else if (order.status === 'pending' || order.status === 'preparing') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Kitchen has already started preparing your order. Cannot add more items.' 
+      });
+    } else if (order.status === 'ready' || order.status === 'completed') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order is already ready or completed. Cannot add more items.' 
+      });
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot add items to this order' 
+      });
+    }
+    
     let additionalAmount = 0;
     
     for (const item of items) {
       const productResult = await client.query(
-        'SELECT price, name FROM products WHERE id = $1',
+        'SELECT price, name FROM products WHERE id = $1 AND is_available = true',
         [item.product_id]
       );
+      
+      if (productResult.rows.length === 0) {
+        throw new Error(`Product ${item.product_id} not available`);
+      }
       
       const unitPrice = parseFloat(productResult.rows[0].price);
       const itemTotal = unitPrice * item.quantity;
@@ -1259,18 +1306,42 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
     
     const newTotal = parseFloat(order.total_amount) + additionalAmount;
     
-    await client.query(
-      `UPDATE orders 
-       SET total_amount = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [newTotal, orderId]
-    );
+    // If order was confirmed, set back to pending_confirmation so waiter can confirm again
+    if (order.status === 'confirmed') {
+      await client.query(
+        `UPDATE orders 
+         SET total_amount = $1, 
+             status = 'pending_confirmation',
+             updated_at = NOW()
+         WHERE id = $2`,
+        [newTotal, orderId]
+      );
+    } else {
+      await client.query(
+        `UPDATE orders 
+         SET total_amount = $1, 
+             updated_at = NOW()
+         WHERE id = $2`,
+        [newTotal, orderId]
+      );
+    }
     
     await client.query('COMMIT');
     
+    // Notify waiter that customer added items
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_items_added', {
+        order_id: orderId,
+        order_number: order.order_number,
+        additional_amount: additionalAmount,
+        new_total: newTotal
+      });
+    }
+    
     res.json({
       success: true,
-      message: 'Items added to order',
+      message: 'Items added to order successfully!',
       additional_amount: additionalAmount,
       new_total: newTotal
     });

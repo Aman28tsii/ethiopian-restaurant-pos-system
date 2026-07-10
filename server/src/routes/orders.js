@@ -158,18 +158,41 @@ const processOrderStockDeduction = async (orderId, items, client) => {
 // ==================== PUBLIC ROUTES ====================
 
 // Track order by order number (Public - no authentication needed)
+// backend/src/routes/orders.js
+
+// ==================== PUBLIC TRACK ORDER ====================
 router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
   const { orderNumber } = req.params;
   
   try {
     const orderResult = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, 
-              o.customer_name, o.customer_phone, o.table_id, o.order_type, o.notes,
-              o.created_at, o.updated_at, o.waiter_id, o.confirmed_at,
-              t.table_number
+      `SELECT 
+        o.id, 
+        o.order_number, 
+        o.total_amount, 
+        o.status, 
+        o.payment_status, 
+        o.customer_name, 
+        o.customer_phone, 
+        o.table_id, 
+        o.order_type, 
+        o.notes,
+        o.created_at, 
+        o.updated_at, 
+        o.waiter_id,
+        o.confirmed_at,
+        o.source,
+        t.table_number,
+        u.name as waiter_name,
+        ko.status as kitchen_status,
+        ko.started_at,
+        ko.completed_at
        FROM orders o
        LEFT JOIN tables t ON o.table_id = t.id
-       WHERE o.order_number = $1`,
+       LEFT JOIN users u ON o.waiter_id = u.id
+       LEFT JOIN kitchen_orders ko ON o.id = ko.order_id
+       WHERE o.order_number = $1
+         AND o.status != 'cancelled'`,
       [orderNumber]
     );
     
@@ -179,18 +202,95 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
     
     const order = orderResult.rows[0];
     
+    // Get order items
     const itemsResult = await pool.query(
-      `SELECT oi.id, oi.product_id, oi.quantity, oi.unit_price, oi.total_price,
-              p.name as product_name
+      `SELECT 
+        oi.id, 
+        oi.product_id, 
+        oi.quantity, 
+        oi.unit_price, 
+        oi.total_price,
+        p.name as product_name,
+        p.category
        FROM order_items oi
        JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = $1`,
+       WHERE oi.order_id = $1
+       ORDER BY oi.id ASC`,
       [order.id]
     );
     
+    // Calculate time estimates
+    const createdTime = new Date(order.created_at);
+    const now = new Date();
+    const elapsedMinutes = Math.floor((now - createdTime) / 60000);
+    
+    // Calculate estimated remaining time
+    let estimatedRemaining = 0;
+    let statusMessage = '';
+    
+    switch(order.status) {
+      case 'pending_confirmation':
+        estimatedRemaining = 5;
+        statusMessage = 'Waiting for waiter to confirm your order';
+        break;
+      case 'confirmed':
+        estimatedRemaining = 10;
+        statusMessage = 'Order confirmed! Kitchen will start preparing soon';
+        break;
+      case 'pending':
+        estimatedRemaining = 15;
+        statusMessage = 'Kitchen is preparing your order';
+        break;
+      case 'preparing':
+        estimatedRemaining = 8;
+        statusMessage = 'Your food is being prepared';
+        break;
+      case 'ready':
+        estimatedRemaining = 0;
+        statusMessage = 'Your order is ready for pickup!';
+        break;
+      case 'completed':
+        estimatedRemaining = 0;
+        statusMessage = 'Order completed. Thank you for dining with us!';
+        break;
+      default:
+        estimatedRemaining = 10;
+        statusMessage = 'Processing your order';
+    }
+    
+    // Calculate progress percentage
+    const progressMap = {
+      'pending_confirmation': 10,
+      'confirmed': 25,
+      'pending': 40,
+      'preparing': 60,
+      'ready': 85,
+      'completed': 100
+    };
+    const progress = progressMap[order.status] || 0;
+    
+    // Get order timeline
+    const timeline = [
+      { status: 'Order Placed', time: order.created_at, completed: true },
+      { status: 'Waiter Confirmation', time: order.confirmed_at, completed: order.status !== 'pending_confirmation' },
+      { status: 'Kitchen Preparation', time: order.started_at, completed: order.status === 'preparing' || order.status === 'ready' || order.status === 'completed' },
+      { status: 'Ready for Pickup', time: order.completed_at, completed: order.status === 'ready' || order.status === 'completed' },
+      { status: 'Order Completed', time: order.updated_at, completed: order.status === 'completed' }
+    ];
+    
     res.json({
       success: true,
-      data: { ...order, items: itemsResult.rows }
+      data: {
+        ...order,
+        items: itemsResult.rows,
+        waiter_name: order.waiter_name || 'Not assigned yet',
+        elapsed_minutes: elapsedMinutes,
+        estimated_remaining: estimatedRemaining,
+        status_message: statusMessage,
+        progress_percentage: progress,
+        timeline: timeline,
+        kitchen_status: order.kitchen_status || 'pending'
+      }
     });
     
   } catch (err) {

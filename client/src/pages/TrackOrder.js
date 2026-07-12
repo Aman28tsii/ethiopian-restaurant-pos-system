@@ -4,12 +4,14 @@ import API from '../api/axios';
 import { 
   Clock, CheckCircle, Coffee, ChefHat, Truck, AlertCircle, 
   RefreshCw, ShoppingBag, Phone, MapPin, Calendar, User,
-  Package, Utensils, Timer
+  Package, Utensils, Timer, Search
 } from 'lucide-react';
 import socket from '../socket';
 
 const TrackOrder = () => {
   const [orderNumber, setOrderNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [orders, setOrders] = useState([]);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -19,6 +21,7 @@ const TrackOrder = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [progress, setProgress] = useState(0);
   const [timeline, setTimeline] = useState([]);
+  const [searchMode, setSearchMode] = useState('order'); // 'order' or 'phone'
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -83,6 +86,34 @@ const TrackOrder = () => {
       setError(err.response?.data?.error || 'Order not found');
       setOrder(null);
       setSearched(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchByPhone = async (e) => {
+    e.preventDefault();
+    if (!phoneNumber.trim()) {
+      setError('Please enter a phone number');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await API.get(`/orders/track-by-phone/${phoneNumber.trim()}`);
+      if (response.data.success && response.data.data.length > 0) {
+        setOrders(response.data.data);
+        setSearched(true);
+        setOrder(null); // Clear single order view
+      } else {
+        setError('No orders found for this phone number');
+        setOrders([]);
+        setSearched(true);
+      }
+    } catch (err) {
+      console.error('Search by phone error:', err);
+      setError('Failed to find orders');
     } finally {
       setLoading(false);
     }
@@ -163,38 +194,131 @@ const TrackOrder = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Track Your Order</h1>
-          <p className="text-gray-500 dark:text-gray-400">Enter your order number to see real-time status</p>
+          <p className="text-gray-500 dark:text-gray-400">Enter your order number or phone number to see real-time status</p>
         </div>
 
-        {/* Search Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              placeholder="Enter order number (e.g., QR-12345678 or ORD-12345678)"
-              value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <RefreshCw className="animate-spin" size={20} /> : <span>Track Order</span>}
-            </button>
-          </form>
-          
-          {error && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm flex items-center gap-2">
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
+        {/* Toggle Search Mode */}
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={() => setSearchMode('order')}
+            className={`px-6 py-2 rounded-xl font-semibold transition ${
+              searchMode === 'order' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            By Order Number
+          </button>
+          <button
+            onClick={() => setSearchMode('phone')}
+            className={`px-6 py-2 rounded-xl font-semibold transition ${
+              searchMode === 'phone' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            By Phone Number
+          </button>
         </div>
+
+        {/* Search Form - Order Number */}
+        {searchMode === 'order' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Enter order number (e.g., QR-12345678 or ORD-12345678)"
+                value={orderNumber}
+                onChange={(e) => setOrderNumber(e.target.value)}
+                className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <RefreshCw className="animate-spin" size={20} /> : <span>Track Order</span>}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Search Form - Phone Number */}
+        {searchMode === 'phone' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <form onSubmit={searchByPhone} className="flex flex-col sm:flex-row gap-4">
+              <input
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <RefreshCw className="animate-spin" size={20} /> : <Search size={20} />}
+                <span>Find My Orders</span>
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm flex items-center gap-2">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
+
+        {/* Order List (Phone Search Results) */}
+        {searchMode === 'phone' && searched && orders.length > 0 && (
+          <div className="space-y-4 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Your Orders ({orders.length})
+            </h3>
+            {orders.map((o) => (
+              <div 
+                key={o.id} 
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition cursor-pointer"
+                onClick={() => {
+                  setOrderNumber(o.order_number);
+                  fetchOrder(o.order_number);
+                  setSearchMode('order');
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">{o.order_number}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{o.order_source || 'Order'}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Table {o.table_number || 'N/A'} • {new Date(o.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-600 dark:text-green-400 font-bold">
+                      {formatCurrency(o.total_amount)}
+                    </p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      o.status === 'ready' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                      o.status === 'pending_confirmation' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                      o.status === 'preparing' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                      'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                    }`}>
+                      {o.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Order Details */}
-        {searched && order && (
+        {searched && order && searchMode === 'order' && (
           <div className="space-y-6">
             {/* Order Header */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -203,7 +327,7 @@ const TrackOrder = () => {
                   <p className="text-gray-500 dark:text-gray-400 text-sm">Order Number</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{order.order_number}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Source: {order.source === 'qr_menu' ? 'QR Code Order' : 'Waiter Order'}
+                    Source: {order.source === 'qr_menu' ? 'QR Code Order' : order.source === 'waiter' ? 'Waiter Order' : 'Regular Order'}
                   </p>
                   {order.waiter_name && (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -414,7 +538,7 @@ const TrackOrder = () => {
         )}
 
         {/* No Order Found */}
-        {searched && !order && !loading && (
+        {searched && !order && !loading && orders.length === 0 && searchMode === 'order' && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
             <AlertCircle size={48} className="mx-auto text-gray-400 mb-3" />
             <p className="text-gray-600 text-lg">Order Not Found</p>

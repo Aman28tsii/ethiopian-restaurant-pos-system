@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import API from '../../api/axios';
 import { 
   Loader2, Users, Utensils, RefreshCw, XCircle, PlusCircle, 
-  Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode 
+  Coffee, Clock, CheckCircle, Bell, Search, Eye, QrCode,
+  AlertCircle, UserCheck
 } from 'lucide-react';
 import socket from '../../socket';
 import { useLanguage } from '../../context/LanguageContext';
@@ -57,6 +58,7 @@ const TableGrid = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrTable, setQrTable] = useState(null);
   const [myShift, setMyShift] = useState(null);
+  const [notificationMessage, setNotificationMessage] = useState(null);
   
   // ========== SELF ASSIGNMENT STATE ==========
   const [mySelfTables, setMySelfTables] = useState([]);
@@ -65,6 +67,7 @@ const TableGrid = () => {
   // Refs
   const intervalRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const notificationTimeoutRef = useRef(null);
 
   // ========== MEMOIZED VALUES ==========
   const categories = useMemo(() => {
@@ -97,6 +100,17 @@ const TableGrid = () => {
   const availableCount = tables.filter(t => t.status === 'available').length;
   const pendingOrdersCount = regularActiveOrders.filter(o => o.status === 'pending').length;
   const pendingConfirmationsCount = pendingConfirmations.length;
+
+  // ========== NOTIFICATION HELPER ==========
+  const showNotification = useCallback((message, type = 'info') => {
+    setNotificationMessage({ message, type });
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+    notificationTimeoutRef.current = setTimeout(() => {
+      setNotificationMessage(null);
+    }, 5000);
+  }, []);
 
   // ========== DEBOUNCE SEARCH ==========
   useEffect(() => {
@@ -131,11 +145,12 @@ const TableGrid = () => {
       setTables(response.data.data || []);
     } catch (err) {
       console.error('Fetch my tables error:', err);
+      showNotification('Failed to fetch tables', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showNotification]);
 
   const fetchMyShift = useCallback(async () => {
     try {
@@ -152,8 +167,9 @@ const TableGrid = () => {
       setProducts(response.data.data || []);
     } catch (err) {
       console.error('Fetch products error:', err);
+      showNotification('Failed to load products', 'error');
     }
-  }, []);
+  }, [showNotification]);
 
   const fetchMyActiveOrders = useCallback(async () => {
     try {
@@ -171,13 +187,16 @@ const TableGrid = () => {
         setActiveOrders(prev => {
           const existingIds = new Set(prev.map(o => o.id));
           const newOrders = response.data.data.filter(o => !existingIds.has(o.id));
+          if (newOrders.length > 0) {
+            showNotification(`📋 ${newOrders.length} new order(s) awaiting confirmation!`, 'info');
+          }
           return [...newOrders, ...prev];
         });
       }
     } catch (err) {
       console.error('Fetch pending confirmations error:', err);
     }
-  }, []);
+  }, [showNotification]);
 
   const fetchTableActiveOrder = useCallback(async (tableId) => {
     try {
@@ -214,23 +233,23 @@ const TableGrid = () => {
     }
     try {
       const response = await API.post(`/waiter/assign-table/${tableId}`);
-      alert(response.data.message);
+      showNotification(response.data.message, 'success');
       await Promise.all([fetchSelfTables(), fetchAvailableSelfTables(), fetchMyTables()]);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to assign table');
     }
-  }, [mySelfTables.length, fetchSelfTables, fetchAvailableSelfTables, fetchMyTables]);
+  }, [mySelfTables.length, fetchSelfTables, fetchAvailableSelfTables, fetchMyTables, showNotification]);
 
   const unassignSelf = useCallback(async (tableId) => {
     if (!window.confirm('Remove this table from your assignment?')) return;
     try {
       const response = await API.delete(`/waiter/unassign-table/${tableId}`);
-      alert(response.data.message);
+      showNotification(response.data.message, 'success');
       await Promise.all([fetchSelfTables(), fetchAvailableSelfTables(), fetchMyTables()]);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to unassign table');
     }
-  }, [fetchSelfTables, fetchAvailableSelfTables, fetchMyTables]);
+  }, [fetchSelfTables, fetchAvailableSelfTables, fetchMyTables, showNotification]);
 
   // ========== INITIAL DATA LOAD ==========
   useEffect(() => {
@@ -247,21 +266,26 @@ const TableGrid = () => {
     };
     loadInitialData();
 
-    const handleOrderStatusUpdate = () => {
+    const handleOrderStatusUpdate = (data) => {
       fetchMyActiveOrders();
       fetchMyTables(true);
       fetchMyPendingConfirmations();
       fetchSelfTables();
       fetchAvailableSelfTables();
+      if (data.status === 'ready') {
+        showNotification(`🍽️ Order #${data.order_id} is now ready!`, 'success');
+      }
     };
     
-    const handleNewOrder = () => {
+    const handleNewOrder = (data) => {
       fetchMyActiveOrders();
       fetchMyPendingConfirmations();
+      showNotification(`📋 New order received from Table ${data.table_id || 'customer'}!`, 'info');
     };
     
-    const handleNewPendingOrder = () => {
+    const handleNewPendingOrder = (data) => {
       fetchMyPendingConfirmations();
+      showNotification(`📋 New QR order from Table ${data.table_number || 'customer'}!`, 'info');
       try {
         const audio = new Audio('/notification.mp3');
         audio.play().catch(() => console.log('Audio not supported'));
@@ -271,13 +295,19 @@ const TableGrid = () => {
     socket.on('order_status_updated', handleOrderStatusUpdate);
     socket.on('new_order', handleNewOrder);
     socket.on('new_pending_order', handleNewPendingOrder);
+    socket.on('order_ready_for_waiter', (data) => {
+      showNotification(`🍽️ ${data.message}`, 'success');
+      fetchMyActiveOrders();
+      fetchMyTables(true);
+    });
     
     return () => {
       socket.off('order_status_updated', handleOrderStatusUpdate);
       socket.off('new_order', handleNewOrder);
       socket.off('new_pending_order', handleNewPendingOrder);
+      socket.off('order_ready_for_waiter');
     };
-  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift, fetchSelfTables, fetchAvailableSelfTables]);
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchProducts, fetchMyShift, fetchSelfTables, fetchAvailableSelfTables, showNotification]);
 
   // ========== POLLING INTERVAL ==========
   useEffect(() => {
@@ -299,6 +329,7 @@ const TableGrid = () => {
   // ========== HANDLERS ==========
   const manualRefresh = useCallback(() => {
     setRefreshing(true);
+    showNotification('Refreshing data...', 'info');
     Promise.all([
       fetchMyTables(false),
       fetchMyActiveOrders(),
@@ -306,8 +337,11 @@ const TableGrid = () => {
       fetchMyShift(),
       fetchSelfTables(),
       fetchAvailableSelfTables()
-    ]).finally(() => setRefreshing(false));
-  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift, fetchSelfTables, fetchAvailableSelfTables]);
+    ]).finally(() => {
+      setRefreshing(false);
+      showNotification('Data refreshed!', 'success');
+    });
+  }, [fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyShift, fetchSelfTables, fetchAvailableSelfTables, showNotification]);
 
   const generateQRCode = useCallback((tableNumber) => {
     return `${window.location.origin}/qr-menu?table=${tableNumber}`;
@@ -323,9 +357,9 @@ const TableGrid = () => {
     if (qrTable) {
       const qrUrl = generateQRCode(qrTable.table_number);
       navigator.clipboard.writeText(qrUrl);
-      alert(`✅ QR URL copied!\n\nShare this link with customers:\n${qrUrl}`);
+      showNotification(`✅ QR URL copied!`, 'success');
     }
-  }, [qrTable, generateQRCode]);
+  }, [qrTable, generateQRCode, showNotification]);
 
   const getTableGradient = useCallback((status) => {
     switch(status) {
@@ -366,19 +400,19 @@ const TableGrid = () => {
         setSelectedTableOrder(activeOrder);
         setShowAddItemsModal(true);
       } else {
-        alert(t('noActiveOrder'));
+        showNotification(t('noActiveOrder'), 'error');
       }
     } catch (err) {
       console.error('Error fetching active order:', err);
-      alert(t('couldNotFetchOrder'));
+      showNotification(t('couldNotFetchOrder'), 'error');
     } finally {
       setIsSubmitting(false);
     }
-  }, [fetchTableActiveOrder, t]);
+  }, [fetchTableActiveOrder, t, showNotification]);
 
   const addItemsToExistingOrder = useCallback(async () => {
     if (addItemsCart.length === 0) {
-      alert(t('pleaseAddItems'));
+      showNotification(t('pleaseAddItems'), 'error');
       return;
     }
 
@@ -392,7 +426,7 @@ const TableGrid = () => {
       });
 
       if (response.data.success) {
-        alert(`${t('itemsAdded')} #${selectedTableOrder.order_number}!`);
+        showNotification(`✅ ${t('itemsAdded')} #${selectedTableOrder.order_number}!`, 'success');
         setShowAddItemsModal(false);
         setAddItemsCart([]);
         setSelectedTableOrder(null);
@@ -400,11 +434,11 @@ const TableGrid = () => {
       }
     } catch (err) {
       console.error('Add items error:', err);
-      alert(err.response?.data?.error || t('failedToAddItems'));
+      showNotification(err.response?.data?.error || t('failedToAddItems'), 'error');
     } finally {
       setIsSubmitting(false);
     }
-  }, [addItemsCart, selectedTableOrder, t, fetchMyTables, fetchMyActiveOrders]);
+  }, [addItemsCart, selectedTableOrder, t, fetchMyTables, fetchMyActiveOrders, showNotification]);
 
   const handleTableClick = useCallback(async (table) => {
     if (table.status === 'available') {
@@ -413,11 +447,11 @@ const TableGrid = () => {
     } else if (table.status === 'occupied') {
       openAddItemsModal(table);
     } else if (table.status === 'reserved') {
-      alert(`${t('table')} ${table.table_number} ${t('isReserved')}`);
+      showNotification(`${t('table')} ${table.table_number} ${t('isReserved')}`, 'warning');
     } else if (table.status === 'cleaning') {
-      alert(`${t('table')} ${table.table_number} ${t('isCleaning')}`);
+      showNotification(`${t('table')} ${table.table_number} ${t('isCleaning')}`, 'info');
     }
-  }, [t, openAddItemsModal]);
+  }, [t, openAddItemsModal, showNotification]);
 
   const addToCart = useCallback((product) => {
     const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
@@ -458,7 +492,7 @@ const TableGrid = () => {
 
   const submitOrder = useCallback(async () => {
     if (cart.length === 0) {
-      alert(t('pleaseAddItems'));
+      showNotification(t('pleaseAddItems'), 'error');
       return;
     }
 
@@ -471,13 +505,14 @@ const TableGrid = () => {
         })),
         table_id: selectedTable.id,
         order_type: 'dine_in',
-        notes: orderNotes
+        notes: orderNotes,
+        source: 'waiter'
       };
 
       const response = await API.post('/orders', orderData);
       
       if (response.data.success) {
-        alert(`${t('orderSent')} #${response.data.data.order_number}!`);
+        showNotification(`✅ ${t('orderSent')} #${response.data.data.order_number}!`, 'success');
         setShowOrderModal(false);
         setCart([]);
         setOrderNotes('');
@@ -486,18 +521,18 @@ const TableGrid = () => {
       }
     } catch (err) {
       console.error('Submit order error:', err);
-      alert(err.response?.data?.error || t('failedToSubmitOrder'));
+      showNotification(err.response?.data?.error || t('failedToSubmitOrder'), 'error');
     } finally {
       setIsSubmitting(false);
     }
-  }, [cart, selectedTable, orderNotes, t, fetchMyTables, fetchMyActiveOrders]);
+  }, [cart, selectedTable, orderNotes, t, fetchMyTables, fetchMyActiveOrders, showNotification]);
 
   const confirmOrder = useCallback(async (orderId) => {
     setConfirmingOrderId(orderId);
     try {
       const response = await API.put(`/orders/confirm/${orderId}`);
       if (response.data.success) {
-        alert(`✅ Order confirmed! Sent to kitchen.`);
+        showNotification(`✅ Order confirmed! Sent to kitchen.`, 'success');
         await Promise.all([
           fetchMyActiveOrders(),
           fetchMyPendingConfirmations(),
@@ -506,16 +541,16 @@ const TableGrid = () => {
       }
     } catch (err) {
       console.error('Confirm order error:', err);
-      alert(err.response?.data?.error || 'Failed to confirm order');
+      showNotification(err.response?.data?.error || 'Failed to confirm order', 'error');
     } finally {
       setConfirmingOrderId(null);
     }
-  }, [fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyTables]);
+  }, [fetchMyActiveOrders, fetchMyPendingConfirmations, fetchMyTables, showNotification]);
 
   const cancelOrder = useCallback(async (orderId, reason) => {
     try {
       await API.put(`/orders/${orderId}/cancel`, { reason });
-      alert(t('orderCancelledSuccess'));
+      showNotification(t('orderCancelledSuccess'), 'success');
       setShowCancelModal(false);
       setCancelReason('');
       setOrderToCancel(null);
@@ -526,9 +561,9 @@ const TableGrid = () => {
       ]);
     } catch (err) {
       console.error('Cancel order error:', err);
-      alert(err.response?.data?.error || t('failedToCancelOrder'));
+      showNotification(err.response?.data?.error || t('failedToCancelOrder'), 'error');
     }
-  }, [t, fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations]);
+  }, [t, fetchMyTables, fetchMyActiveOrders, fetchMyPendingConfirmations, showNotification]);
 
   const openCancelModal = useCallback((order) => {
     setOrderToCancel(order);
@@ -551,6 +586,19 @@ const TableGrid = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="p-3 md:p-8 space-y-4 md:space-y-6 pb-24 md:pb-8">
+        
+        {/* Notification Banner */}
+        {notificationMessage && (
+          <div className={`rounded-xl p-3 text-center animate-slide-up ${
+            notificationMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
+            notificationMessage.type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
+            notificationMessage.type === 'warning' ? 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400' :
+            'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+          }`}>
+            {notificationMessage.message}
+          </div>
+        )}
+
         {/* Header with Stats */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
@@ -715,7 +763,8 @@ const TableGrid = () => {
             {mySelfTables.length >= 5 && availableSelfTables.length > 0 && (
               <div className="mt-4 p-2 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
                 <p className="text-yellow-400 text-xs text-center flex items-center justify-center gap-1">
-                  <span>⚠️</span> You have reached the maximum of 5 tables. Please unassign some tables before taking more.
+                  <AlertCircle size={14} />
+                  You have reached the maximum of 5 tables. Please unassign some tables before taking more.
                 </p>
               </div>
             )}
@@ -815,6 +864,9 @@ const TableGrid = () => {
                           <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs md:text-sm">{t('table')} {order.table_number || 'N/A'}</span>
                         </div>
                         <p className="text-emerald-400 font-bold text-sm md:text-base mt-1">Br {parseFloat(order.total_amount).toFixed(2)}</p>
+                        {order.customer_name && (
+                          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-400 text-xs mt-1">Customer: {order.customer_name}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => openCancelModal(order)}

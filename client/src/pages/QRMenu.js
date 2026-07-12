@@ -54,6 +54,7 @@ const QRMenu = () => {
   const [estimatedTime, setEstimatedTime] = useState(20);
   const [priceUpdate, setPriceUpdate] = useState(null);
   const [isAddingMoreItems, setIsAddingMoreItems] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [restaurantInfo, setRestaurantInfo] = useState({
     name: 'EthioPOS Restaurant',
     address: 'Addis Ababa, Ethiopia',
@@ -203,6 +204,9 @@ const QRMenu = () => {
         setOrderStatus(orderData.status);
         setOrderPlaced(true);
         startStatusPolling(orderData.order_number);
+        if (orderData.status_message) {
+          setStatusMessage(orderData.status_message);
+        }
       }
     } catch (err) {
       console.error('Fetch order details error:', err);
@@ -363,6 +367,7 @@ const QRMenu = () => {
         setCart([]);
         saveOrderToStorage(newOrder);
         startStatusPolling(data.order_number);
+        setStatusMessage('Order placed! Waiting for confirmation.');
       }
     } catch (err) {
       alert(err.response?.data?.error || t('failedToPlaceOrder'));
@@ -404,16 +409,78 @@ const QRMenu = () => {
 
   // ==================== SOCKET LISTENERS ====================
   useEffect(() => {
+    // Real-time order status updates
     socket.on('order_status_updated', (data) => {
       if (currentOrder && data.order_id === currentOrder.order_id) {
         setOrderStatus(data.status);
         const updated = { ...currentOrder, status: data.status };
         setCurrentOrder(updated);
         saveOrderToStorage(updated);
+        
+        // Show status messages to customer
+        const statusMessages = {
+          'confirmed': '✅ Order confirmed by waiter! Kitchen will prepare soon.',
+          'pending': '👨‍🍳 Kitchen has received your order!',
+          'preparing': '🔥 Your food is being cooked!',
+          'ready': '🍽️ Your order is ready for pickup!',
+          'completed': '🎉 Order completed. Enjoy your meal!'
+        };
+        
+        if (statusMessages[data.status]) {
+          setStatusMessage(statusMessages[data.status]);
+          // Show alert for important updates
+          if (data.status === 'ready' || data.status === 'completed') {
+            alert(statusMessages[data.status]);
+          }
+        }
       }
     });
-    return () => socket.off('order_status_updated');
-  }, [currentOrder]);
+
+    // Order ready for customer
+    socket.on('order_ready_for_customer', (data) => {
+      if (currentOrder && data.order_id === currentOrder.order_id) {
+        setOrderStatus('ready');
+        setStatusMessage('🎉 Your order is ready for pickup!');
+        alert('🎉 Your order is ready for pickup!');
+      }
+    });
+
+    // Order items added by customer
+    socket.on('order_items_added', (data) => {
+      if (currentOrder && data.order_id === currentOrder.order_id) {
+        setStatusMessage(`✅ Items added! New total: ${formatCurrency(data.new_total)}`);
+        // Refresh order details
+        if (orderNumber) {
+          fetchOrderDetails(orderNumber);
+        }
+      }
+    });
+
+    // Order completed
+    socket.on('order_completed', (data) => {
+      if (currentOrder && data.order_id === currentOrder.order_id) {
+        setOrderStatus('completed');
+        setStatusMessage('🎉 Order completed! Thank you for dining with us!');
+        alert('🎉 Order completed! Thank you for dining with us!');
+      }
+    });
+
+    // Order confirmed by waiter
+    socket.on('order_confirmed', (data) => {
+      if (currentOrder && data.order_id === currentOrder.order_id) {
+        setOrderStatus('pending');
+        setStatusMessage('✅ Order confirmed! Kitchen is preparing your food.');
+      }
+    });
+
+    return () => {
+      socket.off('order_status_updated');
+      socket.off('order_ready_for_customer');
+      socket.off('order_items_added');
+      socket.off('order_completed');
+      socket.off('order_confirmed');
+    };
+  }, [currentOrder, orderNumber]);
 
   // ==================== INITIALIZATION ====================
   useEffect(() => {
@@ -452,6 +519,11 @@ const QRMenu = () => {
             <button onClick={() => setShowOrderTracking(false)} className="text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-600 dark:text-gray-600 dark:text-gray-300"><X size={24} /></button>
           </div>
           <div className="p-4 space-y-4">
+            {statusMessage && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-blue-700 dark:text-blue-400 text-sm text-center">
+                {statusMessage}
+              </div>
+            )}
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center">
               <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('orderNumber')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{trackingOrder.order_number}</p>
@@ -467,6 +539,18 @@ const QRMenu = () => {
                 <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('totalAmount')}</span>
                 <span className="text-green-600 dark:text-green-400 font-bold">{formatCurrency(trackingOrder.total_amount)}</span>
               </div>
+              {trackingOrder.waiter_name && (
+                <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-300 dark:border-gray-600">
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Waiter</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{trackingOrder.waiter_name}</span>
+                </div>
+              )}
+              {trackingOrder.order_source && (
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Order Source</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{trackingOrder.order_source}</span>
+                </div>
+              )}
             </div>
             <div className="bg-gray-50 dark:bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3">
               <div className="flex justify-between mb-3">
@@ -664,6 +748,9 @@ const QRMenu = () => {
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('yourOrderStatus')}</h2>
               <p className="text-sm mt-1 font-semibold text-blue-600 dark:text-blue-400">{statusText}</p>
+              {statusMessage && (
+                <p className="text-sm mt-2 text-gray-600 dark:text-gray-300">{statusMessage}</p>
+              )}
             </div>
 
             <div className="mb-6">
@@ -692,6 +779,18 @@ const QRMenu = () => {
                 <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-300 dark:border-gray-600">
                   <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">{t('customer')}</span>
                   <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{customerName}</span>
+                </div>
+              )}
+              {currentOrder.waiter_name && (
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Waiter</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{currentOrder.waiter_name}</span>
+                </div>
+              )}
+              {currentOrder.order_source && (
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400">Order Source</span>
+                  <span className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{currentOrder.order_source}</span>
                 </div>
               )}
             </div>

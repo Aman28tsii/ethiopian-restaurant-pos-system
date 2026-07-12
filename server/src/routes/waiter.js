@@ -237,7 +237,7 @@ router.get('/my-shift', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== WAITER'S ACTIVE ORDERS ====================
+// ==================== WAITER'S ACTIVE ORDERS (Filtered by assigned tables) ====================
 router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -245,6 +245,7 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
     const result = await pool.query(
       `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
               o.customer_name, o.table_id, o.created_at,
+              o.source,
               t.table_number,
               COALESCE(
                 json_agg(
@@ -262,7 +263,7 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE t.assigned_waiter_id = $1
          AND o.status NOT IN ('completed', 'cancelled')
-       GROUP BY o.id, t.table_number
+       GROUP BY o.id, t.table_number, o.source
        ORDER BY o.created_at DESC`,
       [waiterId]
     );
@@ -274,7 +275,7 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== PENDING CONFIRMATIONS ====================
+// ==================== PENDING CONFIRMATIONS (Filtered by assigned tables) ====================
 router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
   const waiterId = req.user.id;
   
@@ -282,6 +283,7 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
     const result = await pool.query(
       `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
               o.table_id, o.notes, o.created_at, o.status,
+              o.source,
               t.table_number,
               COALESCE(
                 json_agg(
@@ -300,7 +302,7 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
        WHERE o.status = 'pending_confirmation' 
          AND o.source = 'qr_menu'
          AND t.assigned_waiter_id = $1
-       GROUP BY o.id, t.table_number
+       GROUP BY o.id, t.table_number, o.source
        ORDER BY o.created_at ASC`,
       [waiterId]
     );
@@ -308,6 +310,84 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Get pending confirmations error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== WAITER'S ACTIVE ORDERS (All orders they created - legacy support) ====================
+router.get('/my-created-orders', protect, allowWaiter, async (req, res) => {
+  const waiterId = req.user.id;
+  
+  try {
+    const result = await pool.query(
+      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
+              o.customer_name, o.table_id, o.created_at,
+              o.source,
+              t.table_number,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.unit_price
+                  )
+                ) FILTER (WHERE p.id IS NOT NULL), 
+                '[]'
+              ) as items
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.created_by = $1
+         AND o.status NOT IN ('completed', 'cancelled')
+       GROUP BY o.id, t.table_number, o.source
+       ORDER BY o.created_at DESC`,
+      [waiterId]
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get waiter created orders error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==================== GET ORDER DETAILS FOR WAITER ====================
+router.get('/order/:orderId', protect, allowWaiter, async (req, res) => {
+  const { orderId } = req.params;
+  const waiterId = req.user.id;
+  
+  try {
+    const result = await pool.query(
+      `SELECT o.*, t.table_number,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'name', p.name,
+                    'quantity', oi.quantity,
+                    'price', oi.unit_price,
+                    'total', oi.total_price
+                  )
+                ) FILTER (WHERE p.id IS NOT NULL), 
+                '[]'
+              ) as items
+       FROM orders o
+       LEFT JOIN tables t ON o.table_id = t.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.id = $1
+         AND (o.waiter_id = $2 OR o.created_by = $2)
+       GROUP BY o.id, t.table_number`,
+      [orderId, waiterId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found or not assigned to you' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Get order details error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

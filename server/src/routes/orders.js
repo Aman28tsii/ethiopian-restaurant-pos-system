@@ -158,6 +158,8 @@ const processOrderStockDeduction = async (orderId, items, client) => {
 // ==================== PUBLIC TRACK ORDER ====================
 // backend/src/routes/orders.js
 
+// backend/src/routes/orders.js
+
 // ==================== PUBLIC TRACK ORDER (SHOWS BOTH QR AND WAITER ORDERS) ====================
 router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
   const { orderNumber } = req.params;
@@ -1229,6 +1231,8 @@ router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
     client.release();
   }
 });
+
+// backend/src/routes/orders.js
 
 // ==================== PUBLIC: Customer adds items to existing order ====================
 router.post('/:orderId/customer-add-items', async (req, res) => {

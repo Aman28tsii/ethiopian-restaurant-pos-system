@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { LanguageProvider } from './context/LanguageContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import Categories from './pages/owner/Categories';
 
 // Lazy load layouts
 const OwnerLayout = lazy(() => import('./layouts/OwnerLayout'));
@@ -148,6 +149,7 @@ function App() {
                         <Route path="staff" element={<Staff />} />
                         <Route path="pending-approvals" element={<PendingApprovals />} />
                         <Route path="inventory" element={<Inventory />} />
+                        <Route path="categories" element={<Categories />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="print-qr" element={<PrintQRCodes />} />
@@ -167,6 +169,7 @@ function App() {
                       <Routes>
                         <Route path="dashboard" element={<ManagerDashboard />} />
                         <Route path="inventory" element={<Inventory />} />
+                        <Route path="categories" element={<Categories />} />
                         <Route path="reports" element={<Reports />} />
                         <Route path="profit" element={<ProfitReports />} />
                         <Route path="*" element={<Navigate to="/manager/dashboard" />} />

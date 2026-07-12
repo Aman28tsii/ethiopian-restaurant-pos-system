@@ -4,7 +4,7 @@ import {
   ShoppingCart, Package, BarChart3, Users, LogOut, Store,
   ChevronLeft, ChevronRight, TrendingUp, Receipt, 
   ChefHat, Clock, LayoutDashboard, Settings, ClipboardList,
-  Table as TableIcon, History, Menu, X, QrCode, Table
+  Table as TableIcon, History, Menu, X, QrCode, Table, FolderTree
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -33,6 +33,7 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/reports', icon: TrendingUp, label: t('profitReports') },
     { path: '/owner/expenses', icon: Receipt, label: t('expenses') },
     { path: '/owner/inventory', icon: Package, label: t('inventoryManagement') },
+    { path: '/owner/categories', icon: FolderTree, label: 'Categories' },
     { path: '/owner/staff', icon: Users, label: t('staffManagement') },
     { path: '/owner/customers', icon: Users, label: t('customers') },
     { path: '/owner/manage-tables', icon: Table, label: 'Manage Tables' },

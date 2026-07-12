@@ -21,6 +21,7 @@ import tableRoutes from './src/routes/tables.js';
 import waiterRoutes from './src/routes/waiter.js';
 import kitchenRoutes from './src/routes/kitchen.js';
 import customerRoutes from './src/routes/customers.js';
+import categoryRoutes from './src/routes/categories.js';
 
 dotenv.config();
 
@@ -135,6 +136,7 @@ app.get('/', (req, res) => {
   app.use('/api/waiter', waiterRoutes);
   app.use('/api/kitchen', kitchenRoutes);
   app.use('/api/customers', customerRoutes);
+app.use('/api/categories', categoryRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

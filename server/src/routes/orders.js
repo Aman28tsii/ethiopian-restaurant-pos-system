@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, allowWaiter, allowCashier, allowManager, allowOwner } from '../middleware/auth.js';
+import { protect, allowWaiter, allowCashier, allowKitchen, allowManager, allowOwner } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 import rateLimit from 'express-rate-limit';
 import { processOrderStockDeduction } from '../controllers/recipeController.js';

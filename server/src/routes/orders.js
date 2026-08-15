@@ -1,1448 +1,1004 @@
 import express from 'express';
-import { protect, allowWaiter, allowCashier, allowKitchen, allowManager, allowOwner } from '../middleware/auth.js';
+import { protect, allowWaiter, allowCashier, allowManager, allowOwner } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 import rateLimit from 'express-rate-limit';
+import { processOrderStockDeduction } from '../controllers/recipeController.js';
 
 const router = express.Router();
 
 // Rate limiter for public tracking endpoint
 const trackLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  message: { success: false, error: 'Too many requests. Please wait.' }
+    windowMs: 60 * 1000,
+    max: 30,
+    message: { success: false, error: 'Too many requests. Please wait.' }
 });
 
 // Generate unique sale number
 const generateSaleNumber = () => {
-  const date = new Date();
-  const timestamp = date.getTime().toString().slice(-8);
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `SALE-${timestamp}${random}`;
+    const date = new Date();
+    const timestamp = date.getTime().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `SALE-${timestamp}${random}`;
 };
 
-// ==================== WASTAGE CALCULATION FUNCTION ====================
-const calculateStockDeductionWithWastage = (recipeIngredients, orderQuantity) => {
-  const deductions = [];
-  
-  for (const ingredient of recipeIngredients) {
-    const wastagePercent = parseFloat(ingredient.wastage_percentage) || 0;
-    const cookingLossPercent = parseFloat(ingredient.cooking_loss_percentage) || 0;
-    
-    let expectedQuantity = parseFloat(ingredient.quantity_required) * orderQuantity;
-    let afterWastage = expectedQuantity * (1 + (wastagePercent / 100));
-    let finalQuantity = afterWastage * (1 + (cookingLossPercent / 100));
-    
-    if (ingredient.unit === 'pcs' || ingredient.unit === 'pieces') {
-      finalQuantity = Math.ceil(finalQuantity);
-    } else {
-      finalQuantity = Math.ceil(finalQuantity * 100) / 100;
-    }
-    
-    const wastageAmount = finalQuantity - expectedQuantity;
-    const wastagePercentage = expectedQuantity > 0 
-      ? (wastageAmount / expectedQuantity * 100).toFixed(1) 
-      : 0;
-    
-    deductions.push({
-      ingredient_id: ingredient.ingredient_id,
-      ingredient_name: ingredient.name,
-      expected_quantity: expectedQuantity,
-      actual_quantity: finalQuantity,
-      wastage_amount: wastageAmount,
-      wastage_percentage: wastagePercentage,
-      unit: ingredient.unit,
-      unit_cost: parseFloat(ingredient.unit_cost) || 0,
-      wastage_cost: wastageAmount * (parseFloat(ingredient.unit_cost) || 0)
-    });
-  }
-  
-  return deductions;
-};
+// ============================================
+// PUBLIC ROUTES
+// ============================================
 
-const processOrderStockDeduction = async (orderId, items, client) => {
-  const allDeductions = [];
-  
-  for (const item of items) {
-    const recipeQuery = `
-      SELECT 
-        r.ingredient_id,
-        r.quantity_required,
-        i.name,
-        i.unit,
-        COALESCE(i.wastage_percentage, 0) as wastage_percentage,
-        COALESCE(i.cooking_loss_percentage, 0) as cooking_loss_percentage,
-        i.quantity as current_stock,
-        i.unit_cost
-      FROM recipes r  
-      JOIN ingredients i ON r.ingredient_id = i.id
-      WHERE r.product_id = $1
-    `;
-    
-    const recipeResult = await client.query(recipeQuery, [item.product_id]);
-    
-    if (recipeResult.rows.length === 0) {
-      console.warn(`⚠️ No recipe found for product ${item.product_id} - skipping stock deduction`);
-      continue;
-    }
-    
-    const deductions = calculateStockDeductionWithWastage(recipeResult.rows, item.quantity);
-    
-    for (const deduction of deductions) {
-      const ingredient = recipeResult.rows.find(r => r.ingredient_id === deduction.ingredient_id);
-      
-      if (parseFloat(ingredient.current_stock) < deduction.actual_quantity) {
-        throw new Error(`Insufficient stock for ${deduction.ingredient_name}. Available: ${ingredient.current_stock} ${deduction.unit}, Required: ${deduction.actual_quantity}`);
-      }
-      
-      await client.query(`
-        UPDATE ingredients 
-        SET quantity = quantity - $1,
-            last_used = NOW(),
-            updated_at = NOW()
-        WHERE id = $2
-      `, [deduction.actual_quantity, deduction.ingredient_id]);
-      
-      await client.query(`
-        INSERT INTO stock_transactions (
-          ingredient_id,
-          order_id,
-          expected_quantity,
-          actual_quantity,
-          wastage_amount,
-          wastage_percentage,
-          transaction_type,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'order_deduction', NOW())
-      `, [
-        deduction.ingredient_id,
-        orderId,
-        deduction.expected_quantity,
-        deduction.actual_quantity,
-        deduction.wastage_amount,
-        deduction.wastage_percentage
-      ]);
-      
-      allDeductions.push(deduction);
-    }
-  }
-  
-  return allDeductions;
-};
-
-// ==================== PUBLIC TRACK ORDER (SHOWS BOTH QR AND WAITER ORDERS) ====================
+// Track order by order number (Public - no authentication needed)
 router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
-  const { orderNumber } = req.params;
-  
-  try {
-    const orderResult = await pool.query(
-      `SELECT 
-        o.id, 
-        o.order_number, 
-        o.total_amount, 
-        o.status, 
-        o.payment_status, 
-        o.customer_name, 
-        o.customer_phone, 
-        o.table_id, 
-        o.order_type, 
-        o.notes,
-        o.created_at, 
-        o.updated_at, 
-        o.waiter_id,
-        o.confirmed_at,
-        o.source,
-        t.table_number,
-        u.name as waiter_name,
-        ko.status as kitchen_status,
-        ko.started_at,
-        ko.completed_at,
-        CASE 
-          WHEN o.source = 'qr_menu' THEN 'QR Code Order'
-          WHEN o.source = 'waiter' THEN 'Waiter Order'
-          ELSE 'Regular Order'
-        END as order_source
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       LEFT JOIN users u ON o.waiter_id = u.id
-       LEFT JOIN kitchen_orders ko ON o.id = ko.order_id
-       WHERE o.order_number = $1
-         AND o.status != 'cancelled'`,
-      [orderNumber]
-    );
-    
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
-    }
-    
-    const order = orderResult.rows[0];
-    
-    const itemsResult = await pool.query(
-      `SELECT 
-        oi.id, 
-        oi.product_id, 
-        oi.quantity, 
-        oi.unit_price, 
-        oi.total_price,
-        p.name as product_name,
-        p.category
-       FROM order_items oi
-       JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = $1
-       ORDER BY oi.id ASC`,
-      [order.id]
-    );
-    
-    const createdTime = new Date(order.created_at);
-    const now = new Date();
-    const elapsedMinutes = Math.floor((now - createdTime) / 60000);
-    
-    let estimatedRemaining = 0;
-    let statusMessage = '';
-    
-    switch(order.status) {
-      case 'pending_confirmation':
-        estimatedRemaining = 5;
-        statusMessage = 'Waiting for waiter to confirm your order';
-        break;
-      case 'confirmed':
-        estimatedRemaining = 10;
-        statusMessage = 'Order confirmed! Kitchen will start preparing soon';
-        break;
-      case 'pending':
-        estimatedRemaining = 15;
-        statusMessage = 'Kitchen is preparing your order';
-        break;
-      case 'preparing':
-        estimatedRemaining = 8;
-        statusMessage = 'Your food is being prepared';
-        break;
-      case 'ready':
-        estimatedRemaining = 0;
-        statusMessage = 'Your order is ready for pickup!';
-        break;
-      case 'completed':
-        estimatedRemaining = 0;
-        statusMessage = 'Order completed. Thank you for dining with us!';
-        break;
-      default:
-        estimatedRemaining = 10;
-        statusMessage = 'Processing your order';
-    }
-    
-    const progressMap = {
-      'pending_confirmation': 10,
-      'confirmed': 25,
-      'pending': 40,
-      'preparing': 60,
-      'ready': 85,
-      'completed': 100
-    };
-    const progress = progressMap[order.status] || 0;
-    
-    const timeline = [];
-    if (order.created_at) {
-      timeline.push({ status: 'Order Placed', time: order.created_at, completed: true });
-    }
-    if (order.confirmed_at) {
-      timeline.push({ status: 'Waiter Confirmation', time: order.confirmed_at, completed: true });
-    } else if (order.status !== 'pending_confirmation') {
-      timeline.push({ status: 'Waiter Confirmation', time: null, completed: false });
-    }
-    if (order.started_at) {
-      timeline.push({ status: 'Kitchen Preparation', time: order.started_at, completed: true });
-    } else if (order.status === 'preparing' || order.status === 'ready' || order.status === 'completed') {
-      timeline.push({ status: 'Kitchen Preparation', time: null, completed: false });
-    }
-    if (order.completed_at) {
-      timeline.push({ status: 'Ready for Pickup', time: order.completed_at, completed: true });
-    } else if (order.status === 'ready') {
-      timeline.push({ status: 'Ready for Pickup', time: null, completed: false });
-    }
-    if (order.status === 'completed') {
-      timeline.push({ status: 'Order Completed', time: order.updated_at, completed: true });
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        ...order,
-        items: itemsResult.rows,
-        waiter_name: order.waiter_name || 'Not assigned yet',
-        elapsed_minutes: elapsedMinutes,
-        estimated_remaining: estimatedRemaining,
-        status_message: statusMessage,
-        progress_percentage: progress,
-        timeline: timeline,
-        kitchen_status: order.kitchen_status || 'pending',
-        order_source: order.order_source || 'Regular Order'
-      }
-    });
-    
-  } catch (err) {
-    console.error('Track order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== TRACK BY PHONE NUMBER ====================
-router.get('/track-by-phone/:phone', async (req, res) => {
-  const { phone } = req.params;
-  
-  try {
-    const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.status, o.created_at,
-              t.table_number,
-              CASE 
-                WHEN o.source = 'qr_menu' THEN 'QR Code Order'
-                WHEN o.source = 'waiter' THEN 'Waiter Order'
-                ELSE 'Regular Order'
-              END as order_source
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       WHERE o.customer_phone = $1
-         AND o.status != 'cancelled'
-         AND o.status != 'completed'
-       ORDER BY o.created_at DESC`,
-      [phone]
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Track by phone error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== PUBLIC QR ORDER ROUTE ====================
-router.post('/qr-order', async (req, res) => {
-  try {
-    const { items, table_id, customer_name, customer_phone, notes } = req.body;
-    
-    if (!items || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'No items in order' });
-    }
-    
-    const client = await pool.connect();
+    const { orderNumber } = req.params;
     
     try {
-      await client.query('BEGIN');
-      
-      const tableResult = await client.query(
-        'SELECT id, table_number, waiter_id, status FROM tables WHERE id = $1',
-        [table_id]
-      );
-      
-      if (tableResult.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'Table not found' });
-      }
-      
-      const table = tableResult.rows[0];
-      
-      if (!table.waiter_id) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'No waiter assigned to this table. Please contact restaurant staff.' 
-        });
-      }
-      
-      if (table.status !== 'available') {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Table ${table.table_number} is currently ${table.status}. Please choose another table.` 
-        });
-      }
-      
-      const waiterId = table.waiter_id;
-      
-      let totalAmount = 0;
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price FROM products WHERE id = $1 AND is_available = true',
-          [item.product_id]
-        );
+        const orderResult = await pool.query(`
+            SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, 
+                   o.customer_name, o.customer_phone, o.table_id, o.order_type, o.notes,
+                   o.created_at, o.updated_at, o.waiter_id, o.confirmed_at,
+                   t.table_number
+            FROM orders o
+            LEFT JOIN tables t ON o.table_id = t.id
+            WHERE o.order_number = $1
+        `, [orderNumber]);
         
-        if (productResult.rows.length === 0) {
-          throw new Error(`Product ${item.product_id} not available`);
+        if (orderResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Order not found' });
         }
         
-        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
-      }
-      
-      const orderNumber = `QR-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
-      
-      const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source, waiter_id)
-         VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu', $7)
-         RETURNING id, order_number`,
-        [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null, waiterId]
-      );
-      
-      const orderId = orderResult.rows[0].id;
-      
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price, name FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+        const order = orderResult.rows[0];
         
-        await client.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
-        );
-      }
-      
-      await client.query(
-        `UPDATE tables 
-         SET status = 'occupied', 
-             pending_order_id = $1,
-             updated_at = NOW()
-         WHERE id = $2`,
-        [orderId, table_id]
-      );
-      
-      await client.query('COMMIT');
-      
-      const io = req.app.get('io');
-      if (io) {
-        io.to(`waiter_${waiterId}`).emit('new_pending_order', {
-          order_id: orderId,
-          order_number: orderNumber,
-          table_id: table_id,
-          table_number: table.table_number,
-          customer_name: customer_name || 'Walk-in Customer',
-          total_amount: totalAmount,
-          message: `New QR order from Table ${table.table_number}`
+        const itemsResult = await pool.query(`
+            SELECT oi.id, oi.product_id, oi.quantity, oi.unit_price, oi.total_price,
+                   p.name as product_name
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [order.id]);
+        
+        // Get wastage data for this order
+        const wastageResult = await pool.query(`
+            SELECT 
+                SUM(st.wastage_amount * i.unit_cost) as total_wastage_cost,
+                COUNT(st.id) as wastage_entries
+            FROM stock_transactions st
+            JOIN ingredients i ON st.ingredient_id = i.id
+            WHERE st.order_id = $1
+        `, [order.id]);
+        
+        res.json({
+            success: true,
+            data: { 
+                ...order, 
+                items: itemsResult.rows,
+                wastage: wastageResult.rows[0] || { total_wastage_cost: 0, wastage_entries: 0 }
+            }
         });
         
-        io.emit('new_order', {
-          order_id: orderId,
-          order_number: orderNumber,
-          table_id: table_id,
-          source: 'qr_menu',
-          waiter_id: waiterId
-        });
-      }
-      
-      res.status(201).json({
-        success: true,
-        message: 'Order placed! Waiting for waiter confirmation.',
-        data: { 
-          order_id: orderId, 
-          order_number: orderNumber, 
-          total_amount: totalAmount,
-          status: 'pending_confirmation',
-          waiter_id: waiterId,
-          table_number: table.table_number
-        }
-      });
-      
     } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('QR order error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    } finally {
-      client.release();
+        console.error('Track order error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-  } catch (err) {
-    console.error('QR order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
-// ==================== WAITER CONFIRMATION ROUTE ====================
-router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
-  const { orderId } = req.params;
-  const userId = req.user.id;
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
-    
-    const orderCheck = await client.query(
-      `SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id
-       FROM orders o
-       WHERE o.id = $1 AND o.status = $2`,
-      [orderId, 'pending_confirmation']
-    );
-    
-    if (orderCheck.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found or already confirmed' 
-      });
-    }
-    
-    const order = orderCheck.rows[0];
-    
-    if (!order.waiter_id) {
-      await client.query(
-        `UPDATE orders SET waiter_id = $1 WHERE id = $2`,
-        [userId, orderId]
-      );
-      order.waiter_id = userId;
-    }
-    
-    if (order.waiter_id && order.waiter_id !== userId) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'This order is not assigned to you' 
-      });
-    }
-    
-    await client.query(
-      `UPDATE orders 
-       SET status = 'pending', 
-           confirmed_by = $1, 
-           confirmed_at = NOW(),
-           updated_at = NOW()
-       WHERE id = $2`,
-      [userId, orderId]
-    );
-    
-    await client.query(
-      `INSERT INTO kitchen_orders (order_id, status, notes)
-       VALUES ($1, 'pending', $2)`,
-      [orderId, 'Order confirmed by waiter']
-    );
-    
-    if (order.table_id) {
-      await client.query(
-        `UPDATE tables 
-         SET status = 'occupied', 
-             current_order_id = $1, 
-             pending_order_id = NULL,
-             updated_at = NOW()
-         WHERE id = $2`,
-        [orderId, order.table_id]
-      );
-    }
-    
-    await client.query('COMMIT');
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_confirmed', {
-        order_id: orderId,
-        order_number: order.order_number,
-        status: 'confirmed',
-        waiter_id: userId,
-        message: `Order #${order.order_number} has been confirmed`
-      });
-      io.emit('new_order', {
-        order_id: orderId,
-        order_number: order.order_number,
-        status: 'pending',
-        customer_name: order.customer_name,
-        table_id: order.table_id
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Order confirmed and sent to kitchen',
-      data: { order_id: orderId, status: 'pending' }
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Confirm order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
-});
-
-// ==================== GET PENDING CONFIRMATION ORDERS ====================
-router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
-  const waiterId = req.user.id;
-  
-  try {
-    const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
-              o.table_id, o.notes, o.created_at, o.status,
-              t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.status = 'pending_confirmation' 
-         AND o.source = 'qr_menu'
-         AND t.waiter_id = $1
-       GROUP BY o.id, t.table_number
-       ORDER BY o.created_at ASC`,
-      [waiterId]
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get pending confirmation orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== GET WAITER'S ACTIVE ORDERS ====================
-router.get('/my-orders', protect, allowWaiter, async (req, res) => {
-  const waiterId = req.user.id;
-  
-  try {
-    const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
-              o.customer_name, o.table_id, o.created_at,
-              t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.waiter_id = $1
-         AND o.status NOT IN ('completed', 'cancelled', 'pending_confirmation')
-       GROUP BY o.id, t.table_number
-       ORDER BY o.created_at DESC`,
-      [waiterId]
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get waiter orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== KITCHEN ROUTES ====================
-
-router.get('/kitchen', protect, allowKitchen, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        ko.id, ko.order_id, ko.status, ko.created_at,
-        o.order_number, o.customer_name, o.table_id,
-        t.table_number,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'name', p.name,
-              'quantity', oi.quantity
-            )
-          ) FILTER (WHERE p.id IS NOT NULL), 
-          '[]'
-        ) as items
-      FROM kitchen_orders ko
-      JOIN orders o ON ko.order_id = o.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      LEFT JOIN tables t ON o.table_id = t.id
-      WHERE ko.status IN ('pending', 'preparing')
-      GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number
-      ORDER BY 
-        CASE ko.status
-          WHEN 'pending' THEN 1
-          WHEN 'preparing' THEN 2
-        END,
-        ko.created_at ASC
-    `);
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Kitchen orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) => {
-  const { orderId } = req.params;
-  const { status } = req.body;
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
-    
-    const result = await client.query(
-      `UPDATE kitchen_orders 
-       SET status = $1,
-           started_at = CASE WHEN $1 = 'preparing' AND status = 'pending' THEN NOW() ELSE started_at END,
-           completed_at = CASE WHEN $1 = 'ready' THEN NOW() ELSE completed_at END,
-           updated_at = NOW()
-       WHERE order_id = $2
-       RETURNING *`,
-      [status, orderId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
-    }
-    
-    const orderDetails = await client.query(
-      `SELECT o.order_number, o.table_id, o.waiter_id, o.customer_phone, t.table_number
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       WHERE o.id = $1`,
-      [orderId]
-    );
-    
-    if (status === 'ready') {
-      await client.query(
-        `UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1`,
-        [orderId]
-      );
-    }
-    
-    await client.query('COMMIT');
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_status_updated', {
-        order_id: orderId,
-        status: status,
-        message: `Order #${orderDetails.rows[0].order_number} is now ${status}`
-      });
-      
-      if (status === 'ready') {
-        if (orderDetails.rows[0].waiter_id) {
-          io.to(`waiter_${orderDetails.rows[0].waiter_id}`).emit('order_ready_for_waiter', {
-            order_id: orderId,
-            order_number: orderDetails.rows[0].order_number,
-            table_number: orderDetails.rows[0].table_number,
-            message: `🍽️ Order #${orderDetails.rows[0].order_number} for Table ${orderDetails.rows[0].table_number} is ready!`
-          });
+// ============================================
+// PUBLIC QR ORDER ROUTE
+// ============================================
+router.post('/qr-order', async (req, res) => {
+    try {
+        const { items, table_id, customer_name, customer_phone, notes } = req.body;
+        
+        if (!items || items.length === 0) {
+            return res.status(400).json({ success: false, error: 'No items in order' });
         }
         
-        if (orderDetails.rows[0].customer_phone) {
-          io.emit('order_ready_for_customer', {
-            order_id: orderId,
-            order_number: orderDetails.rows[0].order_number,
-            phone: orderDetails.rows[0].customer_phone,
-            message: 'Your order is ready for pickup!'
-          });
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // Get table info including waiter_id
+            const tableResult = await client.query(
+                'SELECT waiter_id FROM tables WHERE id = $1',
+                [table_id]
+            );
+            const waiterId = tableResult.rows[0]?.waiter_id;
+            
+            // Calculate total
+            let totalAmount = 0;
+            for (const item of items) {
+                const productResult = await client.query(
+                    'SELECT price FROM products WHERE id = $1',
+                    [item.product_id]
+                );
+                totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
+            }
+            
+            const orderNumber = `QR-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+            
+            const orderResult = await client.query(`
+                INSERT INTO orders (
+                    order_number, total_amount, status, payment_status, 
+                    customer_name, customer_phone, table_id, order_type, notes, source, waiter_id
+                ) VALUES ($1, $2, 'pending_confirmation', 'pending', $3, $4, $5, 'dine_in', $6, 'qr_menu', $7)
+                RETURNING id, order_number
+            `, [orderNumber, totalAmount, customer_name || null, customer_phone || null, table_id || null, notes || null, waiterId]);
+            
+            const orderId = orderResult.rows[0].id;
+            
+            for (const item of items) {
+                const productResult = await client.query(
+                    'SELECT price, name FROM products WHERE id = $1',
+                    [item.product_id]
+                );
+                const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+                
+                await client.query(`
+                    INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+                    VALUES ($1, $2, $3, $4, $5)
+                `, [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]);
+            }
+            
+            if (table_id) {
+                await client.query(`
+                    UPDATE tables SET status = 'available', pending_order_id = $1 WHERE id = $2
+                `, [orderId, table_id]);
+            }
+            
+            await client.query('COMMIT');
+            
+            const io = req.app.get('io');
+            if (io && waiterId) {
+                io.to(`waiter_${waiterId}`).emit('new_pending_order', {
+                    order_id: orderId,
+                    order_number: orderNumber,
+                    table_id: table_id,
+                    customer_name: customer_name || 'Walk-in Customer',
+                    total_amount: totalAmount
+                });
+            }
+            
+            res.status(201).json({
+                success: true,
+                message: 'Order placed! Waiting for waiter confirmation.',
+                data: { 
+                    order_id: orderId, 
+                    order_number: orderNumber, 
+                    total_amount: totalAmount,
+                    status: 'pending_confirmation'
+                }
+            });
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error('QR order error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        } finally {
+            client.release();
         }
-      }
+        
+    } catch (err) {
+        console.error('QR order error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
-    
-    res.json({
-      success: true,
-      message: `Order status updated to ${status}`,
-      data: result.rows[0]
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Update kitchen order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
 });
 
-// ==================== TABLE STATUS MANAGEMENT ====================
+// ============================================
+// WAITER ROUTES
+// ============================================
 
-router.get('/tables/all', protect, allowWaiter, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
-              u.name as waiter_name,
-              o.order_number as current_order_number
-       FROM tables t
-       LEFT JOIN users u ON t.waiter_id = u.id
-       LEFT JOIN orders o ON t.current_order_id = o.id
-       ORDER BY t.table_number ASC`
-    );
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get tables error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.put('/tables/:tableId/status', protect, allowWaiter, async (req, res) => {
-  const { tableId } = req.params;
-  const { status } = req.body;
-  
-  const validStatuses = ['available', 'reserved', 'cleaning', 'occupied'];
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ success: false, error: 'Invalid status' });
-  }
-  
-  try {
-    const result = await pool.query(
-      `UPDATE tables 
-       SET status = $1, 
-           updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, table_number, status`,
-      [status, tableId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Table not found' });
-    }
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('table_status_updated', {
-        table_id: tableId,
-        table_number: result.rows[0].table_number,
-        status: status
-      });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: `Table ${result.rows[0].table_number} status updated to ${status}`,
-      data: result.rows[0]
-    });
-  } catch (err) {
-    console.error('Update table status error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== OWNER ROUTES ====================
-
-router.get('/waiters', protect, allowOwner, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT id, name, email FROM users WHERE role = 'waiter' ORDER BY name`
-    );
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get waiters error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.put('/tables/:tableId/assign-waiter', protect, allowOwner, async (req, res) => {
-  const { tableId } = req.params;
-  const { waiter_id } = req.body;
-  
-  try {
-    const result = await pool.query(
-      `UPDATE tables SET waiter_id = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, table_number, waiter_id`,
-      [waiter_id, tableId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Table not found' });
-    }
-    
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    console.error('Assign waiter error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== WAITER MANUAL ORDER ROUTE ====================
+// Create order (with stock deduction)
 router.post('/', protect, allowWaiter, async (req, res) => {
-  try {
-    const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
+    try {
+        const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
+        const userId = req.user.id;
+        
+        if (!items || items.length === 0) {
+            return res.status(400).json({ success: false, error: 'Order must have at least one item' });
+        }
+        
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            let totalAmount = 0;
+            
+            for (const item of items) {
+                const productResult = await client.query(
+                    'SELECT price FROM products WHERE id = $1',
+                    [item.product_id]
+                );
+                totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
+            }
+            
+            const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+            
+            const orderResult = await client.query(`
+                INSERT INTO orders (
+                    order_number, total_amount, created_by, status, payment_status, 
+                    customer_name, customer_phone, table_id, order_type, notes, source, waiter_id
+                ) VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, $9, $10)
+                RETURNING id, order_number, total_amount
+            `, [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null, source, userId]);
+            
+            const orderId = orderResult.rows[0].id;
+            
+            // Insert order items
+            for (const item of items) {
+                const productResult = await client.query(
+                    'SELECT price FROM products WHERE id = $1',
+                    [item.product_id]
+                );
+                const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+                
+                await client.query(`
+                    INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+                    VALUES ($1, $2, $3, $4, $5)
+                `, [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]);
+            }
+            
+            // Insert into kitchen_orders
+            await client.query(`
+                INSERT INTO kitchen_orders (order_id, status, notes)
+                VALUES ($1, 'pending', $2)
+            `, [orderId, notes || null]);
+            
+            // Update table status if dine_in
+            if (table_id && order_type === 'dine_in') {
+                await client.query(`
+                    UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2
+                `, [orderId, table_id]);
+            }
+            
+            // ============================================
+            // PROCESS STOCK DEDUCTION WITH WASTAGE
+            // ============================================
+            let stockResult = { deductions: [], totalWastageCost: 0 };
+            try {
+                stockResult = await processOrderStockDeduction(orderId, items, client);
+                console.log(`Stock deduction completed. Total wastage cost: ${stockResult.totalWastageCost}`);
+            } catch (stockError) {
+                console.warn('Stock deduction warning:', stockError.message);
+                // Continue with order even if stock deduction has issues
+                // This allows ordering to proceed with warnings
+            }
+            
+            await client.query('COMMIT');
+            
+            // Emit socket event for kitchen
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('new_order', {
+                    order_id: orderId,
+                    order_number: orderNumber,
+                    table_id: table_id,
+                    source: source
+                });
+            }
+            
+            res.status(201).json({
+                success: true,
+                message: 'Order created and sent to kitchen',
+                data: { 
+                    order_id: orderId, 
+                    order_number: orderNumber, 
+                    total_amount: totalAmount,
+                    stock_deductions: stockResult.deductions,
+                    total_wastage_cost: stockResult.totalWastageCost
+                }
+            });
+            
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error('Create order error:', err);
+            res.status(500).json({ success: false, error: err.message });
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Create order error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Get waiter's own orders
+router.get('/my-orders', protect, allowWaiter, async (req, res) => {
     const userId = req.user.id;
     
+    try {
+        const result = await pool.query(`
+            SELECT 
+                o.id, o.order_number, o.total_amount, o.status, o.payment_status,
+                o.customer_name, o.table_id, o.created_at,
+                t.table_number,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'name', p.name,
+                            'quantity', oi.quantity,
+                            'price', oi.unit_price
+                        )
+                    ) FILTER (WHERE p.id IS NOT NULL), 
+                    '[]'
+                ) as items
+            FROM orders o
+            JOIN tables t ON o.table_id = t.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE o.waiter_id = $1
+              AND o.status NOT IN ('completed', 'cancelled', 'pending_confirmation')
+            GROUP BY o.id, t.table_number
+            ORDER BY o.created_at DESC
+        `, [userId]);
+        
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('Get waiter orders error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Confirm order
+router.put('/confirm/:orderId', protect, allowWaiter, async (req, res) => {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+    
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        const orderCheck = await client.query(`
+            SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id
+            FROM orders o
+            WHERE o.id = $1 AND o.status = $2
+        `, [orderId, 'pending_confirmation']);
+        
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Order not found or already confirmed' 
+            });
+        }
+        
+        const order = orderCheck.rows[0];
+        
+        if (!order.waiter_id) {
+            await client.query(
+                `UPDATE orders SET waiter_id = $1 WHERE id = $2`,
+                [userId, orderId]
+            );
+            order.waiter_id = userId;
+        }
+        
+        if (order.waiter_id && order.waiter_id !== userId) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'This order is not assigned to you' 
+            });
+        }
+        
+        await client.query(`
+            UPDATE orders 
+            SET status = 'pending', 
+                confirmed_by = $1, 
+                confirmed_at = NOW(),
+                updated_at = NOW()
+            WHERE id = $2
+        `, [userId, orderId]);
+        
+        await client.query(`
+            INSERT INTO kitchen_orders (order_id, status, notes)
+            VALUES ($1, 'pending', $2)
+        `, [orderId, 'Order confirmed by waiter']);
+        
+        if (order.table_id) {
+            await client.query(`
+                UPDATE tables 
+                SET status = 'occupied', 
+                    current_order_id = $1, 
+                    pending_order_id = NULL,
+                    updated_at = NOW()
+                WHERE id = $2
+            `, [orderId, order.table_id]);
+        }
+        
+        await client.query('COMMIT');
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_confirmed', {
+                order_id: orderId,
+                order_number: order.order_number,
+                status: 'confirmed',
+                waiter_id: userId,
+                message: `Order #${order.order_number} has been confirmed`
+            });
+            io.emit('new_order', {
+                order_id: orderId,
+                order_number: order.order_number,
+                status: 'pending',
+                customer_name: order.customer_name,
+                table_id: order.table_id
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Order confirmed and sent to kitchen',
+            data: { order_id: orderId, status: 'pending' }
+        });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Confirm order error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ============================================
+// CASHIER ROUTES
+// ============================================
+
+// Get orders ready for payment
+router.get('/ready', protect, allowCashier, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                o.id, o.order_number, o.total_amount, o.customer_name, o.table_id,
+                t.table_number, o.created_at,
+                ko.status as kitchen_status
+            FROM orders o
+            LEFT JOIN tables t ON o.table_id = t.id
+            JOIN kitchen_orders ko ON o.id = ko.order_id
+            WHERE ko.status = 'ready' 
+                AND o.payment_status = 'pending'
+                AND o.status != 'completed'
+            ORDER BY o.created_at ASC
+        `);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('Ready orders error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Process payment
+router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
+    const { orderId } = req.params;
+    const { payment_method } = req.body;
+    
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        const orderResult = await client.query(`
+            SELECT o.*, ko.status as kitchen_status 
+            FROM orders o
+            JOIN kitchen_orders ko ON o.id = ko.order_id
+            WHERE o.id = $1
+        `, [orderId]);
+        
+        if (orderResult.rows.length === 0) {
+            throw new Error('Order not found');
+        }
+        
+        const order = orderResult.rows[0];
+        
+        if (order.kitchen_status !== 'ready') {
+            throw new Error('Order is not ready for payment');
+        }
+        
+        if (order.payment_status === 'paid') {
+            throw new Error('Order already paid');
+        }
+        
+        await client.query(`
+            UPDATE orders 
+            SET payment_status = 'paid', payment_method = $1, status = 'completed', updated_at = NOW()
+            WHERE id = $2
+        `, [payment_method, orderId]);
+        
+        if (order.table_id) {
+            await client.query(`
+                UPDATE tables 
+                SET status = 'available', current_order_id = NULL, updated_at = NOW()
+                WHERE id = $1
+            `, [order.table_id]);
+        }
+        
+        const saleNumber = generateSaleNumber();
+        await client.query(`
+            INSERT INTO sales (sale_number, order_id, total_amount, payment_method, status, created_at)
+            VALUES ($1, $2, $3, $4, 'completed', NOW())
+        `, [saleNumber, orderId, order.total_amount, payment_method]);
+        
+        await client.query('COMMIT');
+        
+        res.json({ 
+            success: true, 
+            message: 'Payment processed successfully',
+            data: { sale_number: saleNumber, order_id: orderId, total_amount: order.total_amount }
+        });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Payment error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ============================================
+// KITCHEN ROUTES
+// ============================================
+
+// Get kitchen orders
+router.get('/kitchen', protect, allowKitchen, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                ko.id, ko.order_id, ko.status, ko.created_at,
+                o.order_number, o.customer_name, o.table_id,
+                t.table_number,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'name', p.name,
+                            'quantity', oi.quantity
+                        )
+                    ) FILTER (WHERE p.id IS NOT NULL), 
+                    '[]'
+                ) as items
+            FROM kitchen_orders ko
+            JOIN orders o ON ko.order_id = o.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN tables t ON o.table_id = t.id
+            WHERE ko.status IN ('pending', 'preparing')
+            GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number
+            ORDER BY 
+                CASE ko.status
+                    WHEN 'pending' THEN 1
+                    WHEN 'preparing' THEN 2
+                END,
+                ko.created_at ASC
+        `);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('Kitchen orders error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Update kitchen order status
+router.put('/kitchen/:orderId/status', protect, allowKitchen, async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        const result = await client.query(`
+            UPDATE kitchen_orders 
+            SET status = $1,
+                started_at = CASE WHEN $1 = 'preparing' AND status = 'pending' THEN NOW() ELSE started_at END,
+                completed_at = CASE WHEN $1 = 'ready' THEN NOW() ELSE completed_at END,
+                updated_at = NOW()
+            WHERE order_id = $2
+            RETURNING *
+        `, [status, orderId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Order not found' });
+        }
+        
+        const orderDetails = await client.query(`
+            SELECT o.order_number, o.table_id, o.waiter_id, t.table_number
+            FROM orders o
+            LEFT JOIN tables t ON o.table_id = t.id
+            WHERE o.id = $1
+        `, [orderId]);
+        
+        if (status === 'ready') {
+            await client.query(`
+                UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1
+            `, [orderId]);
+        }
+        
+        await client.query('COMMIT');
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_status_updated', {
+                order_id: orderId,
+                status: status,
+                message: `Order #${orderDetails.rows[0].order_number} is now ${status}`
+            });
+            
+            if (status === 'ready' && orderDetails.rows[0].waiter_id) {
+                io.to(`waiter_${orderDetails.rows[0].waiter_id}`).emit('order_ready_for_waiter', {
+                    order_id: orderId,
+                    order_number: orderDetails.rows[0].order_number,
+                    table_number: orderDetails.rows[0].table_number,
+                    message: `🍽️ Order #${orderDetails.rows[0].order_number} for Table ${orderDetails.rows[0].table_number} is ready!`
+                });
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Order status updated to ${status}`,
+            data: result.rows[0]
+        });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Update kitchen order error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ============================================
+// WAITER CONFIRMATION ROUTES
+// ============================================
+
+// Get pending confirmation orders
+router.get('/pending-confirmation', protect, allowWaiter, async (req, res) => {
+    const waiterId = req.user.id;
+    
+    try {
+        const result = await pool.query(`
+            SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
+                   o.table_id, o.notes, o.created_at, o.status,
+                   t.table_number,
+                   COALESCE(
+                       json_agg(
+                           json_build_object(
+                               'name', p.name,
+                               'quantity', oi.quantity,
+                               'price', oi.unit_price
+                           )
+                       ) FILTER (WHERE p.id IS NOT NULL), 
+                       '[]'
+                   ) as items
+            FROM orders o
+            JOIN tables t ON o.table_id = t.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE o.status = 'pending_confirmation' 
+              AND (o.waiter_id = $1 OR o.waiter_id IS NULL)
+              AND o.source = 'qr_menu'
+            GROUP BY o.id, t.table_number
+            ORDER BY o.created_at ASC
+        `, [waiterId]);
+        
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('Get pending confirmation orders error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Add items to existing order (with stock deduction)
+router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
+    const { orderId } = req.params;
+    const { items } = req.body;
+    
     if (!items || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'Order must have at least one item' });
+        return res.status(400).json({ success: false, error: 'No items to add' });
     }
     
     const client = await pool.connect();
     
     try {
-      await client.query('BEGIN');
-      
-      let totalAmount = 0;
-      
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        totalAmount += parseFloat(productResult.rows[0].price) * item.quantity;
-      }
-      
-      const orderNumber = `ORD-${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
-      
-      const orderResult = await client.query(
-        `INSERT INTO orders (order_number, total_amount, created_by, status, payment_status, customer_name, customer_phone, table_id, order_type, notes, source, waiter_id)
-         VALUES ($1, $2, $3, 'pending', 'pending', $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, order_number, total_amount`,
-        [orderNumber, totalAmount, userId, customer_name || null, customer_phone || null, table_id || null, order_type, notes || null, source, userId]
-      );
-      
-      const orderId = orderResult.rows[0].id;
-      
-      for (const item of items) {
-        const productResult = await client.query(
-          'SELECT price FROM products WHERE id = $1',
-          [item.product_id]
-        );
-        const itemTotal = parseFloat(productResult.rows[0].price) * item.quantity;
+        await client.query('BEGIN');
         
-        await client.query(
-          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [orderId, item.product_id, item.quantity, productResult.rows[0].price, itemTotal]
+        const orderCheck = await client.query(
+            'SELECT status, payment_status, total_amount FROM orders WHERE id = $1',
+            [orderId]
         );
-      }
-      
-      await client.query(
-        `INSERT INTO kitchen_orders (order_id, status, notes)
-         VALUES ($1, 'pending', $2)`,
-        [orderId, notes || null]
-      );
-      
-      if (table_id && order_type === 'dine_in') {
-        await client.query(
-          `UPDATE tables SET status = 'occupied', current_order_id = $1 WHERE id = $2`,
-          [orderId, table_id]
-        );
-      }
-      
-      await client.query('COMMIT');
-      
-      const io = req.app.get('io');
-      if (io) {
-        io.emit('new_order', {
-          order_id: orderId,
-          order_number: orderNumber,
-          table_id: table_id,
-          source: source
+        
+        if (orderCheck.rows.length === 0) {
+            throw new Error('Order not found');
+        }
+        
+        const order = orderCheck.rows[0];
+        
+        if (order.payment_status === 'paid') {
+            throw new Error('Cannot add items to a paid order');
+        }
+        
+        if (order.status === 'completed') {
+            throw new Error('Order already completed');
+        }
+        
+        let additionalAmount = 0;
+        const newItems = [];
+        
+        for (const item of items) {
+            const productResult = await client.query(
+                'SELECT price, name FROM products WHERE id = $1',
+                [item.product_id]
+            );
+            
+            const unitPrice = parseFloat(productResult.rows[0].price);
+            const itemTotal = unitPrice * item.quantity;
+            additionalAmount += itemTotal;
+            
+            await client.query(`
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [orderId, item.product_id, item.quantity, unitPrice, itemTotal]);
+            
+            newItems.push(item);
+        }
+        
+        // Process stock deduction for new items with wastage
+        let stockResult = { deductions: [], totalWastageCost: 0 };
+        try {
+            stockResult = await processOrderStockDeduction(orderId, newItems, client);
+        } catch (stockError) {
+            console.warn('Stock deduction warning:', stockError.message);
+        }
+        
+        const newTotal = parseFloat(order.total_amount) + additionalAmount;
+        
+        await client.query(`
+            UPDATE orders 
+            SET total_amount = $1, updated_at = NOW()
+            WHERE id = $2
+        `, [newTotal, orderId]);
+        
+        await client.query('COMMIT');
+        
+        res.json({
+            success: true,
+            message: 'Items added to order',
+            additional_amount: additionalAmount,
+            new_total: newTotal,
+            stock_deductions: stockResult.deductions,
+            total_wastage_cost: stockResult.totalWastageCost
         });
-      }
-      
-      res.status(201).json({
-        success: true,
-        message: 'Order created and sent to kitchen',
-        data: { order_id: orderId, order_number: orderNumber, total_amount: totalAmount }
-      });
-      
+        
     } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('Create order error:', err);
-      res.status(500).json({ success: false, error: err.message });
+        await client.query('ROLLBACK');
+        console.error('Add items error:', err);
+        res.status(500).json({ success: false, error: err.message });
     } finally {
-      client.release();
+        client.release();
     }
-  } catch (err) {
-    console.error('Create order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
-// ==================== GET ACTIVE ORDER FOR TABLE ====================
-router.get('/table/:tableId/active-order', protect, allowWaiter, async (req, res) => {
-  const { tableId } = req.params;
-  
-  try {
-    const result = await pool.query(
-      `SELECT id, order_number, total_amount, status, payment_status, created_at
-       FROM orders 
-       WHERE table_id = $1 
-         AND status NOT IN ('completed', 'cancelled')
-         AND payment_status != 'paid'
-       ORDER BY created_at DESC 
-       LIMIT 1`,
-      [tableId]
-    );
-    
-    res.json({ success: true, data: result.rows[0] || null });
-  } catch (err) {
-    console.error('Get active order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== ADD ITEMS TO EXISTING ORDER ====================
-router.post('/:orderId/add-items', protect, allowWaiter, async (req, res) => {
-  const { orderId } = req.params;
-  const { items } = req.body;
-  
-  if (!items || items.length === 0) {
-    return res.status(400).json({ success: false, error: 'No items to add' });
-  }
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
-    
-    const orderCheck = await client.query(
-      'SELECT status, payment_status, total_amount FROM orders WHERE id = $1',
-      [orderId]
-    );
-    
-    if (orderCheck.rows.length === 0) {
-      throw new Error('Order not found');
-    }
-    
-    const order = orderCheck.rows[0];
-    
-    if (order.payment_status === 'paid') {
-      throw new Error('Cannot add items to a paid order');
-    }
-    
-    if (order.status === 'completed') {
-      throw new Error('Order already completed');
-    }
-    
-    let additionalAmount = 0;
-    const newItems = [];
-    
-    for (const item of items) {
-      const productResult = await client.query(
-        'SELECT price, name FROM products WHERE id = $1',
-        [item.product_id]
-      );
-      
-      const unitPrice = parseFloat(productResult.rows[0].price);
-      const itemTotal = unitPrice * item.quantity;
-      additionalAmount += itemTotal;
-      
-      await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [orderId, item.product_id, item.quantity, unitPrice, itemTotal]
-      );
-      
-      newItems.push(item);
-    }
-    
-    const stockDeductions = await processOrderStockDeduction(orderId, newItems, client);
-    
-    const newTotal = parseFloat(order.total_amount) + additionalAmount;
-    
-    await client.query(
-      `UPDATE orders 
-       SET total_amount = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [newTotal, orderId]
-    );
-    
-    await client.query('COMMIT');
-    
-    res.json({
-      success: true,
-      message: 'Items added to order',
-      additional_amount: additionalAmount,
-      new_total: newTotal,
-      stock_deductions: stockDeductions,
-      total_wastage_cost: stockDeductions.reduce((sum, d) => sum + d.wastage_cost, 0)
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Add items error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
-});
-
-// ==================== CASHIER ROUTES ====================
-
-router.get('/ready', protect, allowCashier, async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        o.id, o.order_number, o.total_amount, o.customer_name, o.table_id,
-        t.table_number, o.created_at,
-        ko.status as kitchen_status
-      FROM orders o
-      LEFT JOIN tables t ON o.table_id = t.id
-      JOIN kitchen_orders ko ON o.id = ko.order_id
-      WHERE ko.status = 'ready' 
-        AND o.payment_status = 'pending'
-        AND o.status != 'completed'
-      ORDER BY o.created_at ASC
-    `);
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Ready orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.post('/:orderId/pay', protect, allowCashier, async (req, res) => {
-  const { orderId } = req.params;
-  const { payment_method } = req.body;
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
-    
-    const orderResult = await client.query(
-      `SELECT o.*, ko.status as kitchen_status 
-       FROM orders o
-       JOIN kitchen_orders ko ON o.id = ko.order_id
-       WHERE o.id = $1`,
-      [orderId]
-    );
-    
-    if (orderResult.rows.length === 0) {
-      throw new Error('Order not found');
-    }
-    
-    const order = orderResult.rows[0];
-    
-    if (order.kitchen_status !== 'ready') {
-      throw new Error('Order is not ready for payment');
-    }
-    
-    if (order.payment_status === 'paid') {
-      throw new Error('Order already paid');
-    }
-    
-    await client.query(
-      `UPDATE orders 
-       SET payment_status = 'paid', payment_method = $1, status = 'completed', updated_at = NOW()
-       WHERE id = $2`,
-      [payment_method, orderId]
-    );
-    
-    if (order.table_id) {
-      await client.query(
-        `UPDATE tables 
-         SET status = 'available', current_order_id = NULL, updated_at = NOW()
-         WHERE id = $1`,
-        [order.table_id]
-      );
-    }
-    
-    const saleNumber = generateSaleNumber();
-    await client.query(
-      `INSERT INTO sales (sale_number, order_id, total_amount, payment_method, status, created_at)
-       VALUES ($1, $2, $3, $4, 'completed', NOW())`,
-      [saleNumber, orderId, order.total_amount, payment_method]
-    );
-    
-    await client.query('COMMIT');
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_completed', {
-        order_id: orderId,
-        order_number: order.order_number,
-        status: 'completed'
-      });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Payment processed successfully',
-      data: { sale_number: saleNumber, order_id: orderId, total_amount: order.total_amount }
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Payment error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
-});
-
-// ==================== MANAGER ROUTES ====================
-
-router.get('/:orderId', protect, allowManager, async (req, res) => {
-  try {
-    const orderResult = await pool.query(
-      `SELECT o.*, t.table_number, u.name as waiter_name
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       LEFT JOIN users u ON o.created_by = u.id
-       WHERE o.id = $1`,
-      [req.params.orderId]
-    );
-    
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
-    }
-    
-    const itemsResult = await pool.query(
-      `SELECT oi.*, p.name as product_name
-       FROM order_items oi
-       JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = $1`,
-      [req.params.orderId]
-    );
-    
-    res.json({
-      success: true,
-      data: {
-        ...orderResult.rows[0],
-        items: itemsResult.rows
-      }
-    });
-  } catch (err) {
-    console.error('Get order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== CANCEL ORDER ====================
+// ============================================
+// CANCEL ORDER
+// ============================================
 router.put('/:orderId/cancel', protect, allowWaiter, async (req, res) => {
-  const { orderId } = req.params;
-  const { reason } = req.body;
-  const userId = req.user.id;
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
+    const { orderId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
     
-    const orderCheck = await client.query(
-      'SELECT status, payment_status, table_id FROM orders WHERE id = $1 AND waiter_id = $2',
-      [orderId, userId]
-    );
+    const client = await pool.connect();
     
-    if (orderCheck.rows.length === 0) {
-      throw new Error('Order not found or does not belong to you');
+    try {
+        await client.query('BEGIN');
+        
+        const orderCheck = await client.query(
+            'SELECT status, payment_status, table_id FROM orders WHERE id = $1 AND waiter_id = $2',
+            [orderId, userId]
+        );
+        
+        if (orderCheck.rows.length === 0) {
+            throw new Error('Order not found or does not belong to you');
+        }
+        
+        const order = orderCheck.rows[0];
+        
+        if (order.payment_status === 'paid') {
+            throw new Error('Cannot cancel a paid order. Please process refund instead.');
+        }
+        
+        if (order.status === 'completed') {
+            throw new Error('Order already completed');
+        }
+        
+        await client.query(`
+            UPDATE orders 
+            SET status = 'cancelled', updated_at = NOW(), cancellation_reason = $1
+            WHERE id = $2
+        `, [reason || 'Cancelled by staff', orderId]);
+        
+        await client.query(`
+            UPDATE kitchen_orders 
+            SET status = 'cancelled', updated_at = NOW()
+            WHERE order_id = $1
+        `, [orderId]);
+        
+        if (order.table_id) {
+            await client.query(`
+                UPDATE tables 
+                SET status = 'available', current_order_id = NULL, pending_order_id = NULL, updated_at = NOW()
+                WHERE id = $1
+            `, [order.table_id]);
+        }
+        
+        await client.query('COMMIT');
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_cancelled', {
+                order_id: orderId,
+                status: 'cancelled',
+                message: `Order has been cancelled`
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Order cancelled successfully',
+            data: { order_id: orderId }
+        });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Cancel order error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
     }
-    
-    const order = orderCheck.rows[0];
-    
-    if (order.payment_status === 'paid') {
-      throw new Error('Cannot cancel a paid order. Please process refund instead.');
-    }
-    
-    if (order.status === 'completed') {
-      throw new Error('Order already completed');
-    }
-    
-    await client.query(
-      `UPDATE orders 
-       SET status = 'cancelled', updated_at = NOW(), cancellation_reason = $1
-       WHERE id = $2`,
-      [reason || 'Cancelled by staff', orderId]
-    );
-    
-    await client.query(
-      `UPDATE kitchen_orders 
-       SET status = 'cancelled', updated_at = NOW()
-       WHERE order_id = $1`,
-      [orderId]
-    );
-    
-    if (order.table_id) {
-      await client.query(
-        `UPDATE tables 
-         SET status = 'available', current_order_id = NULL, pending_order_id = NULL, updated_at = NOW()
-         WHERE id = $1`,
-        [order.table_id]
-      );
-    }
-    
-    await client.query('COMMIT');
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_cancelled', {
-        order_id: orderId,
-        status: 'cancelled',
-        message: `Order has been cancelled`
-      });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Order cancelled successfully',
-      data: { order_id: orderId }
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Cancel order error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
 });
 
-// ==================== PUBLIC: Customer adds items to existing order ====================
+// ============================================
+// ACTIVE ORDER FOR TABLE
+// ============================================
+router.get('/table/:tableId/active-order', protect, allowWaiter, async (req, res) => {
+    const { tableId } = req.params;
+    
+    try {
+        const result = await pool.query(`
+            SELECT id, order_number, total_amount, status, payment_status, created_at
+            FROM orders 
+            WHERE table_id = $1 
+              AND status NOT IN ('completed', 'cancelled')
+              AND payment_status != 'paid'
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `, [tableId]);
+        
+        res.json({ success: true, data: result.rows[0] || null });
+    } catch (err) {
+        console.error('Get active order error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ============================================
+// PUBLIC: Customer adds items to existing order
+// ============================================
 router.post('/:orderId/customer-add-items', async (req, res) => {
-  const { orderId } = req.params;
-  const { items } = req.body;
-  
-  if (!items || items.length === 0) {
-    return res.status(400).json({ success: false, error: 'No items to add' });
-  }
-  
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
+    const { orderId } = req.params;
+    const { items } = req.body;
     
-    const orderCheck = await client.query(
-      `SELECT id, status, total_amount, source, table_id, order_number
-       FROM orders 
-       WHERE id = $1`,
-      [orderId]
-    );
-    
-    if (orderCheck.rows.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
-      });
+    if (!items || items.length === 0) {
+        return res.status(400).json({ success: false, error: 'No items to add' });
     }
     
-    const order = orderCheck.rows[0];
+    const client = await pool.connect();
     
-    if (order.status === 'pending_confirmation' || order.status === 'confirmed') {
-      // OK - can add items
-    } else if (order.status === 'pending' || order.status === 'preparing') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Kitchen has already started preparing your order. Cannot add more items.' 
-      });
-    } else if (order.status === 'ready' || order.status === 'completed') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order is already ready or completed. Cannot add more items.' 
-      });
-    } else {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cannot add items to this order' 
-      });
+    try {
+        await client.query('BEGIN');
+        
+        const orderCheck = await client.query(
+            'SELECT id, status, total_amount FROM orders WHERE id = $1 AND status = $2',
+            [orderId, 'pending_confirmation']
+        );
+        
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Order not found or already confirmed' 
+            });
+        }
+        
+        const order = orderCheck.rows[0];
+        let additionalAmount = 0;
+        
+        for (const item of items) {
+            const productResult = await client.query(
+                'SELECT price, name FROM products WHERE id = $1',
+                [item.product_id]
+            );
+            
+            const unitPrice = parseFloat(productResult.rows[0].price);
+            const itemTotal = unitPrice * item.quantity;
+            additionalAmount += itemTotal;
+            
+            await client.query(`
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+                VALUES ($1, $2, $3, $4, $5)
+            `, [orderId, item.product_id, item.quantity, unitPrice, itemTotal]);
+        }
+        
+        const newTotal = parseFloat(order.total_amount) + additionalAmount;
+        
+        await client.query(`
+            UPDATE orders 
+            SET total_amount = $1, updated_at = NOW()
+            WHERE id = $2
+        `, [newTotal, orderId]);
+        
+        await client.query('COMMIT');
+        
+        res.json({
+            success: true,
+            message: 'Items added to order',
+            additional_amount: additionalAmount,
+            new_total: newTotal
+        });
+        
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Customer add items error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        client.release();
     }
-    
-    let additionalAmount = 0;
-    
-    for (const item of items) {
-      const productResult = await client.query(
-        'SELECT price, name FROM products WHERE id = $1 AND is_available = true',
-        [item.product_id]
-      );
-      
-      if (productResult.rows.length === 0) {
-        throw new Error(`Product ${item.product_id} not available`);
-      }
-      
-      const unitPrice = parseFloat(productResult.rows[0].price);
-      const itemTotal = unitPrice * item.quantity;
-      additionalAmount += itemTotal;
-      
-      await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [orderId, item.product_id, item.quantity, unitPrice, itemTotal]
-      );
-    }
-    
-    const newTotal = parseFloat(order.total_amount) + additionalAmount;
-    
-    if (order.status === 'confirmed') {
-      await client.query(
-        `UPDATE orders 
-         SET total_amount = $1, 
-             status = 'pending_confirmation',
-             updated_at = NOW()
-         WHERE id = $2`,
-        [newTotal, orderId]
-      );
-    } else {
-      await client.query(
-        `UPDATE orders 
-         SET total_amount = $1, 
-             updated_at = NOW()
-         WHERE id = $2`,
-        [newTotal, orderId]
-      );
-    }
-    
-    await client.query('COMMIT');
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order_items_added', {
-        order_id: orderId,
-        order_number: order.order_number,
-        additional_amount: additionalAmount,
-        new_total: newTotal
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Items added to order successfully!',
-      additional_amount: additionalAmount,
-      new_total: newTotal
-    });
-    
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Customer add items error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  } finally {
-    client.release();
-  }
 });
 
-// ==================== GET WASTAGE REPORT FOR ORDER ====================
+// ============================================
+// WASTAGE REPORT FOR ORDER
+// ============================================
 router.get('/:orderId/wastage', protect, allowManager, async (req, res) => {
-  const { orderId } = req.params;
-  
-  try {
-    const result = await pool.query(`
-      SELECT 
-        st.ingredient_id,
-        i.name as ingredient_name,
-        i.unit,
-        st.expected_quantity,
-        st.actual_quantity,
-        st.wastage_amount,
-        st.wastage_percentage,
-        st.created_at,
-        (st.wastage_amount * i.unit_cost) as wastage_cost
-      FROM stock_transactions st
-      JOIN ingredients i ON st.ingredient_id = i.id
-      WHERE st.order_id = $1
-      ORDER BY st.wastage_amount DESC
-    `, [orderId]);
+    const { orderId } = req.params;
     
-    const summary = await pool.query(`
-      SELECT 
-        SUM(st.wastage_amount * i.unit_cost) as total_wastage_cost,
-        SUM(st.wastage_amount) as total_wastage_quantity,
-        AVG(st.wastage_percentage) as avg_wastage_percentage
-      FROM stock_transactions st
-      JOIN ingredients i ON st.ingredient_id = i.id
-      WHERE st.order_id = $1
-    `, [orderId]);
-    
-    res.json({
-      success: true,
-      data: {
-        details: result.rows,
-        summary: summary.rows[0]
-      }
-    });
-  } catch (err) {
-    console.error('Get wastage report error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
+    try {
+        const result = await pool.query(`
+            SELECT 
+                st.ingredient_id,
+                i.name as ingredient_name,
+                i.unit,
+                st.expected_quantity,
+                st.actual_quantity,
+                st.wastage_amount,
+                st.wastage_percentage,
+                st.created_at,
+                (st.wastage_amount * i.unit_cost) as wastage_cost,
+                p.name as product_name
+            FROM stock_transactions st
+            JOIN ingredients i ON st.ingredient_id = i.id
+            LEFT JOIN products p ON st.product_id = p.id
+            WHERE st.order_id = $1
+            ORDER BY st.wastage_amount DESC
+        `, [orderId]);
+        
+        const summary = await pool.query(`
+            SELECT 
+                SUM(st.wastage_amount * i.unit_cost) as total_wastage_cost,
+                SUM(st.wastage_amount) as total_wastage_quantity,
+                AVG(st.wastage_percentage) as avg_wastage_percentage
+            FROM stock_transactions st
+            JOIN ingredients i ON st.ingredient_id = i.id
+            WHERE st.order_id = $1
+        `, [orderId]);
+        
+        res.json({
+            success: true,
+            data: {
+                details: result.rows,
+                summary: summary.rows[0] || { total_wastage_cost: 0, total_wastage_quantity: 0, avg_wastage_percentage: 0 }
+            }
+        });
+    } catch (err) {
+        console.error('Get wastage report error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 export default router;

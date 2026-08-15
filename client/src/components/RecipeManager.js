@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { 
     UtensilsCrossed, Plus, Trash2, X, Loader2, Save,
-    AlertCircle, CheckCircle, DollarSign
+    DollarSign, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -32,14 +32,17 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [recipeRes, ingredientsRes] = await Promise.all([
-                API.get(`/recipes/product/${productId}`),
-                API.get('/ingredients')
-            ]);
-
+            // ✅ Fetch recipe for the PRODUCT
+            const recipeRes = await API.get(`/recipes/product/${productId}`);
+            
+            // ✅ Fetch ALL ingredients (these are raw materials)
+            const ingredientsRes = await API.get('/ingredients');
+            
             const recipeData = recipeRes.data.data;
             setIngredients(recipeData.ingredients || []);
             setYieldQuantity(recipeData.yield_quantity || 1);
+            
+            // ✅ These are raw ingredients that can be added to the recipe
             setAllIngredients(ingredientsRes.data.data || []);
             
             calculateCost(recipeData.ingredients || []);
@@ -221,10 +224,10 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                         <div>
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <UtensilsCrossed size={24} className="text-purple-600 dark:text-purple-400" />
-                                {t('recipe')}: {productName}
+                                Recipe: {productName}
                             </h2>
                             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                                {t('sellingPrice')}: Br {parseFloat(productPrice).toFixed(2)}
+                                Selling Price: Br {parseFloat(productPrice).toFixed(2)}
                             </p>
                         </div>
                         <button 
@@ -241,17 +244,17 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                             <DollarSign size={18} className="text-purple-600 dark:text-purple-400" />
-                            {t('profitSummary')}
+                            Profit Summary
                         </h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('ingredientCost')}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">Ingredient Cost</p>
                                 <p className="text-red-600 dark:text-red-400 font-bold text-lg">
                                     Br {costSummary.totalCost.toFixed(2)}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('profit')}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">Profit</p>
                                 <p className={`font-bold text-lg ${
                                     costSummary.profit >= 0 
                                         ? 'text-green-600 dark:text-green-400' 
@@ -261,7 +264,7 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                                 </p>
                             </div>
                             <div>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('profitMargin')}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">Profit Margin</p>
                                 <p className={`font-bold text-lg ${
                                     costSummary.profitMargin >= 30 
                                         ? 'text-green-600 dark:text-green-400' 
@@ -278,7 +281,7 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                     {/* Yield Quantity */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('yieldQuantity')}
+                            Yield Quantity
                             <span className="text-gray-500 text-xs ml-2">(How many portions this makes)</span>
                         </label>
                         <input
@@ -293,7 +296,7 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
 
                     {/* Ingredients List */}
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('ingredientsNeeded')}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Ingredients Needed</h3>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                             {ingredients.map((ing, idx) => (
                                 <div key={idx} className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
@@ -354,22 +357,22 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                             {ingredients.length === 0 && (
                                 <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                                     <UtensilsCrossed size={32} className="mx-auto mb-2 opacity-50" />
-                                    {t('noIngredientsAddedYet')}
+                                    No ingredients added yet
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Add Ingredient Form */}
+                    {/* Add Ingredient Form - ONLY INGREDIENTS */}
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('addIngredient')}</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Add Ingredient</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <select
                                 value={selectedIngredient.ingredient_id}
                                 onChange={(e) => setSelectedIngredient({ ...selectedIngredient, ingredient_id: e.target.value })}
                                 className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
-                                <option value="">{t('selectIngredient')}</option>
+                                <option value="">Select Ingredient</option>
                                 {allIngredients
                                     .filter(i => !ingredients.some(ing => ing.ingredient_id === i.id))
                                     .map(ing => (
@@ -381,7 +384,7 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                             <input
                                 type="number"
                                 step="0.01"
-                                placeholder={t('quantityRequired')}
+                                placeholder="Quantity Required"
                                 value={selectedIngredient.quantity_required}
                                 onChange={(e) => setSelectedIngredient({ ...selectedIngredient, quantity_required: e.target.value })}
                                 className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -425,7 +428,7 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                             className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus size={16} />
-                            {t('addIngredient')}
+                            Add Ingredient
                         </button>
                     </div>
 
@@ -437,13 +440,13 @@ const RecipeManager = ({ productId, productName, productPrice, onSave, onClose }
                             className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                            {saving ? t('saving') : t('saveRecipe')}
+                            {saving ? 'Saving...' : 'Save Recipe'}
                         </button>
                         <button
                             onClick={onClose}
                             className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition"
                         >
-                            {t('cancel')}
+                            Cancel
                         </button>
                     </div>
                 </div>

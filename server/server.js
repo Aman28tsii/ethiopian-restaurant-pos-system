@@ -10,7 +10,7 @@ import { testConnection } from './src/config/database.js';
 import { errorHandler, notFound } from './src/middleware/errorHandler.js';
 import productRoutes from './src/routes/products.js';
 import saleRoutes from './src/routes/sales.js';
-import ingredientRoutes from './src/routes/ingredients.js';      // ← SINGULAR (ingredientRoutes)
+import ingredientRoutes from './src/routes/ingredients.js';
 import recipeRoutes from './src/routes/recipes.js';
 import profitRoutes from './src/routes/profit.js';
 import expenseRoutes from './src/routes/expenses.js';
@@ -108,24 +108,27 @@ const startServer = async () => {
   app.get('/api/health', async (req, res) => {
     res.json({ success: true, status: 'healthy', timestamp: new Date().toISOString() });
   });
-  // Add this near your other app.get routes
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'EthioPOS API is running', 
-    version: '2.0.0',
-    endpoints: {
-      products: '/api/products',
-      ingredients: '/api/ingredients',
-      orders: '/api/orders',
-      kitchen: '/api/kitchen/orders',
-      auth: '/api/auth'
-    }
+  
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'EthioPOS API is running', 
+      version: '2.0.0',
+      endpoints: {
+        products: '/api/products',
+        ingredients: '/api/ingredients',
+        orders: '/api/orders',
+        kitchen: '/api/kitchen/orders',
+        auth: '/api/auth'
+      }
+    });
   });
-});
 
+  // ============================================
+  // API ROUTES
+  // ============================================
   app.use('/api/products', productRoutes);
   app.use('/api/sales', saleRoutes);
-  app.use('/api/ingredients', ingredientRoutes);     // ✅ FIXED - using 'ingredientRoutes' (singular)
+  app.use('/api/ingredients', ingredientRoutes);
   app.use('/api/recipes', recipeRoutes);
   app.use('/api/profit', profitRoutes);
   app.use('/api/expenses', expenseRoutes);
@@ -136,7 +139,7 @@ app.get('/', (req, res) => {
   app.use('/api/waiter', waiterRoutes);
   app.use('/api/kitchen', kitchenRoutes);
   app.use('/api/customers', customerRoutes);
-app.use('/api/categories', categoryRoutes);
+  app.use('/api/categories', categoryRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

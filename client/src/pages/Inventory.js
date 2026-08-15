@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../api/axios';
-import { Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2, ChefHat, Wine } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDebounce } from '../hooks/useDebounce';
 
-const IngredientRow = memo(({ ingredient, onEdit, onDelete, formatCurrency }) => {
+const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
     const { t } = useLanguage();
     const isLowStock = ingredient.quantity <= ingredient.min_stock;
     
@@ -16,34 +16,28 @@ const IngredientRow = memo(({ ingredient, onEdit, onDelete, formatCurrency }) =>
                 <span className={`font-semibold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {ingredient.quantity}
                 </span>
-                {ingredient.safety_stock > 0 && (
-                    <span className="text-xs text-gray-500 ml-1">(Safety: {ingredient.safety_stock})</span>
-                )}
             </td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.min_stock}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{formatCurrency(ingredient.unit_cost)}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.category || '-'}</td>
             <td className="px-6 py-4">
                 <div className="flex gap-2">
-                    <button onClick={() => onEdit(ingredient, 'ingredient')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
+                    <button onClick={() => onEdit(ingredient)} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
                         <Edit2 size={16} />
                     </button>
-                    <button onClick={() => onDelete(ingredient.id, 'ingredient')} className="text-red-600 dark:text-red-400 hover:text-red-700 transition">
+                    <button onClick={() => onDelete(ingredient.id)} className="text-red-600 dark:text-red-400 hover:text-red-700 transition">
                         <Trash2 size={16} />
                     </button>
                 </div>
             </td>
         </tr>
     );
-});
-
-IngredientRow.displayName = 'IngredientRow';
+};
 
 const Inventory = () => {
     const { t } = useLanguage();
     const [ingredients, setIngredients] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('ingredients');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +45,7 @@ const Inventory = () => {
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     
-    // Form data with wastage fields
+    // ✅ ONLY ingredients - NO recipe fields
     const [ingredientForm, setIngredientForm] = useState({
         name: '',
         unit: '',
@@ -59,12 +53,14 @@ const Inventory = () => {
         min_stock: 0,
         unit_cost: 0,
         category: '',
-        supplier: '',
-        default_wastage_percentage: 0,
-        default_cooking_loss_percentage: 0,
-        safety_stock: 0
+        supplier: ''
+        // ❌ NO default_wastage_percentage
+        // ❌ NO default_cooking_loss_percentage
+        // ❌ NO safety_stock
+        // ❌ NO recipe fields
     });
 
+    // ✅ ONLY fetch ingredients
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -94,7 +90,7 @@ const Inventory = () => {
         return ingredients.filter(i => i.quantity <= i.min_stock);
     }, [ingredients]);
 
-    const handleSubmit = useCallback(async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         
@@ -107,14 +103,13 @@ const Inventory = () => {
             resetModal();
             fetchData();
         } catch (err) {
-            console.error('Save error:', err);
             alert(err.response?.data?.error || t('saveFailed'));
         } finally {
             setIsSubmitting(false);
         }
-    }, [editingItem, ingredientForm, fetchData, t]);
+    };
 
-    const handleDelete = useCallback(async (id, type) => {
+    const handleDelete = async (id) => {
         if (window.confirm(t('deleteConfirm'))) {
             try {
                 await API.delete(`/ingredients/${id}`);
@@ -123,28 +118,23 @@ const Inventory = () => {
                 alert(err.response?.data?.error || t('deleteFailed'));
             }
         }
-    }, [fetchData, t]);
+    };
 
-    const handleEdit = useCallback((item, type) => {
-        if (type === 'ingredient') {
-            setIngredientForm({
-                name: item.name,
-                unit: item.unit,
-                quantity: item.quantity,
-                min_stock: item.min_stock,
-                unit_cost: item.unit_cost,
-                category: item.category || '',
-                supplier: item.supplier || '',
-                default_wastage_percentage: item.default_wastage_percentage || 0,
-                default_cooking_loss_percentage: item.default_cooking_loss_percentage || 0,
-                safety_stock: item.safety_stock || 0
-            });
-        }
+    const handleEdit = (item) => {
+        setIngredientForm({
+            name: item.name,
+            unit: item.unit,
+            quantity: item.quantity,
+            min_stock: item.min_stock,
+            unit_cost: item.unit_cost,
+            category: item.category || '',
+            supplier: item.supplier || ''
+        });
         setEditingItem(item);
         setShowModal(true);
-    }, []);
+    };
 
-    const resetModal = useCallback(() => {
+    const resetModal = () => {
         setShowModal(false);
         setEditingItem(null);
         setIngredientForm({
@@ -154,27 +144,15 @@ const Inventory = () => {
             min_stock: 0,
             unit_cost: 0,
             category: '',
-            supplier: '',
-            default_wastage_percentage: 0,
-            default_cooking_loss_percentage: 0,
-            safety_stock: 0
+            supplier: ''
         });
         setIsSubmitting(false);
-    }, []);
+    };
 
-    const formatCurrency = useCallback((value) => {
+    const formatCurrency = (value) => {
         const num = parseFloat(value || 0);
         return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }, []);
-
-    const EmptyState = useMemo(() => (
-        <div className="text-center py-12">
-            <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">
-                {t('noIngredientsFound')}
-            </p>
-        </div>
-    ), [t]);
+    };
 
     if (loading) {
         return (
@@ -228,6 +206,7 @@ const Inventory = () => {
                 )}
             </div>
 
+            {/* Ingredients Table - ONLY INGREDIENTS */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -255,12 +234,17 @@ const Inventory = () => {
                         </tbody>
                     </table>
                 </div>
-                {filteredIngredients.length === 0 && EmptyState}
+                {filteredIngredients.length === 0 && (
+                    <div className="text-center py-12">
+                        <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400">{t('noIngredientsFound')}</p>
+                    </div>
+                )}
             </div>
 
-            {/* Add/Edit Ingredient Modal with Wastage Fields */}
+            {/* Add/Edit Ingredient Modal - ONLY INGREDIENT FIELDS */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
                         <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center">
@@ -358,65 +342,7 @@ const Inventory = () => {
                                 </div>
                             </div>
 
-                            {/* NEW: Wastage Fields */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
-                                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('wastageSettings')}</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                            {t('defaultWastage')} (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.5"
-                                            min="0"
-                                            max="50"
-                                            value={ingredientForm.default_wastage_percentage}
-                                            onChange={(e) => setIngredientForm({ 
-                                                ...ingredientForm, 
-                                                default_wastage_percentage: parseFloat(e.target.value) || 0 
-                                            })}
-                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Trimming, spoilage, spillage</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                            {t('cookingLoss')} (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.5"
-                                            min="0"
-                                            max="50"
-                                            value={ingredientForm.default_cooking_loss_percentage}
-                                            onChange={(e) => setIngredientForm({ 
-                                                ...ingredientForm, 
-                                                default_cooking_loss_percentage: parseFloat(e.target.value) || 0 
-                                            })}
-                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">Evaporation, shrinkage</p>
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        {t('safetyStock')}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={ingredientForm.safety_stock}
-                                        onChange={(e) => setIngredientForm({ 
-                                            ...ingredientForm, 
-                                            safety_stock: parseFloat(e.target.value) || 0 
-                                        })}
-                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Extra stock kept as buffer</p>
-                                </div>
-                            </div>
+                            {/* ❌ NO wastage fields here - Ingredients ONLY have quantity */}
 
                             <div className="flex gap-3 pt-4">
                                 <button type="submit" disabled={isSubmitting} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2">

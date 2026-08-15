@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../api/axios';
 import { 
     Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2,
-    UtensilsCrossed, Eye
+    UtensilsCrossed
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDebounce } from '../hooks/useDebounce';
 import RecipeManager from '../components/RecipeManager';
 
 // ============================================
-// INGREDIENT ROW COMPONENT
+// INGREDIENT ROW
 // ============================================
 const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
     const { t } = useLanguage();
@@ -42,7 +42,7 @@ const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
 };
 
 // ============================================
-// PRODUCT CARD COMPONENT
+// PRODUCT CARD
 // ============================================
 const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) => {
     const { t } = useLanguage();
@@ -70,7 +70,7 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) =>
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition-all shadow-sm hover:shadow-md">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-purple-500/50 transition-all shadow-sm hover:shadow-md">
             <div className="h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                 <span className="text-6xl">{getCategoryEmoji(product.category)}</span>
             </div>
@@ -101,6 +101,7 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) =>
                     <button
                         onClick={() => onRecipe(product)}
                         className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
+                        title="Manage Recipe"
                     >
                         <UtensilsCrossed size={14} />
                         Recipe
@@ -142,7 +143,7 @@ const Inventory = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showRecipeManager, setShowRecipeManager] = useState(false);
     const [selectedProductForRecipe, setSelectedProductForRecipe] = useState(null);
-    const [editType, setEditType] = useState('ingredient'); // 'ingredient' or 'product'
+    const [editType, setEditType] = useState('ingredient');
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     
@@ -317,7 +318,7 @@ const Inventory = () => {
     };
 
     // ============================================
-    // LOADING STATE
+    // LOADING
     // ============================================
     if (loading) {
         return (
@@ -336,10 +337,10 @@ const Inventory = () => {
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {t('inventoryManagement')}
+                        Inventory Management
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {t('manageProductsAndIngredients')}
+                        Manage products and ingredients
                     </p>
                 </div>
                 <button
@@ -351,7 +352,7 @@ const Inventory = () => {
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
                 >
                     <Plus size={18} />
-                    {activeTab === 'ingredients' ? t('addIngredient') : t('addProduct')}
+                    {activeTab === 'ingredients' ? 'Add Ingredient' : 'Add Product'}
                 </button>
             </div>
 
@@ -361,9 +362,9 @@ const Inventory = () => {
                     <div className="flex items-center gap-3">
                         <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-500" />
                         <div>
-                            <p className="text-yellow-700 dark:text-yellow-400 font-semibold">{t('lowStockAlert')}</p>
+                            <p className="text-yellow-700 dark:text-yellow-400 font-semibold">Low Stock Alert</p>
                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                {lowStockItems.length} {t('ingredientsBelowMinStock')}
+                                {lowStockItems.length} ingredients are below minimum stock level
                             </p>
                         </div>
                     </div>
@@ -380,7 +381,7 @@ const Inventory = () => {
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                 >
-                    🧂 {t('ingredients')}
+                    🧂 Ingredients
                 </button>
                 <button
                     onClick={() => setActiveTab('products')}
@@ -390,7 +391,7 @@ const Inventory = () => {
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                 >
-                    🛒 {t('products')}
+                    🛒 Products
                 </button>
             </div>
 
@@ -399,7 +400,7 @@ const Inventory = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
                 <input
                     type="text"
-                    placeholder={`${t('search')} ${activeTab === 'ingredients' ? t('ingredients') : t('products')}...`}
+                    placeholder={`Search ${activeTab === 'ingredients' ? 'ingredients' : 'products'}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -411,22 +412,20 @@ const Inventory = () => {
                 )}
             </div>
 
-            {/* ============================================ */}
             {/* INGREDIENTS TABLE */}
-            {/* ============================================ */}
             {activeTab === 'ingredients' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('unit')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('stock')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('minStock')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('unitCost')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Name</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Unit</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Stock</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Min Stock</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Unit Cost</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Category</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -445,15 +444,13 @@ const Inventory = () => {
                     {filteredIngredients.length === 0 && (
                         <div className="text-center py-12">
                             <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-                            <p className="text-gray-500 dark:text-gray-400">{t('noIngredientsFound')}</p>
+                            <p className="text-gray-500 dark:text-gray-400">No ingredients found</p>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* ============================================ */}
             {/* PRODUCTS GRID */}
-            {/* ============================================ */}
             {activeTab === 'products' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredProducts.map(product => (
@@ -472,13 +469,11 @@ const Inventory = () => {
             {activeTab === 'products' && filteredProducts.length === 0 && (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                     <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">{t('noProductsFound')}</p>
+                    <p className="text-gray-500 dark:text-gray-400">No products found</p>
                 </div>
             )}
 
-            {/* ============================================ */}
-            {/* RECIPE MANAGER MODAL */}
-            {/* ============================================ */}
+            {/* RECIPE MANAGER */}
             {showRecipeManager && selectedProductForRecipe && (
                 <RecipeManager
                     productId={selectedProductForRecipe.id}
@@ -495,9 +490,7 @@ const Inventory = () => {
                 />
             )}
 
-            {/* ============================================ */}
             {/* ADD/EDIT MODAL */}
-            {/* ============================================ */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">

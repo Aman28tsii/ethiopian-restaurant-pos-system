@@ -13,41 +13,41 @@ const MyOrders = () => {
   const [notification, setNotification] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  useEffect(() => {
+  useEffect(function() {
     fetchOrders();
     
-    socket.on('order_status_updated', (data) => {
+    socket.on('order_status_updated', function(data) {
       fetchOrders();
       if (data.status === 'ready') {
-        setNotification(🍽️  #  !);
-        setTimeout(() => setNotification(null), 5000);
+        setNotification('Order #' + data.order_id + ' is now ready!');
+        setTimeout(function() { setNotification(null); }, 5000);
       }
     });
     
-    socket.on('order_ready_for_waiter', (data) => {
+    socket.on('order_ready_for_waiter', function(data) {
       fetchOrders();
-      setNotification(🍽️ );
-      setTimeout(() => setNotification(null), 5000);
+      setNotification(data.message);
+      setTimeout(function() { setNotification(null); }, 5000);
       try {
         const audio = new Audio('/notification.mp3');
-        audio.play().catch(e => console.log('Audio not supported'));
+        audio.play().catch(function(e) { console.log('Audio not supported'); });
       } catch(e) {}
     });
     
-    socket.on('new_order', (data) => {
+    socket.on('new_order', function(data) {
       fetchOrders();
-      setNotification(📋  #!);
-      setTimeout(() => setNotification(null), 5000);
+      setNotification('New order received #' + data.order_number + '!');
+      setTimeout(function() { setNotification(null); }, 5000);
     });
     
-    return () => {
+    return function() {
       socket.off('order_status_updated');
       socket.off('order_ready_for_waiter');
       socket.off('new_order');
     };
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async function() {
     setLoading(true);
     try {
       const response = await API.get('/orders/my-orders');
@@ -61,7 +61,7 @@ const MyOrders = () => {
       } else {
         setNotification(t('failedToLoadOrders'));
       }
-      setTimeout(() => setNotification(null), 5000);
+      setTimeout(function() { setNotification(null); }, 5000);
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const MyOrders = () => {
       </div>
 
       {notification && (
-        <div className={ounded-xl p-3 text-center animate-pulse }>
+        <div className={'rounded-xl p-3 text-center animate-pulse ' + (notification.includes('ready') ? 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' : notification.includes('Failed') ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400')}>
           <Bell size={18} className="inline mr-2" />
           {notification}
         </div>
@@ -102,15 +102,15 @@ const MyOrders = () => {
         </div>
         <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-xl p-3 text-center border border-yellow-200 dark:border-yellow-800">
           <p className="text-yellow-700 dark:text-yellow-400 text-xs">{t('inKitchen')}</p>
-          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{orders.filter(o => o.status === 'pending').length}</p>
+          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{orders.filter(function(o) { return o.status === 'pending'; }).length}</p>
         </div>
         <div className="bg-orange-100 dark:bg-orange-900/30 rounded-xl p-3 text-center border border-orange-200 dark:border-orange-800">
           <p className="text-orange-700 dark:text-orange-400 text-xs">{t('preparing')}</p>
-          <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{orders.filter(o => o.status === 'preparing').length}</p>
+          <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{orders.filter(function(o) { return o.status === 'preparing'; }).length}</p>
         </div>
         <div className="bg-green-100 dark:bg-green-900/30 rounded-xl p-3 text-center border border-green-200 dark:border-green-800">
           <p className="text-green-700 dark:text-green-400 text-xs">{t('readyToServe')}</p>
-          <p className="text-2xl font-bold text-green-700 dark:text-green-400">{orders.filter(o => o.status === 'ready').length}</p>
+          <p className="text-2xl font-bold text-green-700 dark:text-green-400">{orders.filter(function(o) { return o.status === 'ready'; }).length}</p>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ const MyOrders = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {orders.map(order => {
+          {orders.map(function(order) {
             return (
               <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500/50 transition-all shadow-sm hover:shadow-md">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -141,12 +141,14 @@ const MyOrders = () => {
                   <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">{t('customer')}: {order.customer_name || t('walkInCustomer')}</p>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
                     <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">{t('items')}:</p>
-                    {order.items && order.items.slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-700 dark:text-gray-300">{item.quantity}x {item.name}</span>
-                        <span className="text-gray-700 dark:text-gray-300">{formatCurrency(item.price * item.quantity)}</span>
-                      </div>
-                    ))}
+                    {order.items && order.items.slice(0, 3).map(function(item, idx) {
+                      return (
+                        <div key={idx} className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-700 dark:text-gray-300">{item.quantity}x {item.name}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{formatCurrency(item.price * item.quantity)}</span>
+                        </div>
+                      );
+                    })}
                     {order.items && order.items.length > 3 && (
                       <p className="text-gray-500 dark:text-gray-400 text-xs">+{order.items.length - 3} {t('moreItems')}</p>
                     )}
@@ -157,7 +159,7 @@ const MyOrders = () => {
                     </div>
                   )}
                   <button
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={function() { setSelectedOrder(order); }}
                     className="mt-3 w-full py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
                   >
                     <Eye size={14} />
@@ -176,14 +178,14 @@ const MyOrders = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('orderDetails')}</h2>
-              <button onClick={() => setSelectedOrder(null)} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
+              <button onClick={function() { setSelectedOrder(null); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">X</button>
             </div>
             <div className="p-4 space-y-4">
               <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('orderNumber')}</p><p className="text-gray-900 dark:text-white font-bold">{selectedOrder.order_number}</p></div>
               <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p><p className="text-gray-900 dark:text-white">{selectedOrder.customer_name || t('walkInCustomer')}</p></div>
               <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('table')}</p><p className="text-gray-900 dark:text-white">{t('table')} {selectedOrder.table_number}</p></div>
               <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('status')}</p><StatusBadge status={selectedOrder.status} /></div>
-              <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('items')}</p>{selectedOrder.items && selectedOrder.items.map((item, idx) => (<div key={idx} className="flex justify-between text-sm py-1"><span className="text-gray-700 dark:text-gray-300">{item.quantity}x {item.name}</span><span className="text-gray-700 dark:text-gray-300">{formatCurrency(item.price * item.quantity)}</span></div>))}</div>
+              <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('items')}</p>{selectedOrder.items && selectedOrder.items.map(function(item, idx) { return (<div key={idx} className="flex justify-between text-sm py-1"><span className="text-gray-700 dark:text-gray-300">{item.quantity}x {item.name}</span><span className="text-gray-700 dark:text-gray-300">{formatCurrency(item.price * item.quantity)}</span></div>); })}</div>
               <div className="border-t border-gray-200 dark:border-gray-700 pt-2"><div className="flex justify-between font-bold"><span className="text-gray-900 dark:text-white">{t('total')}</span><span className="text-green-600 dark:text-green-400">{formatCurrency(selectedOrder.total_amount)}</span></div></div>
               {selectedOrder.notes && (<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3"><p className="text-yellow-700 dark:text-yellow-400 text-xs">{t('specialInstructions')}</p><p className="text-gray-700 dark:text-gray-300">{selectedOrder.notes}</p></div>)}
             </div>

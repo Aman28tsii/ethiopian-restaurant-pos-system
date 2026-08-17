@@ -13,23 +13,23 @@ const PendingConfirmations = () => {
   const [processing, setProcessing] = useState(null);
   const [notification, setNotification] = useState('');
 
-  useEffect(() => {
+  useEffect(function() {
     fetchPendingOrders();
     
-    socket.on('new_pending_order', (data) => {
+    socket.on('new_pending_order', function(data) {
       fetchPendingOrders();
-      setNotification(📱  );
-      setTimeout(() => setNotification(''), 5000);
+      setNotification('New QR order from ' + (data.customer_name || 'Customer'));
+      setTimeout(function() { setNotification(''); }, 5000);
       const audio = new Audio('/notification.mp3');
-      audio.play().catch(e => console.log('Audio not supported'));
+      audio.play().catch(function(e) { console.log('Audio not supported'); });
     });
     
-    return () => {
+    return function() {
       socket.off('new_pending_order');
     };
   }, []);
 
-  const fetchPendingOrders = async () => {
+  const fetchPendingOrders = async function() {
     setLoading(true);
     try {
       const response = await API.get('/orders/pending-confirmation');
@@ -41,17 +41,17 @@ const PendingConfirmations = () => {
     }
   };
 
-  const confirmOrder = async (orderId) => {
+  const confirmOrder = async function(orderId) {
     setProcessing(orderId);
     try {
-      const response = await API.put(/orders/confirm/);
+      const response = await API.put('/orders/confirm/' + orderId);
       if (response.data.success) {
-        alert(✅  );
-        setPendingOrders(prev => prev.filter(o => o.id !== orderId));
+        alert('Order confirmed! Sent to kitchen.');
+        setPendingOrders(function(prev) { return prev.filter(function(o) { return o.id !== orderId; }); });
       }
     } catch (err) {
       console.error('Confirm order error:', err);
-      alert(err.response?.data?.error || t('failedToConfirmOrder'));
+      alert(err.response?.data?.error || 'Failed to confirm order');
     } finally {
       setProcessing(null);
     }
@@ -106,77 +106,81 @@ const PendingConfirmations = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {pendingOrders.map(order => (
-            <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-yellow-500/50 transition-all shadow-sm hover:shadow-md">
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Utensils size={18} className="text-yellow-600 dark:text-yellow-400" />
-                      <span className="text-yellow-700 dark:text-yellow-400 text-sm font-semibold">{t('qrOrder')}</span>
-                    </div>
-                    <p className="text-gray-900 dark:text-white font-bold text-xl mt-1">{order.order_number}</p>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('table')}: {order.table_number}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('total')}</p>
-                    <p className="text-green-600 dark:text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{order.customer_name || t('walkInCustomer')}</p>
-                  </div>
-                  {order.customer_phone && (
+          {pendingOrders.map(function(order) {
+            return (
+              <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-yellow-500/50 transition-all shadow-sm hover:shadow-md">
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('phone')}</p>
-                      <p className="text-gray-900 dark:text-white font-medium">{order.customer_phone}</p>
+                      <div className="flex items-center gap-2">
+                        <Utensils size={18} className="text-yellow-600 dark:text-yellow-400" />
+                        <span className="text-yellow-700 dark:text-yellow-400 text-sm font-semibold">QR Order</span>
+                      </div>
+                      <p className="text-gray-900 dark:text-white font-bold text-xl mt-1">{order.order_number}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('table')}: {order.table_number}</p>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orderedAt')}</p>
-                    <p className="text-gray-900 dark:text-white font-medium">{new Date(order.created_at).toLocaleTimeString()}</p>
+                    <div className="text-right">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('total')}</p>
+                      <p className="text-green-600 dark:text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{t('items')}:</p>
-                <div className="space-y-1">
-                  {order.items && order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <span className="text-gray-700 dark:text-gray-300">
-                        <span className="text-gray-900 dark:text-white font-bold">{item.quantity}x</span> {item.name}
-                      </span>
-                      <span className="text-gray-600 dark:text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('customer')}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">{order.customer_name || t('walkInCustomer')}</p>
                     </div>
-                  ))}
+                    {order.customer_phone && (
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">{t('phone')}</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{order.customer_phone}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">{t('orderedAt')}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">{new Date(order.created_at).toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{t('items')}:</p>
+                  <div className="space-y-1">
+                    {order.items && order.items.map(function(item, idx) {
+                      return (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span className="text-gray-700 dark:text-gray-300">
+                            <span className="text-gray-900 dark:text-white font-bold">{item.quantity}x</span> {item.name}
+                          </span>
+                          <span className="text-gray-600 dark:text-gray-400">{formatCurrency(item.price * item.quantity)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {order.notes && (
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-yellow-50 dark:bg-yellow-900/20">
+                    <p className="text-yellow-700 dark:text-yellow-400 text-xs mb-1">{t('specialInstructions')}:</p>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm italic">"{order.notes}"</p>
+                  </div>
+                )}
+
+                <div className="p-4">
+                  <button
+                    onClick={function() { confirmOrder(order.id); }}
+                    disabled={processing === order.id}
+                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
+                  >
+                    {processing === order.id ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                    {t('confirmOrder')}
+                  </button>
                 </div>
               </div>
-
-              {order.notes && (
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-yellow-50 dark:bg-yellow-900/20">
-                  <p className="text-yellow-700 dark:text-yellow-400 text-xs mb-1">{t('specialInstructions')}:</p>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm italic">"{order.notes}"</p>
-                </div>
-              )}
-
-              <div className="p-4">
-                <button
-                  onClick={() => confirmOrder(order.id)}
-                  disabled={processing === order.id}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
-                >
-                  {processing === order.id ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
-                  {t('confirmOrder')}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

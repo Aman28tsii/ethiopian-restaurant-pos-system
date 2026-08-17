@@ -23,30 +23,30 @@ const TableStatus = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
-  useEffect(() => {
+  useEffect(function() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUserRole(user?.role);
     fetchTables();
     fetchWaiters();
     
-    socket.on('table_status_updated', (data) => {
+    socket.on('table_status_updated', function(data) {
       fetchTables();
-      setNotification(${t('table')}   );
-      setTimeout(() => setNotification(''), 3000);
+      setNotification(t('table') + ' ' + data.table_number + ' ' + t('isNow') + ' ' + data.status);
+      setTimeout(function() { setNotification(''); }, 3000);
     });
     
-    socket.on('order_ready_for_waiter', (data) => {
-      setNotification(🍽️ );
-      setTimeout(() => setNotification(''), 5000);
+    socket.on('order_ready_for_waiter', function(data) {
+      setNotification(data.message);
+      setTimeout(function() { setNotification(''); }, 5000);
     });
     
-    return () => {
+    return function() {
       socket.off('table_status_updated');
       socket.off('order_ready_for_waiter');
     };
   }, []);
 
-  const fetchTables = async () => {
+  const fetchTables = async function() {
     setLoading(true);
     try {
       const response = await API.get('/orders/tables/all');
@@ -58,7 +58,7 @@ const TableStatus = () => {
     }
   };
 
-  const fetchWaiters = async () => {
+  const fetchWaiters = async function() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user?.role !== 'owner' && user?.role !== 'admin') {
       setWaiters([]);
@@ -73,9 +73,9 @@ const TableStatus = () => {
     }
   };
 
-  const fetchOrderDetails = async (orderId) => {
+  const fetchOrderDetails = async function(orderId) {
     try {
-      const response = await API.get(/orders/);
+      const response = await API.get('/orders/' + orderId);
       setSelectedOrderDetails(response.data.data);
       setShowOrderModal(true);
     } catch (err) {
@@ -83,10 +83,10 @@ const TableStatus = () => {
     }
   };
 
-  const updateTableStatus = async (tableId, newStatus) => {
+  const updateTableStatus = async function(tableId, newStatus) {
     setUpdating(tableId);
     try {
-      await API.put(/orders/tables//status, { status: newStatus });
+      await API.put('/orders/tables/' + tableId + '/status', { status: newStatus });
       fetchTables();
     } catch (err) {
       console.error('Update status error:', err);
@@ -96,9 +96,9 @@ const TableStatus = () => {
     }
   };
 
-  const assignWaiter = async (tableId, waiterId) => {
+  const assignWaiter = async function(tableId, waiterId) {
     try {
-      await API.put(/orders/tables//assign-waiter, { waiter_id: waiterId });
+      await API.put('/orders/tables/' + tableId + '/assign-waiter', { waiter_id: waiterId });
       fetchTables();
       setShowAssignModal(false);
       setSelectedTableForAssign(null);
@@ -109,7 +109,7 @@ const TableStatus = () => {
     }
   };
 
-  const getStatusStyle = (status) => {
+  const getStatusStyle = function(status) {
     const options = {
       available: { value: 'available', label: t('available'), color: 'bg-green-500', textColor: 'text-green-600 dark:text-green-400' },
       occupied: { value: 'occupied', label: t('occupied'), color: 'bg-red-500', textColor: 'text-red-600 dark:text-red-400' },
@@ -119,8 +119,8 @@ const TableStatus = () => {
     return options[status] || options.available;
   };
 
-  const getStatusCount = (statusValue) => {
-    return tables.filter(t => t.status === statusValue).length;
+  const getStatusCount = function(statusValue) {
+    return tables.filter(function(t) { return t.status === statusValue; }).length;
   };
 
   const isOwner = userRole === 'owner' || userRole === 'admin';
@@ -190,17 +190,17 @@ const TableStatus = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {tables.map(table => {
+        {tables.map(function(table) {
           const statusStyle = getStatusStyle(table.status);
           return (
             <div key={table.id} className="bg-white dark:bg-gray-800 rounded-xl border-2 overflow-hidden transition-all border-gray-200 dark:border-gray-700">
-              <div className={p-4 /10 border-b border-gray-200 dark:border-gray-700}>
+              <div className={'p-4 ' + statusStyle.textColor + '/10 border-b border-gray-200 dark:border-gray-700'}>
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('table')} {table.table_number}</h3>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">{t('capacity')}: {table.capacity} {t('seats')}</p>
                   </div>
-                  <div className={px-3 py-1 rounded-full /20  text-sm font-semibold flex items-center gap-1}>
+                  <div className={'px-3 py-1 rounded-full ' + statusStyle.textColor + '/20 ' + statusStyle.textColor + ' text-sm font-semibold flex items-center gap-1'}>
                     {statusStyle.label}
                   </div>
                 </div>
@@ -218,7 +218,7 @@ const TableStatus = () => {
                         </span>
                       </div>
                       <button
-                        onClick={() => {
+                        onClick={function() {
                           setSelectedTableForAssign(table);
                           setSelectedWaiter(table.waiter_id || '');
                           setShowAssignModal(true);
@@ -240,7 +240,7 @@ const TableStatus = () => {
                         <p className="text-gray-700 dark:text-gray-300 text-sm font-mono">{table.current_order_number}</p>
                       </div>
                       <button
-                        onClick={() => fetchOrderDetails(table.current_order_id)}
+                        onClick={function() { fetchOrderDetails(table.current_order_id); }}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs flex items-center gap-1"
                       >
                         <Eye size={12} />
@@ -260,30 +260,30 @@ const TableStatus = () => {
                   <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">{t('changeStatus')}:</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => updateTableStatus(table.id, 'available')}
+                      onClick={function() { updateTableStatus(table.id, 'available'); }}
                       disabled={updating === table.id || table.status === 'available'}
-                      className={px-2 py-1.5 rounded-lg text-xs font-semibold transition }
+                      className={'px-2 py-1.5 rounded-lg text-xs font-semibold transition ' + (table.status === 'available' ? 'bg-green-500 text-white opacity-50 cursor-not-allowed' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800/50')}
                     >
                       {updating === table.id ? <Loader2 className="animate-spin inline" size={12} /> : t('available')}
                     </button>
                     <button
-                      onClick={() => updateTableStatus(table.id, 'occupied')}
+                      onClick={function() { updateTableStatus(table.id, 'occupied'); }}
                       disabled={updating === table.id || table.status === 'occupied'}
-                      className={px-2 py-1.5 rounded-lg text-xs font-semibold transition }
+                      className={'px-2 py-1.5 rounded-lg text-xs font-semibold transition ' + (table.status === 'occupied' ? 'bg-red-500 text-white opacity-50 cursor-not-allowed' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/50')}
                     >
                       {updating === table.id ? <Loader2 className="animate-spin inline" size={12} /> : t('occupied')}
                     </button>
                     <button
-                      onClick={() => updateTableStatus(table.id, 'reserved')}
+                      onClick={function() { updateTableStatus(table.id, 'reserved'); }}
                       disabled={updating === table.id || table.status === 'reserved'}
-                      className={px-2 py-1.5 rounded-lg text-xs font-semibold transition }
+                      className={'px-2 py-1.5 rounded-lg text-xs font-semibold transition ' + (table.status === 'reserved' ? 'bg-yellow-500 text-white opacity-50 cursor-not-allowed' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-800/50')}
                     >
                       {updating === table.id ? <Loader2 className="animate-spin inline" size={12} /> : t('reserved')}
                     </button>
                     <button
-                      onClick={() => updateTableStatus(table.id, 'cleaning')}
+                      onClick={function() { updateTableStatus(table.id, 'cleaning'); }}
                       disabled={updating === table.id || table.status === 'cleaning'}
-                      className={px-2 py-1.5 rounded-lg text-xs font-semibold transition }
+                      className={'px-2 py-1.5 rounded-lg text-xs font-semibold transition ' + (table.status === 'cleaning' ? 'bg-blue-500 text-white opacity-50 cursor-not-allowed' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50')}
                     >
                       {updating === table.id ? <Loader2 className="animate-spin inline" size={12} /> : t('cleaning')}
                     </button>
@@ -307,23 +307,25 @@ const TableStatus = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
             <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('assignWaiterToTable')} {selectedTableForAssign.table_number}</h2>
-              <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300">✕</button>
+              <button onClick={function() { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300">X</button>
             </div>
             <div className="p-5">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('selectWaiter')}</label>
               <select 
                 value={selectedWaiter} 
-                onChange={(e) => setSelectedWaiter(e.target.value)} 
+                onChange={function(e) { setSelectedWaiter(e.target.value); }} 
                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- {t('noWaiterAssigned')} --</option>
-                {waiters.map(waiter => (
-                  <option key={waiter.id} value={waiter.id}>{waiter.name} ({waiter.email})</option>
-                ))}
+                {waiters.map(function(waiter) {
+                  return (
+                    <option key={waiter.id} value={waiter.id}>{waiter.name} ({waiter.email})</option>
+                  );
+                })}
               </select>
               <div className="flex gap-3">
-                <button onClick={() => assignWaiter(selectedTableForAssign.id, selectedWaiter || null)} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">{t('assign')}</button>
-                <button onClick={() => { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition">{t('cancel')}</button>
+                <button onClick={function() { assignWaiter(selectedTableForAssign.id, selectedWaiter || null); }} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">{t('assign')}</button>
+                <button onClick={function() { setShowAssignModal(false); setSelectedTableForAssign(null); setSelectedWaiter(''); }} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition">{t('cancel')}</button>
               </div>
             </div>
           </div>
@@ -336,7 +338,7 @@ const TableStatus = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('orderDetails')}</h2>
-              <button onClick={() => setShowOrderModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300">✕</button>
+              <button onClick={function() { setShowOrderModal(false); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300">X</button>
             </div>
             <div className="p-4 space-y-4">
               <div><p className="text-gray-500 dark:text-gray-400 text-xs">{t('orderNumber')}</p><p className="text-gray-900 dark:text-white font-bold text-lg">{selectedOrderDetails.order_number}</p></div>

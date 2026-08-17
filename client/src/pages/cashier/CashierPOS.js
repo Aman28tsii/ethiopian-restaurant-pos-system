@@ -34,12 +34,12 @@ const CashierPOS = () => {
     
     setProcessing(true);
     try {
-      const response = await API.post(/orders//pay, {
+      const response = await API.post('/orders/' + selectedOrder.id + '/pay', {
         payment_method: paymentMethod
       });
       
       if (response.data.success) {
-        alert(${t('paymentSuccessful')}  .);
+        alert(t('paymentSuccessful') + ' ' + selectedOrder.order_number + ' ' + t('completed') + '.');
         setSelectedOrder(null);
         fetchReadyOrders();
       }
@@ -72,25 +72,27 @@ const CashierPOS = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {readyOrders.map(order => (
-              <button
-                key={order.id}
-                onClick={() => setSelectedOrder(order)}
-                className={g-white dark:bg-gray-800 rounded-2xl p-6 text-left border-2 transition-all }
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="text-gray-900 dark:text-white font-bold text-lg">{order.order_number}</p>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('table')}: {order.table_number || t('takeaway')}</p>
+            {readyOrders.map(function(order) {
+              return (
+                <button
+                  key={order.id}
+                  onClick={function() { setSelectedOrder(order); }}
+                  className={'bg-white dark:bg-gray-800 rounded-2xl p-6 text-left border-2 transition-all ' + (selectedOrder?.id === order.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600')}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-gray-900 dark:text-white font-bold text-lg">{order.order_number}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('table')}: {order.table_number || t('takeaway')}</p>
+                    </div>
+                    <p className="text-green-600 dark:text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
                   </div>
-                  <p className="text-green-600 dark:text-green-400 font-bold text-xl">{formatCurrency(order.total_amount)}</p>
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">{t('customer')}: {order.customer_name || t('walkInCustomer')}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">
-                  {t('readySince')}: {new Date(order.created_at).toLocaleTimeString()}
-                </p>
-              </button>
-            ))}
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">{t('customer')}: {order.customer_name || t('walkInCustomer')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">
+                    {t('readySince')}: {new Date(order.created_at).toLocaleTimeString()}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -114,22 +116,22 @@ const CashierPOS = () => {
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{t('paymentMethod')}</p>
             <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={() => setPaymentMethod('cash')}
-                className={py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('cash'); }}
+                className={'py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'cash' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <DollarSign size={18} />
                 {t('cash')}
               </button>
               <button
-                onClick={() => setPaymentMethod('card')}
-                className={py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('card'); }}
+                className={'py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'card' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <CreditCard size={18} />
                 {t('card')}
               </button>
               <button
-                onClick={() => setPaymentMethod('mobile')}
-                className={py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('mobile'); }}
+                className={'py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'mobile' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <Smartphone size={18} />
                 {t('mobile')}
@@ -139,7 +141,7 @@ const CashierPOS = () => {
 
           <div className="flex gap-3 mt-auto">
             <button
-              onClick={() => setSelectedOrder(null)}
+              onClick={function() { setSelectedOrder(null); }}
               className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition"
             >
               {t('cancel')}

@@ -37,7 +37,7 @@ const ManualOrder = () => {
       const response = await API.get('/products');
       const productsData = response.data.data || [];
       setProducts(productsData);
-      const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
+      const uniqueCategories = ['all'].concat(productsData.filter(function(p) { return p.category; }).map(function(p) { return p.category; }));
       setCategories(uniqueCategories);
     } catch (err) {
       console.error('Fetch products error:', err);
@@ -55,54 +55,56 @@ const ManualOrder = () => {
     }
   };
 
-  const addToCart = (product) => {
+  const addToCart = function(product) {
     const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+    setCart(function(prev) {
+      const existing = prev.find(function(item) { return item.id === product.id; });
       if (existing) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price }
-            : item
-        );
+        return prev.map(function(item) {
+          if (item.id === product.id) {
+            return { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * price };
+          }
+          return item;
+        });
       }
-      return [...prev, {
+      return prev.concat([{
         id: product.id,
         name: product.name,
         price: price,
         quantity: 1,
         total: price
-      }];
+      }]);
     });
   };
 
-  const updateQuantity = (productId, delta) => {
-    setCart(prev => {
-      const item = prev.find(i => i.id === productId);
+  const updateQuantity = function(productId, delta) {
+    setCart(function(prev) {
+      const item = prev.find(function(i) { return i.id === productId; });
       if (!item) return prev;
       const newQuantity = item.quantity + delta;
       if (newQuantity <= 0) {
-        return prev.filter(i => i.id !== productId);
+        return prev.filter(function(i) { return i.id !== productId; });
       }
-      return prev.map(i =>
-        i.id === productId
-          ? { ...i, quantity: newQuantity, total: newQuantity * i.price }
-          : i
-      );
+      return prev.map(function(i) {
+        if (i.id === productId) {
+          return { ...i, quantity: newQuantity, total: newQuantity * i.price };
+        }
+        return i;
+      });
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCart(prev => prev.filter(item => item.id !== productId));
+  const removeFromCart = function(productId) {
+    setCart(function(prev) { return prev.filter(function(item) { return item.id !== productId; }); });
   };
 
-  const clearCart = () => {
+  const clearCart = function() {
     if (window.confirm(t('clearCart'))) {
       setCart([]);
     }
   };
 
-  const placeOrder = async () => {
+  const placeOrder = async function() {
     if (cart.length === 0) {
       alert(t('pleaseAddItems'));
       return;
@@ -116,10 +118,7 @@ const ManualOrder = () => {
     setProcessing(true);
     try {
       const orderData = {
-        items: cart.map(item => ({
-          product_id: item.id,
-          quantity: item.quantity
-        })),
+        items: cart.map(function(item) { return { product_id: item.id, quantity: item.quantity }; }),
         customer_name: customerName.trim() || t('walkInCustomer'),
         customer_phone: customerPhone || null,
         table_id: selectedTableId || null,
@@ -144,7 +143,7 @@ const ManualOrder = () => {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = function() {
     setCustomerName('');
     setCustomerPhone('');
     setSpecialInstructions('');
@@ -154,19 +153,19 @@ const ManualOrder = () => {
     setSearchTerm('');
   };
 
-  const startNewOrder = () => {
+  const startNewOrder = function() {
     setOrderComplete(false);
     setOrderNumber(null);
     resetForm();
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter(function(product) {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = cart.reduce(function(sum, item) { return sum + item.total; }, 0);
   const tax = subtotal * 0.15;
   const total = subtotal + tax;
 
@@ -222,7 +221,7 @@ const ManualOrder = () => {
                 type="radio"
                 value="dine_in"
                 checked={orderType === 'dine_in'}
-                onChange={(e) => {
+                onChange={function(e) {
                   setOrderType(e.target.value);
                   if (e.target.value === 'takeaway') {
                     setSelectedTableId('');
@@ -237,7 +236,7 @@ const ManualOrder = () => {
                 type="radio"
                 value="takeaway"
                 checked={orderType === 'takeaway'}
-                onChange={(e) => {
+                onChange={function(e) {
                   setOrderType(e.target.value);
                   if (e.target.value === 'takeaway') {
                     setSelectedTableId('');
@@ -256,19 +255,21 @@ const ManualOrder = () => {
               </label>
               <select
                 value={selectedTableId}
-                onChange={(e) => setSelectedTableId(e.target.value)}
+                onChange={function(e) { setSelectedTableId(e.target.value); }}
                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- {t('selectTable')} --</option>
-                {tables.filter(t => t.status === 'available').map(table => (
-                  <option key={table.id} value={table.id}>
-                    {t('table')} {table.table_number} ({t('capacity')}: {table.capacity}) - {t('available')}
-                  </option>
-                ))}
+                {tables.filter(function(t) { return t.status === 'available'; }).map(function(table) {
+                  return (
+                    <option key={table.id} value={table.id}>
+                      {t('table')} {table.table_number} ({t('capacity')}: {table.capacity}) - {t('available')}
+                    </option>
+                  );
+                })}
               </select>
-              {tables.filter(t => t.status === 'available').length === 0 && (
+              {tables.filter(function(t) { return t.status === 'available'; }).length === 0 && (
                 <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">
-                  ⚠️ {t('noAvailableTables')}
+                  No available tables
                 </p>
               )}
             </div>
@@ -277,7 +278,7 @@ const ManualOrder = () => {
           {orderType === 'takeaway' && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
               <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
-                <span>📦</span> {t('takeawayOrderNote')}
+                <span>Takeaway order</span>
               </p>
             </div>
           )}
@@ -291,37 +292,41 @@ const ManualOrder = () => {
               type="text"
               placeholder={t('searchProducts')}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={function(e) { setSearchTerm(e.target.value); }}
               className="w-full px-4 py-3 pl-10 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap }
-              >
-                {cat === 'all' ? t('allItems') : cat}
-              </button>
-            ))}
+            {categories.map(function(cat) {
+              return (
+                <button
+                  key={cat}
+                  onClick={function() { setSelectedCategory(cat); }}
+                  className={'px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap ' + (selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
+                >
+                  {cat === 'all' ? t('allItems') : cat}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Products Grid with Emojis */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {filteredProducts.map(product => (
-            <button
-              key={product.id}
-              onClick={() => addToCart(product)}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:shadow-md"
-            >
-              <div className="text-4xl text-center mb-2">{getProductEmoji(product.category)}</div>
-              <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-              <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
-              <span className="text-xs text-green-600 dark:text-green-400 mt-1 inline-block">+ {t('add')}</span>
-            </button>
-          ))}
+          {filteredProducts.map(function(product) {
+            return (
+              <button
+                key={product.id}
+                onClick={function() { addToCart(product); }}
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:shadow-md"
+              >
+                <div className="text-4xl text-center mb-2">{getProductEmoji(product.category)}</div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
+                <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
+                <span className="text-xs text-green-600 dark:text-green-400 mt-1 inline-block">+ Add</span>
+              </button>
+            );
+          })}
         </div>
         
         {filteredProducts.length === 0 && (
@@ -355,37 +360,39 @@ const ManualOrder = () => {
               <p className="text-gray-500 dark:text-gray-400 text-sm">{t('tapToAdd')}</p>
             </div>
           ) : (
-            cart.map(item => (
-              <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
-                    <p className="text-blue-600 dark:text-blue-400 text-sm">{formatCurrency(item.price)}</p>
-                  </div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
-                    >
-                      -
-                    </button>
-                    <span className="text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
-                    >
-                      +
+            cart.map(function(item) {
+              return (
+                <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
+                      <p className="text-blue-600 dark:text-blue-400 text-sm">{formatCurrency(item.price)}</p>
+                    </div>
+                    <button onClick={function() { removeFromCart(item.id); }} className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300">
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                  <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(item.total)}</span>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={function() { updateQuantity(item.id, -1); }}
+                        className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                      >
+                        -
+                      </button>
+                      <span className="text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={function() { updateQuantity(item.id, 1); }}
+                        className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(item.total)}</span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -394,20 +401,20 @@ const ManualOrder = () => {
             type="text"
             placeholder={t('customerNameOptional')}
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={function(e) { setCustomerName(e.target.value); }}
             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="tel"
             placeholder={t('customerPhoneOptional')}
             value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
+            onChange={function(e) { setCustomerPhone(e.target.value); }}
             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <textarea
             placeholder={t('specialInstructions')}
             value={specialInstructions}
-            onChange={(e) => setSpecialInstructions(e.target.value)}
+            onChange={function(e) { setSpecialInstructions(e.target.value); }}
             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={2}
           />
@@ -416,20 +423,20 @@ const ManualOrder = () => {
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{t('paymentMethod')}</p>
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => setPaymentMethod('cash')}
-                className={py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('cash'); }}
+                className={'py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'cash' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <DollarSign size={16} /> {t('cash')}
               </button>
               <button
-                onClick={() => setPaymentMethod('card')}
-                className={py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('card'); }}
+                className={'py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'card' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <CreditCard size={16} /> {t('card')}
               </button>
               <button
-                onClick={() => setPaymentMethod('mobile')}
-                className={py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition }
+                onClick={function() { setPaymentMethod('mobile'); }}
+                className={'py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition ' + (paymentMethod === 'mobile' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
               >
                 <Smartphone size={16} /> {t('mobile')}
               </button>

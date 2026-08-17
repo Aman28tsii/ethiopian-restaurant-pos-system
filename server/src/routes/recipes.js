@@ -1,4 +1,5 @@
-import express from 'express';
+﻿import express from 'express';
+import { protect, restrictTo } from '../middleware/auth.js';
 import {
     getAllRecipes,
     getRecipeByProduct,
@@ -14,7 +15,6 @@ import {
     getProductsWithoutRecipes,
     getRecipeCount
 } from '../controllers/recipeController.js';
-import { protect, allowManager, allowOwner } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -24,30 +24,30 @@ router.use(protect);
 // ============================================
 // RECIPE MANAGEMENT
 // ============================================
-router.get('/', allowManager, getAllRecipes);
-router.get('/product/:productId', allowManager, getRecipeByProduct);
-router.post('/product/:productId', allowManager, createOrUpdateRecipe);
-router.delete('/:id', allowOwner, deleteRecipe);
-router.delete('/ingredient/:id', allowOwner, deleteRecipeIngredient);
+router.get('/', restrictTo('manager', 'owner', 'admin'), getAllRecipes);
+router.get('/product/:productId', restrictTo('manager', 'owner', 'admin'), getRecipeByProduct);
+router.post('/product/:productId', restrictTo('manager', 'owner', 'admin'), createOrUpdateRecipe);
+router.delete('/:id', restrictTo('owner', 'admin'), deleteRecipe);
+router.delete('/ingredient/:id', restrictTo('owner', 'admin'), deleteRecipeIngredient);
 
 // ============================================
 // PRODUCTS WITHOUT RECIPES
 // ============================================
-router.get('/products-without', allowManager, getProductsWithoutRecipes);
-router.get('/count', allowManager, getRecipeCount);
+router.get('/products-without', restrictTo('manager', 'owner', 'admin'), getProductsWithoutRecipes);
+router.get('/count', restrictTo('manager', 'owner', 'admin'), getRecipeCount);
 
 // ============================================
 // WASTAGE REPORTS
 // ============================================
-router.get('/wastage-report', allowManager, getWastageReport);
-router.get('/order/:orderId/wastage', allowManager, getOrderWastage);
-router.post('/order/:orderId/calculate-wastage', allowManager, calculateOrderWastage);
+router.get('/wastage-report', restrictTo('manager', 'owner', 'admin'), getWastageReport);
+router.get('/order/:orderId/wastage', restrictTo('manager', 'owner', 'admin'), getOrderWastage);
+router.post('/order/:orderId/calculate-wastage', restrictTo('manager', 'owner', 'admin'), calculateOrderWastage);
 
 // ============================================
 // INGREDIENT WASTAGE SETTINGS
 // ============================================
-router.put('/ingredient/:id/wastage', allowOwner, updateIngredientWastage);
-router.get('/ingredients', allowManager, getAllIngredientsWithWastage);
-router.get('/ingredients/low-stock', allowManager, getLowStockIngredients);
+router.put('/ingredient/:id/wastage', restrictTo('owner', 'admin'), updateIngredientWastage);
+router.get('/ingredients', restrictTo('manager', 'owner', 'admin'), getAllIngredientsWithWastage);
+router.get('/ingredients/low-stock', restrictTo('manager', 'owner', 'admin'), getLowStockIngredients);
 
 export default router;

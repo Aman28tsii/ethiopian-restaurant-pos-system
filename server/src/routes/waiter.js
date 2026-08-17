@@ -10,12 +10,8 @@ router.get('/my-tables', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
   
   try {
     const result = await pool.query(
-      SELECT t.*, 
-              CASE WHEN t.self_assigned THEN 'Self-Assigned' ELSE 'Manager-Assigned' END as assignment_type
-       FROM tables t
-       WHERE t.assigned_waiter_id = 
-       ORDER BY t.status = 'occupied' DESC, t.table_number ASC,
-      [waiterId]
+      'SELECT t.*, CASE WHEN t.self_assigned THEN  ELSE  END as assignment_type FROM tables t WHERE t.assigned_waiter_id =  ORDER BY t.status =  DESC, t.table_number ASC',
+      ['Self-Assigned', 'Manager-Assigned', waiterId, 'occupied']
     );
     
     res.json({ success: true, data: result.rows });
@@ -31,12 +27,8 @@ router.get('/available-tables', protect, restrictTo('waiter', 'cashier', 'manage
   
   try {
     const result = await pool.query(
-      SELECT t.* 
-       FROM tables t
-       WHERE t.status = 'available' 
-         AND (t.assigned_waiter_id IS NULL OR t.assigned_waiter_id = )
-       ORDER BY t.table_number ASC,
-      [waiterId]
+      'SELECT t.* FROM tables t WHERE t.status =  AND (t.assigned_waiter_id IS NULL OR t.assigned_waiter_id = ) ORDER BY t.table_number ASC',
+      ['available', waiterId]
     );
     
     res.json({ success: true, data: result.rows });
@@ -57,9 +49,7 @@ router.post('/assign-table/:tableId', protect, restrictTo('waiter', 'cashier', '
     await client.query('BEGIN');
     
     const tableCheck = await client.query(
-      SELECT id, table_number, status, assigned_waiter_id 
-       FROM tables 
-       WHERE id = ,
+      'SELECT id, table_number, status, assigned_waiter_id FROM tables WHERE id = ',
       [tableId]
     );
     
@@ -74,16 +64,13 @@ router.post('/assign-table/:tableId', protect, restrictTo('waiter', 'cashier', '
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        error: Table  is . Only available tables can be assigned. 
+        error: 'Table ' + table.table_number + ' is ' + table.status + '. Only available tables can be assigned.' 
       });
     }
     
     const currentAssignments = await client.query(
-      SELECT COUNT(*) as count 
-       FROM tables 
-       WHERE assigned_waiter_id =  
-         AND status IN ('available', 'occupied', 'reserved'),
-      [waiterId]
+      'SELECT COUNT(*) as count FROM tables WHERE assigned_waiter_id =  AND status IN (, , )',
+      [waiterId, 'available', 'occupied', 'reserved']
     );
     
     if (parseInt(currentAssignments.rows[0].count) >= 5) {
@@ -95,21 +82,13 @@ router.post('/assign-table/:tableId', protect, restrictTo('waiter', 'cashier', '
     }
     
     await client.query(
-      UPDATE tables 
-       SET assigned_waiter_id = , 
-           assignment_date = CURRENT_DATE,
-           assignment_method = 'self',
-           assigned_by = ,
-           self_assigned = true,
-           updated_at = NOW()
-       WHERE id = ,
-      [waiterId, tableId]
+      'UPDATE tables SET assigned_waiter_id = , assignment_date = CURRENT_DATE, assignment_method = , assigned_by = , self_assigned = true, updated_at = NOW() WHERE id = ',
+      [waiterId, 'self', waiterId, tableId]
     );
     
     await client.query(
-      INSERT INTO waiter_self_assignments (waiter_id, table_id, status)
-       VALUES (, , 'active'),
-      [waiterId, tableId]
+      'INSERT INTO waiter_self_assignments (waiter_id, table_id, status) VALUES (, , )',
+      [waiterId, tableId, 'active']
     );
     
     await client.query('COMMIT');
@@ -126,7 +105,7 @@ router.post('/assign-table/:tableId', protect, restrictTo('waiter', 'cashier', '
     
     res.json({ 
       success: true, 
-      message: Table  assigned to you successfully!,
+      message: 'Table ' + table.table_number + ' assigned to you successfully!',
       data: { table_id: tableId, table_number: table.table_number }
     });
     
@@ -150,9 +129,7 @@ router.delete('/unassign-table/:tableId', protect, restrictTo('waiter', 'cashier
     await client.query('BEGIN');
     
     const tableCheck = await client.query(
-      SELECT id, table_number, status, assigned_waiter_id 
-       FROM tables 
-       WHERE id =  AND assigned_waiter_id = ,
+      'SELECT id, table_number, status, assigned_waiter_id FROM tables WHERE id =  AND assigned_waiter_id = ',
       [tableId, waiterId]
     );
     
@@ -170,26 +147,18 @@ router.delete('/unassign-table/:tableId', protect, restrictTo('waiter', 'cashier
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        error: Table  is occupied. Cannot unassign until table is available. 
+        error: 'Table ' + table.table_number + ' is occupied. Cannot unassign until table is available.' 
       });
     }
     
     await client.query(
-      UPDATE tables 
-       SET assigned_waiter_id = NULL, 
-           assignment_date = NULL,
-           assignment_method = NULL,
-           self_assigned = false,
-           updated_at = NOW()
-       WHERE id = ,
+      'UPDATE tables SET assigned_waiter_id = NULL, assignment_date = NULL, assignment_method = NULL, self_assigned = false, updated_at = NOW() WHERE id = ',
       [tableId]
     );
     
     await client.query(
-      UPDATE waiter_self_assignments 
-       SET unassigned_at = NOW(), status = 'inactive'
-       WHERE table_id =  AND status = 'active',
-      [tableId]
+      'UPDATE waiter_self_assignments SET unassigned_at = NOW(), status =  WHERE table_id =  AND status = ',
+      ['inactive', tableId, 'active']
     );
     
     await client.query('COMMIT');
@@ -205,7 +174,7 @@ router.delete('/unassign-table/:tableId', protect, restrictTo('waiter', 'cashier
     
     res.json({ 
       success: true, 
-      message: Table  unassigned successfully! 
+      message: 'Table ' + table.table_number + ' unassigned successfully!' 
     });
     
   } catch (err) {
@@ -223,10 +192,7 @@ router.get('/my-shift', protect, restrictTo('waiter', 'cashier', 'manager', 'own
   
   try {
     const result = await pool.query(
-      SELECT * FROM waiter_shifts 
-       WHERE waiter_id =  
-       AND shift_date = CURRENT_DATE 
-       AND is_active = true,
+      'SELECT * FROM waiter_shifts WHERE waiter_id =  AND shift_date = CURRENT_DATE AND is_active = true',
       [waiterId]
     );
     
@@ -243,28 +209,8 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
   
   try {
     const result = await pool.query(
-      SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
-              o.customer_name, o.table_id, o.created_at,
-              o.source,
-              t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE t.assigned_waiter_id =          AND o.status NOT IN ('completed', 'cancelled')
-       GROUP BY o.id, t.table_number, o.source
-       ORDER BY o.created_at DESC,
-      [waiterId]
+      'SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.customer_name, o.table_id, o.created_at, o.source, t.table_number, COALESCE(json_agg(json_build_object(, p.name, , oi.quantity, , oi.unit_price)) FILTER (WHERE p.id IS NOT NULL), ) as items FROM orders o JOIN tables t ON o.table_id = t.id LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE t.assigned_waiter_id =  AND o.status NOT IN (, ) GROUP BY o.id, t.table_number, o.source ORDER BY o.created_at DESC',
+      ['name', 'quantity', 'price', '[]', waiterId, 'completed', 'cancelled']
     );
     
     res.json({ success: true, data: result.rows });
@@ -280,30 +226,8 @@ router.get('/pending-confirmations', protect, restrictTo('waiter', 'cashier', 'm
   
   try {
     const result = await pool.query(
-      SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
-              o.table_id, o.notes, o.created_at, o.status,
-              o.source,
-              t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.status = 'pending_confirmation' 
-         AND o.source = 'qr_menu'
-         AND t.assigned_waiter_id = 
-       GROUP BY o.id, t.table_number, o.source
-       ORDER BY o.created_at ASC,
-      [waiterId]
+      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, o.table_id, o.notes, o.created_at, o.status, o.source, t.table_number, COALESCE(json_agg(json_build_object(, p.name, , oi.quantity, , oi.unit_price)) FILTER (WHERE p.id IS NOT NULL), ) as items FROM orders o JOIN tables t ON o.table_id = t.id LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE o.status =  AND o.source =  AND t.assigned_waiter_id =  GROUP BY o.id, t.table_number, o.source ORDER BY o.created_at ASC',
+      ['name', 'quantity', 'price', '[]', 'pending_confirmation', 'qr_menu', waiterId]
     );
     
     res.json({ success: true, data: result.rows });

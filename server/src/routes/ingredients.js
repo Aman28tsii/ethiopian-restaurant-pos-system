@@ -1,5 +1,5 @@
-import express from 'express';
-import { protect, allowManager, allowOwner } from '../middleware/auth.js';
+﻿import express from 'express';
+import { protect, restrictTo } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 const router = express.Router();
@@ -8,9 +8,7 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier 
-             FROM ingredients 
-             ORDER BY name`
+            'SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier FROM ingredients ORDER BY name'
         );
         res.json({ success: true, data: result.rows });
     } catch (err) {
@@ -23,10 +21,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/low-stock-alert', protect, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, name, quantity, min_stock, unit 
-             FROM ingredients 
-             WHERE quantity <= min_stock 
-             ORDER BY quantity ASC`
+            'SELECT id, name, quantity, min_stock, unit FROM ingredients WHERE quantity <= min_stock ORDER BY quantity ASC'
         );
         res.json({ success: true, data: result.rows });
     } catch (err) {
@@ -39,9 +34,7 @@ router.get('/low-stock-alert', protect, async (req, res) => {
 router.get('/low-stock', protect, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT id, name, quantity, min_stock, unit, unit_cost 
-             FROM ingredients 
-             WHERE quantity <= min_stock`
+            'SELECT id, name, quantity, min_stock, unit, unit_cost FROM ingredients WHERE quantity <= min_stock'
         );
         res.json({ success: true, data: result.rows });
     } catch (err) {
@@ -54,10 +47,7 @@ router.get('/low-stock', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query(
-            `SELECT * FROM ingredients WHERE id = $1`,
-            [id]
-        );
+        const result = await pool.query('SELECT * FROM ingredients WHERE id = ', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Ingredient not found' });
         }
@@ -72,17 +62,17 @@ router.get('/:id', protect, async (req, res) => {
 router.get('/categories', protect, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT DISTINCT category FROM ingredients WHERE category IS NOT NULL ORDER BY category`
+            'SELECT DISTINCT category FROM ingredients WHERE category IS NOT NULL ORDER BY category'
         );
-        res.json({ success: true, data: result.rows.map(r => r.category) });
+        res.json({ success: true, data: result.rows.map(function(r) { return r.category; }) });
     } catch (err) {
         console.error('Get ingredient categories error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// POST create ingredient (owner only)
-router.post('/', protect, allowOwner, async (req, res) => {
+// POST create ingredient (owner/admin only)
+router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
         
@@ -91,9 +81,7 @@ router.post('/', protect, allowOwner, async (req, res) => {
         }
         
         const result = await pool.query(
-            `INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING *`,
+            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES (, , , , , , ) RETURNING *',
             [name.trim(), unit, quantity || 0, min_stock || 0, unit_cost || 0, category, supplier]
         );
         
@@ -104,24 +92,14 @@ router.post('/', protect, allowOwner, async (req, res) => {
     }
 });
 
-// PUT update ingredient (owner only)
-router.put('/:id', protect, allowOwner, async (req, res) => {
+// PUT update ingredient (owner/admin only)
+router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
         
         const result = await pool.query(
-            `UPDATE ingredients 
-             SET name = $1, 
-                 unit = $2, 
-                 quantity = $3, 
-                 min_stock = $4, 
-                 unit_cost = $5, 
-                 category = $6, 
-                 supplier = $7, 
-                 updated_at = NOW()
-             WHERE id = $8
-             RETURNING *`,
+            'UPDATE ingredients SET name = , unit = , quantity = , min_stock = , unit_cost = , category = , supplier = , updated_at = NOW() WHERE id =  RETURNING *',
             [name, unit, quantity, min_stock, unit_cost, category, supplier, id]
         );
         
@@ -136,25 +114,24 @@ router.put('/:id', protect, allowOwner, async (req, res) => {
     }
 });
 
-// DELETE ingredient (owner only)
-router.delete('/:id', protect, allowOwner, async (req, res) => {
+// DELETE ingredient (owner/admin only)
+router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Check if ingredient is used in recipes
         const recipeCheck = await pool.query(
-            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = $1',
+            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = ',
             [id]
         );
         
         if (parseInt(recipeCheck.rows[0].count) > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Cannot delete ingredient that is used in recipes' 
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot delete ingredient that is used in recipes'
             });
         }
         
-        await pool.query('DELETE FROM ingredients WHERE id = $1', [id]);
+        await pool.query('DELETE FROM ingredients WHERE id = ', [id]);
         res.json({ success: true, message: 'Ingredient deleted successfully' });
     } catch (err) {
         console.error('Delete ingredient error:', err);
@@ -162,14 +139,14 @@ router.delete('/:id', protect, allowOwner, async (req, res) => {
     }
 });
 
-// PUT adjust stock (owner only)
-router.put('/:id/adjust-stock', protect, allowOwner, async (req, res) => {
+// PUT adjust stock (owner/admin only)
+router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { amount, reason } = req.body;
         
         const currentIngredient = await pool.query(
-            'SELECT name, quantity, unit FROM ingredients WHERE id = $1',
+            'SELECT name, quantity, unit FROM ingredients WHERE id = ',
             [id]
         );
         
@@ -185,10 +162,7 @@ router.put('/:id/adjust-stock', protect, allowOwner, async (req, res) => {
         }
         
         const result = await pool.query(
-            `UPDATE ingredients 
-             SET quantity = $1, updated_at = NOW()
-             WHERE id = $2
-             RETURNING *`,
+            'UPDATE ingredients SET quantity = , updated_at = NOW() WHERE id =  RETURNING *',
             [newQuantity, id]
         );
         
@@ -197,7 +171,7 @@ router.put('/:id/adjust-stock', protect, allowOwner, async (req, res) => {
         
         res.json({
             success: true,
-            message: `${absAmount} ${result.rows[0].unit} ${action} ${result.rows[0].name}`,
+            message: absAmount + ' ' + result.rows[0].unit + ' ' + action + ' ' + result.rows[0].name,
             data: result.rows[0]
         });
     } catch (err) {

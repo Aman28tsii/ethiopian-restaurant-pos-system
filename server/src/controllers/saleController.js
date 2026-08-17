@@ -3,7 +3,7 @@ import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { processOrderStockDeduction } from './recipeController.js';
 
 // Generate unique sale number
-const generateSaleNumber = () => {
+const generateSaleNumber = function() {
   const date = new Date();
   const timestamp = date.getTime().toString().slice(-8);
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -11,7 +11,7 @@ const generateSaleNumber = () => {
 };
 
 // Create new sale (POST /api/sales)
-export const createSale = catchAsync(async (req, res) => {
+export const createSale = catchAsync(async function(req, res) {
   const { items, payment_method, customer_name, customer_phone } = req.body;
   const userId = req.user?.id || 1;
   const businessId = 1;
@@ -57,8 +57,8 @@ export const createSale = catchAsync(async (req, res) => {
     const saleNumber = generateSaleNumber();
     
     const saleResult = await client.query(
-      'INSERT INTO sales (business_id, user_id, sale_number, total_amount, payment_method, customer_name, customer_phone, status) VALUES (, , , , , , , 'completed') RETURNING id, sale_number, created_at',
-      [businessId, userId, saleNumber, totalAmount, payment_method, customer_name, customer_phone]
+      'INSERT INTO sales (business_id, user_id, sale_number, total_amount, payment_method, customer_name, customer_phone, status) VALUES (, , , , , , , ) RETURNING id, sale_number, created_at',
+      [businessId, userId, saleNumber, totalAmount, payment_method, customer_name, customer_phone, 'completed']
     );
     
     const saleId = saleResult.rows[0].id;
@@ -111,13 +111,13 @@ export const createSale = catchAsync(async (req, res) => {
 });
 
 // Get sales history
-export const getSales = catchAsync(async (req, res) => {
+export const getSales = catchAsync(async function(req, res) {
   const { startDate, endDate, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   
-  let sql = 'SELECT s.*, u.name as cashier_name, COUNT(si.id) as item_count FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id WHERE s.status = 'completed'';
-  const params = [];
-  let paramIndex = 1;
+  let sql = 'SELECT s.*, u.name as cashier_name, COUNT(si.id) as item_count FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id WHERE s.status = ';
+  const params = ['completed'];
+  let paramIndex = 2;
   
   if (startDate) {
     sql += ' AND DATE(s.created_at) >= $' + paramIndex++;
@@ -149,7 +149,7 @@ export const getSales = catchAsync(async (req, res) => {
 });
 
 // Get single sale details
-export const getSaleById = catchAsync(async (req, res) => {
+export const getSaleById = catchAsync(async function(req, res) {
   const { id } = req.params;
   
   const saleResult = await query(
@@ -176,12 +176,12 @@ export const getSaleById = catchAsync(async (req, res) => {
 });
 
 // Get today's sales summary
-export const getTodaySales = catchAsync(async (req, res) => {
+export const getTodaySales = catchAsync(async function(req, res) {
   const today = new Date().toISOString().split('T')[0];
   
   const result = await query(
-    'SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue, COALESCE(SUM(profit), 0) as total_profit, COALESCE(AVG(total_amount), 0) as average_order FROM sales WHERE DATE(created_at) =  AND status = 'completed'',
-    [today]
+    'SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue, COALESCE(SUM(profit), 0) as total_profit, COALESCE(AVG(total_amount), 0) as average_order FROM sales WHERE DATE(created_at) =  AND status = ',
+    [today, 'completed']
   );
   
   res.json({

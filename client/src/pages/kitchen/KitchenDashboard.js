@@ -24,7 +24,8 @@ const KitchenDashboard = () => {
 
   const fetchOrders = async function() {
     try {
-      const response = await API.get('/kitchen/orders');
+      // FIXED: Changed from /kitchen/orders to /orders/kitchen
+      const response = await API.get('/orders/kitchen');
       setOrders(response.data.data || []);
     } catch (err) {
       console.error('Fetch orders error:', err);
@@ -44,7 +45,8 @@ const KitchenDashboard = () => {
 
   const updateStatus = async function(orderId, status) {
     try {
-      await API.put('/kitchen/orders/' + orderId + '/status', { status: status });
+      // FIXED: Changed from /kitchen/orders to /orders/kitchen
+      await API.put('/orders/kitchen/' + orderId + '/status', { status: status });
       fetchOrders();
     } catch (err) {
       console.error('Update error:', err);

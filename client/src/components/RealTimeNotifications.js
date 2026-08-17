@@ -16,7 +16,6 @@ const RealTimeNotifications = memo(() => {
   const socketInitializedRef = useRef(false);
   const intervalRef = useRef(null);
 
-  // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -26,7 +25,6 @@ const RealTimeNotifications = memo(() => {
       const role = user?.role;
       const newNotifications = [];
       
-      // Only fetch low stock if user is manager, owner, or admin
       if (role === 'manager' || role === 'owner' || role === 'admin') {
         try {
           const lowStockRes = await API.get('/ingredients/low-stock-alert');
@@ -47,10 +45,10 @@ const RealTimeNotifications = memo(() => {
         }
       }
       
-      // Only fetch pending orders if user is kitchen, manager, or owner
       if (role === 'kitchen' || role === 'manager' || role === 'owner' || role === 'admin') {
         try {
-          const pendingOrdersRes = await API.get('/kitchen/orders');
+          // FIXED: Changed from /kitchen/orders to /orders/kitchen
+          const pendingOrdersRes = await API.get('/orders/kitchen');
           const pendingOrders = pendingOrdersRes.data.data || [];
           const pendingCount = pendingOrders.filter(o => o.status === 'pending').length;
           
@@ -84,7 +82,6 @@ const RealTimeNotifications = memo(() => {
     }
   }, [t]);
 
-  // Listen for real-time socket events
   useEffect(() => {
     fetchNotifications();
     

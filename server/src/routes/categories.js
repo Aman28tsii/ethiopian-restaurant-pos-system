@@ -4,12 +4,10 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// ==================== GET ALL CATEGORIES ====================
+// GET all categories
 router.get('/', protect, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM categories ORDER BY name ASC'
-    );
+    const result = await pool.query('SELECT * FROM categories ORDER BY name ASC');
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Get categories error:', err);
@@ -17,12 +15,11 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// ==================== GET CATEGORY WITH PRODUCT COUNT ====================
+// GET categories with product count
 router.get('/with-count', protect, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT c.*, COUNT(p.id) as product_count, SUM(CASE WHEN p.is_available = true THEN 1 ELSE 0 END) as available_products FROM categories c LEFT JOIN products p ON c.id = p.category_id GROUP BY c.id ORDER BY c.name ASC'
-    );
+    const sql = 'SELECT c.*, COUNT(p.id) as product_count, SUM(CASE WHEN p.is_available = true THEN 1 ELSE 0 END) as available_products FROM categories c LEFT JOIN products p ON c.id = p.category_id GROUP BY c.id ORDER BY c.name ASC';
+    const result = await pool.query(sql);
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Get categories with count error:', err);
@@ -30,54 +27,41 @@ router.get('/with-count', protect, async (req, res) => {
   }
 });
 
-// ==================== CREATE CATEGORY ====================
+// POST create category
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { name, description, color, icon } = req.body;
   
   if (!name || name.trim().length < 2) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Category name must be at least 2 characters' 
-    });
+    return res.status(400).json({ success: false, error: 'Category name must be at least 2 characters' });
   }
   
   try {
-    const existing = await pool.query(
-      'SELECT id FROM categories WHERE LOWER(name) = LOWER()',
-      [name.trim()]
-    );
+    const existing = await pool.query('SELECT id FROM categories WHERE LOWER(name) = LOWER($1)', [name.trim()]);
     
     if (existing.rows.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Category already exists' 
-      });
+      return res.status(400).json({ success: false, error: 'Category already exists' });
     }
     
     const result = await pool.query(
-      'INSERT INTO categories (name, description, color, icon, created_at) VALUES (, , , , NOW()) RETURNING *',
+      'INSERT INTO categories (name, description, color, icon, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
       [name.trim(), description || null, color || '#6B7280', icon || null]
     );
     
-    res.status(201).json({
-      success: true,
-      message: 'Category created successfully',
-      data: result.rows[0]
-    });
+    res.status(201).json({ success: true, message: 'Category created successfully', data: result.rows[0] });
   } catch (err) {
     console.error('Create category error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ==================== UPDATE CATEGORY ====================
+// PUT update category
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { name, description, color, icon } = req.body;
   
   try {
     const result = await pool.query(
-      'UPDATE categories SET name = COALESCE(, name), description = COALESCE(, description), color = COALESCE(, color), icon = COALESCE(, icon), updated_at = NOW() WHERE id =  RETURNING *',
+      'UPDATE categories SET name = COALESCE($1, name), description = COALESCE($2, description), color = COALESCE($3, color), icon = COALESCE($4, icon), updated_at = NOW() WHERE id = $5 RETURNING *',
       [name, description, color, icon, id]
     );
     
@@ -85,60 +69,47 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
       return res.status(404).json({ success: false, error: 'Category not found' });
     }
     
-    res.json({
-      success: true,
-      message: 'Category updated successfully',
-      data: result.rows[0]
-    });
+    res.json({ success: true, message: 'Category updated successfully', data: result.rows[0] });
   } catch (err) {
     console.error('Update category error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ==================== DELETE CATEGORY ====================
+// DELETE category
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   
   try {
-    const productCheck = await pool.query(
-      'SELECT COUNT(*) as count FROM products WHERE category_id = ',
-      [id]
-    );
+    const productCheck = await pool.query('SELECT COUNT(*) as count FROM products WHERE category_id = $1', [id]);
     
     if (parseInt(productCheck.rows[0].count) > 0) {
       return res.status(400).json({
         success: false,
-        error: 'Cannot delete category. It has ' + productCheck.rows[0].count + ' products assigned. Move or delete products first.'
+        error: 'Cannot delete category. It has ' + productCheck.rows[0].count + ' products assigned.'
       });
     }
     
-    const result = await pool.query(
-      'DELETE FROM categories WHERE id =  RETURNING id',
-      [id]
-    );
+    const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING id', [id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Category not found' });
     }
     
-    res.json({
-      success: true,
-      message: 'Category deleted successfully'
-    });
+    res.json({ success: true, message: 'Category deleted successfully' });
   } catch (err) {
     console.error('Delete category error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ==================== GET PRODUCTS BY CATEGORY ====================
+// GET products by category
 router.get('/:id/products', protect, async (req, res) => {
   const { id } = req.params;
   
   try {
     const result = await pool.query(
-      'SELECT p.*, c.name as category_name, c.color as category_color FROM products p JOIN categories c ON p.category_id = c.id WHERE p.category_id =  ORDER BY p.name ASC',
+      'SELECT p.*, c.name as category_name, c.color as category_color FROM products p JOIN categories c ON p.category_id = c.id WHERE p.category_id = $1 ORDER BY p.name ASC',
       [id]
     );
     

@@ -1,5 +1,4 @@
-﻿// server/src/routes/categories.js
-import express from 'express';
+﻿import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
@@ -9,8 +8,7 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
   try {
     const result = await pool.query(
-      SELECT * FROM categories 
-       ORDER BY name ASC
+      'SELECT * FROM categories ORDER BY name ASC'
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -23,13 +21,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/with-count', protect, async (req, res) => {
   try {
     const result = await pool.query(
-      SELECT c.*, 
-              COUNT(p.id) as product_count,
-              SUM(CASE WHEN p.is_available = true THEN 1 ELSE 0 END) as available_products
-       FROM categories c
-       LEFT JOIN products p ON c.id = p.category_id
-       GROUP BY c.id
-       ORDER BY c.name ASC
+      'SELECT c.*, COUNT(p.id) as product_count, SUM(CASE WHEN p.is_available = true THEN 1 ELSE 0 END) as available_products FROM categories c LEFT JOIN products p ON c.id = p.category_id GROUP BY c.id ORDER BY c.name ASC'
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -50,7 +42,6 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
   
   try {
-    // Check if category already exists
     const existing = await pool.query(
       'SELECT id FROM categories WHERE LOWER(name) = LOWER()',
       [name.trim()]
@@ -64,9 +55,7 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
     
     const result = await pool.query(
-      INSERT INTO categories (name, description, color, icon, created_at)
-       VALUES (, , , , NOW())
-       RETURNING *,
+      'INSERT INTO categories (name, description, color, icon, created_at) VALUES (, , , , NOW()) RETURNING *',
       [name.trim(), description || null, color || '#6B7280', icon || null]
     );
     
@@ -88,14 +77,7 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   
   try {
     const result = await pool.query(
-      UPDATE categories 
-       SET name = COALESCE(, name),
-           description = COALESCE(, description),
-           color = COALESCE(, color),
-           icon = COALESCE(, icon),
-           updated_at = NOW()
-       WHERE id = 
-       RETURNING *,
+      'UPDATE categories SET name = COALESCE(, name), description = COALESCE(, description), color = COALESCE(, color), icon = COALESCE(, icon), updated_at = NOW() WHERE id =  RETURNING *',
       [name, description, color, icon, id]
     );
     
@@ -119,7 +101,6 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
   const { id } = req.params;
   
   try {
-    // Check if category has products
     const productCheck = await pool.query(
       'SELECT COUNT(*) as count FROM products WHERE category_id = ',
       [id]
@@ -128,7 +109,7 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
     if (parseInt(productCheck.rows[0].count) > 0) {
       return res.status(400).json({
         success: false,
-        error: Cannot delete category. It has  products assigned. Move or delete products first.
+        error: 'Cannot delete category. It has ' + productCheck.rows[0].count + ' products assigned. Move or delete products first.'
       });
     }
     
@@ -157,13 +138,7 @@ router.get('/:id/products', protect, async (req, res) => {
   
   try {
     const result = await pool.query(
-      SELECT p.*,
-              c.name as category_name,
-              c.color as category_color
-       FROM products p
-       JOIN categories c ON p.category_id = c.id
-       WHERE p.category_id = 
-       ORDER BY p.name ASC,
+      'SELECT p.*, c.name as category_name, c.color as category_color FROM products p JOIN categories c ON p.category_id = c.id WHERE p.category_id =  ORDER BY p.name ASC',
       [id]
     );
     

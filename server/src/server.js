@@ -73,10 +73,10 @@ app.use(errorHandler);
 
 // Socket.io connection
 io.on('connection', (socket) => {
-  console.log('🔌 Client connected:', socket.id);
+  console.log('Client connected:', socket.id);
   
   socket.on('disconnect', () => {
-    console.log('🔌 Client disconnected:', socket.id);
+    console.log('Client disconnected:', socket.id);
   });
 });
 
@@ -85,21 +85,21 @@ async function startServer() {
   const dbConnected = await testConnection();
   
   if (!dbConnected) {
-    console.error('❌ Database connection failed. Exiting...');
+    console.error('Database connection failed. Exiting...');
     process.exit(1);
   }
   
   httpServer.listen(PORT, () => {
-    console.log(✅ Server running on http://localhost:);
-    console.log(📦 Products API: http://localhost:/api/products);
-    console.log(💰 Sales API: http://localhost:/api/sales);
-    console.log(🍽️  Orders API: http://localhost:/api/orders);
-    console.log(📋 Tables API: http://localhost:/api/tables);
-    console.log(🔌 WebSocket enabled - Real-time updates active);
+    console.log('Server running on http://localhost:' + PORT);
+    console.log('Products API: http://localhost:' + PORT + '/api/products');
+    console.log('Sales API: http://localhost:' + PORT + '/api/sales');
+    console.log('Orders API: http://localhost:' + PORT + '/api/orders');
+    console.log('Tables API: http://localhost:' + PORT + '/api/tables');
+    console.log('WebSocket enabled - Real-time updates active');
   });
 }
 
 startServer().catch((err) => {
-  console.error('❌ Failed to start server:', err);
+  console.error('Failed to start server:', err);
   process.exit(1);
 });

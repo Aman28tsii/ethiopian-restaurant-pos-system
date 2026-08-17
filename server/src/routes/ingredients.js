@@ -4,7 +4,8 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-router.get('/', protect, async (req, res) => {
+// GET all ingredients - RESTRICTED to Manager/Owner/Admin
+router.get('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier FROM ingredients ORDER BY name'
@@ -16,8 +17,8 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// FIXED: Remove restrictTo for testing, use simple query
-router.get('/:id', protect, async (req, res) => {
+// GET ingredient by ID - RESTRICTED
+router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('SELECT * FROM ingredients WHERE id = ', [id]);
@@ -31,8 +32,8 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// FIXED: Simple query without empty string filter
-router.get('/categories', protect, async (req, res) => {
+// GET ingredient categories - RESTRICTED
+router.get('/categories', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT DISTINCT category FROM ingredients WHERE category IS NOT NULL ORDER BY category'
@@ -45,7 +46,8 @@ router.get('/categories', protect, async (req, res) => {
     }
 });
 
-router.get('/low-stock-alert', protect, async (req, res) => {
+// GET low stock alert - RESTRICTED
+router.get('/low-stock-alert', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT id, name, quantity, min_stock, unit FROM ingredients WHERE quantity <= min_stock ORDER BY quantity ASC'
@@ -57,7 +59,8 @@ router.get('/low-stock-alert', protect, async (req, res) => {
     }
 });
 
-router.get('/low-stock', protect, async (req, res) => {
+// GET low stock - RESTRICTED
+router.get('/low-stock', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT id, name, quantity, min_stock, unit, unit_cost FROM ingredients WHERE quantity <= min_stock'
@@ -69,6 +72,7 @@ router.get('/low-stock', protect, async (req, res) => {
     }
 });
 
+// POST create ingredient - RESTRICTED
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
@@ -86,6 +90,7 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
 });
 
+// PUT update ingredient - RESTRICTED
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -104,6 +109,7 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
 });
 
+// DELETE ingredient - RESTRICTED
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -125,6 +131,7 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
     }
 });
 
+// PUT adjust stock - RESTRICTED
 router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;

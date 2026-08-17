@@ -34,9 +34,9 @@ const RealTimeNotifications = memo(() => {
           
           lowStockItems.forEach(item => {
             newNotifications.push({
-              id: lowstock--,
+              id: 'lowstock-' + item.id + '-' + Date.now(),
               type: 'warning',
-              message: ${item.name} -     (: ),
+              message: item.name + ' - ' + t('only') + ' ' + item.quantity + ' ' + item.unit + ' ' + t('left') + ' (' + t('min') + ': ' + item.min_stock + ')',
               time: new Date().toLocaleTimeString(),
               read: false,
               link: '/owner/inventory'
@@ -56,9 +56,9 @@ const RealTimeNotifications = memo(() => {
           
           if (pendingCount > 0) {
             newNotifications.push({
-              id: pending-orders-,
+              id: 'pending-orders-' + Date.now(),
               type: 'info',
-              message: ${pendingCount} ,
+              message: pendingCount + ' ' + t('newOrdersWaiting'),
               time: new Date().toLocaleTimeString(),
               read: false,
               link: '/kitchen/orders'
@@ -94,8 +94,7 @@ const RealTimeNotifications = memo(() => {
       socketInitializedRef.current = true;
       
       const handleNewOrder = (data) => {
-        const notificationKey = 
-ew_order_;
+        const notificationKey = 'new_order_' + (data.order_id || data.order_number || data.id);
         const now = Date.now();
         
         if (lastNotificationRef.current[notificationKey] && now - lastNotificationRef.current[notificationKey] < 5000) {
@@ -104,9 +103,9 @@ ew_order_;
         lastNotificationRef.current[notificationKey] = now;
         
         const newNotif = {
-          id: socket-order--,
+          id: 'socket-order-' + Date.now() + '-' + Math.random(),
           type: 'info',
-          message: ${t('newOrderReceived')} #!,
+          message: t('newOrderReceived') + ' #' + (data.order_number || data.order_id || data.id) + '!',
           time: new Date().toLocaleTimeString(),
           read: false,
           link: '/kitchen/orders'
@@ -129,7 +128,7 @@ ew_order_;
       };
       
       const handleOrderStatusUpdate = (data) => {
-        const notificationKey = status__;
+        const notificationKey = 'status_' + data.order_id + '_' + data.status;
         const now = Date.now();
         
         if (lastNotificationRef.current[notificationKey] && now - lastNotificationRef.current[notificationKey] < 5000) {
@@ -138,9 +137,9 @@ ew_order_;
         lastNotificationRef.current[notificationKey] = now;
         
         const newNotif = {
-          id: socket-status--,
+          id: 'socket-status-' + Date.now() + '-' + Math.random(),
           type: 'success',
-          message: ${t('order')} #  !,
+          message: t('order') + ' #' + data.order_id + ' ' + t('isNow') + ' ' + data.status + '!',
           time: new Date().toLocaleTimeString(),
           read: false,
           link: data.status === 'ready' ? '/cashier/pos' : '/kitchen/orders'

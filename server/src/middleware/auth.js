@@ -1,5 +1,4 @@
-﻿// backend/src/middleware/auth.js
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
@@ -25,7 +24,7 @@ export const protect = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
-    console.log('✅ Authenticated:', req.user.email, 'Role:', req.user.role);
+    console.log('Authenticated:', req.user.email, 'Role:', req.user.role);
     next();
   } catch (error) {
     return res.status(401).json({ success: false, error: 'Invalid or expired token.' });
@@ -36,7 +35,7 @@ export const protect = (req, res, next) => {
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
     const userRole = req.user?.role;
-    console.log(🔍 User role: , Required: );
+    console.log('User role:', userRole, 'Required:', roles.join(', '));
     
     // Check if user role is in allowed roles
     if (roles.includes(userRole)) {

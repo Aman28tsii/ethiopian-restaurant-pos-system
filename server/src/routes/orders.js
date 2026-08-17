@@ -6,14 +6,12 @@ import { processOrderStockDeduction } from '../controllers/recipeController.js';
 
 const router = express.Router();
 
-// Rate limiter for public tracking endpoint
 const trackLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
   message: { success: false, error: 'Too many requests. Please wait.' }
 });
 
-// Generate unique sale number
 const generateSaleNumber = function() {
   const date = new Date();
   const timestamp = date.getTime().toString().slice(-8);
@@ -25,7 +23,6 @@ const generateSaleNumber = function() {
 // PUBLIC ROUTES
 // ============================================
 
-// Track order by order number (Public)
 router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
   const { orderNumber } = req.params;
   
@@ -46,29 +43,19 @@ router.get('/track/:orderNumber', trackLimiter, async (req, res) => {
       [order.id]
     );
     
-    const wastageResult = await pool.query(
-      'SELECT SUM(st.wastage_amount * i.unit_cost) as total_wastage_cost, COUNT(st.id) as wastage_entries FROM stock_transactions st JOIN ingredients i ON st.ingredient_id = i.id WHERE st.order_id = $1',
-      [order.id]
-    );
-    
     res.json({
       success: true,
       data: {
         ...order,
-        items: itemsResult.rows,
-        wastage: wastageResult.rows[0] || { total_wastage_cost: 0, wastage_entries: 0 }
+        items: itemsResult.rows
       }
     });
-    
   } catch (err) {
     console.error('Track order error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ============================================
-// PUBLIC QR ORDER ROUTE
-// ============================================
 router.post('/qr-order', async (req, res) => {
   try {
     const { items, table_id, customer_name, customer_phone, notes } = req.body;
@@ -157,7 +144,6 @@ router.post('/qr-order', async (req, res) => {
     } finally {
       client.release();
     }
-    
   } catch (err) {
     console.error('QR order error:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -165,10 +151,9 @@ router.post('/qr-order', async (req, res) => {
 });
 
 // ============================================
-// WAITER ROUTES - WITH STOCK DEDUCTION
+// WAITER ROUTES
 // ============================================
 
-// Create order with stock deduction
 router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
@@ -184,7 +169,6 @@ router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'a
       await client.query('BEGIN');
       
       let totalAmount = 0;
-      
       for (const item of items) {
         const productResult = await client.query(
           'SELECT price FROM products WHERE id = $1',
@@ -272,7 +256,6 @@ router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'a
   }
 });
 
-// Add items to existing order
 router.post('/:orderId/add-items', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -364,11 +347,10 @@ router.post('/:orderId/add-items', protect, restrictTo('waiter', 'cashier', 'man
 // CASHIER ROUTES
 // ============================================
 
-// Get orders ready for payment
 router.get('/ready', protect, restrictTo('cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.table_id, t.table_number, o.created_at, ko.status as kitchen_status, (SELECT COUNT(*) FROM stock_transactions WHERE order_id = o.id) as has_wastage FROM orders o LEFT JOIN tables t ON o.table_id = t.id JOIN kitchen_orders ko ON o.id = ko.order_id WHERE ko.status = $1 AND o.payment_status = $2 AND o.status != $3 ORDER BY o.created_at ASC',
+      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.table_id, t.table_number, o.created_at, ko.status as kitchen_status FROM orders o LEFT JOIN tables t ON o.table_id = t.id JOIN kitchen_orders ko ON o.id = ko.order_id WHERE ko.status = $1 AND o.payment_status = $2 AND o.status != $3 ORDER BY o.created_at ASC',
       ['ready', 'pending', 'completed']
     );
     res.json({ success: true, data: result.rows });
@@ -378,7 +360,6 @@ router.get('/ready', protect, restrictTo('cashier', 'manager', 'owner', 'admin')
   }
 });
 
-// Process payment
 router.post('/:orderId/pay', protect, restrictTo('cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { payment_method } = req.body;
@@ -443,24 +424,37 @@ router.post('/:orderId/pay', protect, restrictTo('cashier', 'manager', 'owner', 
 });
 
 // ============================================
-// KITCHEN ROUTES
+// KITCHEN ROUTES - FIXED
 // ============================================
 
-// Get kitchen orders
 router.get('/kitchen', protect, restrictTo('kitchen', 'manager', 'owner', 'admin'), async (req, res) => {
   try {
+    // Get orders with their items - simplified query
     const result = await pool.query(
-      'SELECT ko.id, ko.order_id, ko.status, ko.created_at, o.order_number, o.customer_name, o.table_id, t.table_number, COALESCE(json_agg(json_build_object($1, p.name, $2, oi.quantity)) FILTER (WHERE p.id IS NOT NULL), $3) as items FROM kitchen_orders ko JOIN orders o ON ko.order_id = o.id LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id LEFT JOIN tables t ON o.table_id = t.id WHERE ko.status IN ($4, $5) GROUP BY ko.id, o.order_number, o.customer_name, o.table_id, ko.status, ko.created_at, t.table_number ORDER BY CASE ko.status WHEN $6 THEN 1 WHEN $7 THEN 2 END, ko.created_at ASC',
-      ['name', 'quantity', '[]', 'pending', 'preparing', 'pending', 'preparing']
+      'SELECT ko.id, ko.order_id, ko.status, ko.created_at, o.order_number, o.customer_name, o.table_id, t.table_number FROM kitchen_orders ko JOIN orders o ON ko.order_id = o.id LEFT JOIN tables t ON o.table_id = t.id WHERE ko.status IN ($1, $2) ORDER BY CASE ko.status WHEN $3 THEN 1 WHEN $4 THEN 2 END, ko.created_at ASC',
+      ['pending', 'preparing', 'pending', 'preparing']
     );
-    res.json({ success: true, data: result.rows });
+    
+    // Get items for each order
+    const ordersWithItems = [];
+    for (const order of result.rows) {
+      const itemsResult = await pool.query(
+        'SELECT p.name, oi.quantity FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $1',
+        [order.order_id]
+      );
+      ordersWithItems.push({
+        ...order,
+        items: itemsResult.rows
+      });
+    }
+    
+    res.json({ success: true, data: ordersWithItems });
   } catch (err) {
     console.error('Kitchen orders error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Update kitchen order status
 router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { status } = req.body;
@@ -470,19 +464,26 @@ router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager',
   try {
     await client.query('BEGIN');
     
-    const result = await client.query(
-      'UPDATE kitchen_orders SET status = $1, started_at = CASE WHEN $2 = $3 AND status = $4 THEN NOW() ELSE started_at END, completed_at = CASE WHEN $5 = $6 THEN NOW() ELSE completed_at END, updated_at = NOW() WHERE order_id = $7 RETURNING *',
-      [status, status, 'preparing', 'pending', status, 'ready', orderId]
-    );
+    let updateQuery = 'UPDATE kitchen_orders SET status = $1, updated_at = NOW()';
+    let params = [status];
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
+    if (status === 'preparing') {
+      updateQuery = 'UPDATE kitchen_orders SET status = $1, started_at = NOW(), updated_at = NOW() WHERE order_id = $2 RETURNING *';
+      params = [status, orderId];
+    } else if (status === 'ready') {
+      updateQuery = 'UPDATE kitchen_orders SET status = $1, completed_at = NOW(), updated_at = NOW() WHERE order_id = $2 RETURNING *';
+      params = [status, orderId];
+    } else {
+      updateQuery = 'UPDATE kitchen_orders SET status = $1, updated_at = NOW() WHERE order_id = $2 RETURNING *';
+      params = [status, orderId];
     }
     
-    const orderDetails = await client.query(
-      'SELECT o.order_number, o.table_id, o.waiter_id, t.table_number FROM orders o LEFT JOIN tables t ON o.table_id = t.id WHERE o.id = $1',
-      [orderId]
-    );
+    const result = await client.query(updateQuery, params);
+    
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
     
     if (status === 'ready') {
       await client.query(
@@ -492,6 +493,11 @@ router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager',
     }
     
     await client.query('COMMIT');
+    
+    const orderDetails = await pool.query(
+      'SELECT o.order_number, o.table_id, o.waiter_id, t.table_number FROM orders o LEFT JOIN tables t ON o.table_id = t.id WHERE o.id = $1',
+      [orderId]
+    );
     
     const io = req.app.get('io');
     if (io) {
@@ -530,14 +536,13 @@ router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager',
 // OTHER ROUTES
 // ============================================
 
-// Get pending confirmation orders
 router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, o.table_id, o.notes, o.created_at, o.status, t.table_number, COALESCE(json_agg(json_build_object($1, p.name, $2, oi.quantity, $3, oi.unit_price)) FILTER (WHERE p.id IS NOT NULL), $4) as items FROM orders o JOIN tables t ON o.table_id = t.id LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE o.status = $5 AND (o.waiter_id = $6 OR o.waiter_id IS NULL) AND o.source = $7 GROUP BY o.id, t.table_number ORDER BY o.created_at ASC',
-      ['name', 'quantity', 'price', '[]', 'pending_confirmation', waiterId, 'qr_menu']
+      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, o.table_id, o.notes, o.created_at, o.status, t.table_number FROM orders o JOIN tables t ON o.table_id = t.id WHERE o.status = $1 AND (o.waiter_id = $2 OR o.waiter_id IS NULL) AND o.source = $3 ORDER BY o.created_at ASC',
+      ['pending_confirmation', waiterId, 'qr_menu']
     );
     
     res.json({ success: true, data: result.rows });
@@ -547,7 +552,6 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
   }
 });
 
-// Confirm order
 router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
@@ -638,14 +642,13 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
   }
 });
 
-// Get waiter's orders
 router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const userId = req.user.id;
   
   try {
     const result = await pool.query(
-      'SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.customer_name, o.table_id, o.created_at, t.table_number, COALESCE(json_agg(json_build_object($1, p.name, $2, oi.quantity, $3, oi.unit_price)) FILTER (WHERE p.id IS NOT NULL), $4) as items FROM orders o JOIN tables t ON o.table_id = t.id LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE o.waiter_id = $5 AND o.status NOT IN ($6, $7, $8) GROUP BY o.id, t.table_number ORDER BY o.created_at DESC',
-      ['name', 'quantity', 'price', '[]', userId, 'completed', 'cancelled', 'pending_confirmation']
+      'SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.customer_name, o.table_id, o.created_at, t.table_number FROM orders o JOIN tables t ON o.table_id = t.id WHERE o.waiter_id = $1 AND o.status NOT IN ($2, $3, $4) ORDER BY o.created_at DESC',
+      [userId, 'completed', 'cancelled', 'pending_confirmation']
     );
     
     res.json({ success: true, data: result.rows });
@@ -655,7 +658,6 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
   }
 });
 
-// Cancel order
 router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { reason } = req.body;
@@ -728,7 +730,6 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
   }
 });
 
-// Get active order for table
 router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;
   
@@ -745,7 +746,6 @@ router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashie
   }
 });
 
-// Public: Customer adds items to existing order
 router.post('/:orderId/customer-add-items', async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -815,7 +815,6 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
   }
 });
 
-// Get wastage for order
 router.get('/:orderId/wastage', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   

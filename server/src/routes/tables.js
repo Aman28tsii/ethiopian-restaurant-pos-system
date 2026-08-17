@@ -17,8 +17,6 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// ==================== TABLE MANAGEMENT ====================
-
 // CREATE new table
 router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { table_number, capacity, status } = req.body;

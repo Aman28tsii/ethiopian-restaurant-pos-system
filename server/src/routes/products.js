@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET product by ID (public) - FIXED
+// GET product by ID (public)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -39,9 +39,10 @@ router.get('/:id', async (req, res) => {
 router.get('/categories', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT DISTINCT category FROM products WHERE category IS NOT NULL ORDER BY category'
+      "SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category"
     );
-    res.json({ success: true, data: result.rows.map(function(r) { return r.category; }) });
+    const categories = result.rows.map(function(r) { return r.category; });
+    res.json({ success: true, data: categories });
   } catch (err) {
     console.error('Get categories error:', err);
     res.status(500).json({ success: false, error: err.message });

@@ -1,10 +1,10 @@
-import express from 'express';
+﻿import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// Get all customers
+// GET all customers
 router.get('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
@@ -17,10 +17,11 @@ router.get('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// Get customer by ID
+// GET customer by ID - FIXED
 router.get('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM customers WHERE id = $1', [req.params.id]);
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM customers WHERE id = ', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
@@ -31,14 +32,18 @@ router.get('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// Create customer
+// CREATE customer
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { name, email, phone, address, notes } = req.body;
   
+  if (!name) {
+    return res.status(400).json({ success: false, error: 'Name is required' });
+  }
+  
   try {
     const result = await pool.query(
-      'INSERT INTO customers (name, email, phone, address, notes, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
-      [name, email, phone, address, notes]
+      'INSERT INTO customers (name, email, phone, address, notes, created_at) VALUES (, , , , , NOW()) RETURNING *',
+      [name, email || null, phone || null, address || null, notes || null]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -47,14 +52,15 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// Update customer
+// UPDATE customer
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
+  const { id } = req.params;
   const { name, email, phone, address, loyalty_points, total_spent, visit_count, notes } = req.body;
   
   try {
     const result = await pool.query(
-      'UPDATE customers SET name = COALESCE($1, name), email = COALESCE($2, email), phone = COALESCE($3, phone), address = COALESCE($4, address), loyalty_points = COALESCE($5, loyalty_points), total_spent = COALESCE($6, total_spent), visit_count = COALESCE($7, visit_count), notes = COALESCE($8, notes), updated_at = NOW() WHERE id = $9 RETURNING *',
-      [name, email, phone, address, loyalty_points, total_spent, visit_count, notes, req.params.id]
+      'UPDATE customers SET name = COALESCE(, name), email = COALESCE(, email), phone = COALESCE(, phone), address = COALESCE(, address), loyalty_points = COALESCE(, loyalty_points), total_spent = COALESCE(, total_spent), visit_count = COALESCE(, visit_count), notes = COALESCE(, notes), updated_at = NOW() WHERE id =  RETURNING *',
+      [name, email, phone, address, loyalty_points, total_spent, visit_count, notes, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
@@ -66,10 +72,11 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// Delete customer
+// DELETE customer
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM customers WHERE id = $1 RETURNING id', [req.params.id]);
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM customers WHERE id =  RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }

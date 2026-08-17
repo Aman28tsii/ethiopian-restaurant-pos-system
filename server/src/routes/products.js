@@ -4,7 +4,6 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// GET all products (public)
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
@@ -17,12 +16,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET product by ID (public)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, name, price, category, description, is_available FROM products WHERE id = $1',
+      'SELECT id, name, price, category, description, is_available FROM products WHERE id = ',
       [id]
     );
     if (result.rows.length === 0) {
@@ -35,11 +33,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET categories (public) - FIXED
+// FIXED: Simple query without empty string filter
 router.get('/categories', async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category"
+      'SELECT DISTINCT category FROM products WHERE category IS NOT NULL ORDER BY category'
     );
     const categories = result.rows.map(function(r) { return r.category; });
     res.json({ success: true, data: categories });
@@ -49,7 +47,6 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// GET all products (admin view)
 router.get('/all', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
@@ -62,20 +59,16 @@ router.get('/all', protect, restrictTo('manager', 'owner', 'admin'), async (req,
   }
 });
 
-// POST create product
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { name, price, category, description } = req.body;
-    
     if (!name || price === undefined) {
       return res.status(400).json({ success: false, error: 'Name and price are required' });
     }
-    
     const result = await pool.query(
-      'INSERT INTO products (name, price, category, description, is_available) VALUES ($1, $2, $3, $4, true) RETURNING id, name, price, category, description, is_available',
+      'INSERT INTO products (name, price, category, description, is_available) VALUES (, , , , true) RETURNING id, name, price, category, description, is_available',
       [name.trim(), price, category || null, description || null]
     );
-    
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('Create product error:', err);
@@ -83,21 +76,17 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// PUT update product
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, category, is_available, description } = req.body;
-    
     const result = await pool.query(
-      'UPDATE products SET name = COALESCE($1, name), price = COALESCE($2, price), category = COALESCE($3, category), is_available = COALESCE($4, is_available), description = COALESCE($5, description), updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING id, name, price, category, is_available, description',
+      'UPDATE products SET name = COALESCE(, name), price = COALESCE(, price), category = COALESCE(, category), is_available = COALESCE(, is_available), description = COALESCE(, description), updated_at = CURRENT_TIMESTAMP WHERE id =  RETURNING id, name, price, category, is_available, description',
       [name, price, category, is_available, description, id]
     );
-    
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
-    
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('Update product error:', err);
@@ -105,12 +94,11 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// DELETE product
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE products SET is_available = false WHERE id = $1 RETURNING id',
+      'UPDATE products SET is_available = false WHERE id =  RETURNING id',
       [id]
     );
     if (result.rows.length === 0) {

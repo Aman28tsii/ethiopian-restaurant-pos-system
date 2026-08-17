@@ -4,7 +4,6 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// GET all customers
 router.get('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
@@ -17,7 +16,7 @@ router.get('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// GET customer by ID - FIXED
+// FIXED: Simple query without error
 router.get('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -32,14 +31,11 @@ router.get('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// CREATE customer
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { name, email, phone, address, notes } = req.body;
-  
   if (!name) {
     return res.status(400).json({ success: false, error: 'Name is required' });
   }
-  
   try {
     const result = await pool.query(
       'INSERT INTO customers (name, email, phone, address, notes, created_at) VALUES (, , , , , NOW()) RETURNING *',
@@ -52,11 +48,9 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// UPDATE customer
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, address, loyalty_points, total_spent, visit_count, notes } = req.body;
-  
   try {
     const result = await pool.query(
       'UPDATE customers SET name = COALESCE(, name), email = COALESCE(, email), phone = COALESCE(, phone), address = COALESCE(, address), loyalty_points = COALESCE(, loyalty_points), total_spent = COALESCE(, total_spent), visit_count = COALESCE(, visit_count), notes = COALESCE(, notes), updated_at = NOW() WHERE id =  RETURNING *',
@@ -72,7 +66,6 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// DELETE customer
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,28 +1,19 @@
-﻿/**
- * Format currency in Ethiopian Birr
- */
-export const formatCurrency = (value) => {
+﻿export const formatCurrency = function(value) {
   const num = parseFloat(value || 0);
   const rounded = Math.round(num * 100) / 100;
-  return "Br " + rounded.toLocaleString(undefined, { 
+  return 'Br ' + rounded.toLocaleString(undefined, { 
     minimumFractionDigits: 2, 
     maximumFractionDigits: 2 
   });
 };
 
-/**
- * Format date to locale string
- */
-export const formatDate = (dateString) => {
+export const formatDate = function(dateString) {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 };
 
-/**
- * Get order status info
- */
-export const getOrderStatusInfo = (status) => {
+export const getOrderStatusInfo = function(status) {
   const statusMap = {
     'pending_confirmation': { 
       label: 'Waiting for Waiter', 
@@ -75,10 +66,7 @@ export const getOrderStatusInfo = (status) => {
   };
 };
 
-/**
- * Get product emoji by category
- */
-export const getProductEmoji = (category) => {
+export const getProductEmoji = function(category) {
   const emojis = {
     'Main Course': '🍛',
     'Beverage': '🥤',
@@ -100,10 +88,7 @@ export const getProductEmoji = (category) => {
   return emojis[category] || '🍽️';
 };
 
-/**
- * Get status badge JSX class combinations
- */
-export const getStatusBadgeClasses = (status) => {
+export const getStatusBadgeClasses = function(status) {
   const info = getOrderStatusInfo(status);
   return {
     container: info.bgColor + ' ' + info.textColor + ' px-2 py-1 rounded-full text-xs font-semibold',

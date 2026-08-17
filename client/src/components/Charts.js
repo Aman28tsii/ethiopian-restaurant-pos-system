@@ -9,7 +9,6 @@ import { formatCurrency } from '../utils/formatting';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-// Revenue & Profit Line Chart
 export const RevenueChart = ({ data, title }) => {
   const { t } = useLanguage();
   
@@ -28,13 +27,13 @@ export const RevenueChart = ({ data, title }) => {
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="date" stroke="#9ca3af" />
-          <YAxis stroke="#9ca3af" tickFormatter={(value) => Br } />
+          <YAxis stroke="#9ca3af" tickFormatter={function(value) { return 'Br ' + value; }} />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
-            formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => ${t('date')}: }
+            formatter={function(value) { return formatCurrency(value); }}
+            labelFormatter={function(label) { return t('date') + ': ' + label; }}
           />
-          <Legend formatter={(value) => t(value.toLowerCase())} />
+          <Legend formatter={function(value) { return t(value.toLowerCase()); }} />
           <Line type="monotone" dataKey="revenue" stroke="#3b82f6" name="revenue" strokeWidth={2} dot={{ r: 4 }} />
           <Line type="monotone" dataKey="profit" stroke="#10b981" name="profit" strokeWidth={2} dot={{ r: 4 }} />
         </LineChart>
@@ -43,7 +42,6 @@ export const RevenueChart = ({ data, title }) => {
   );
 };
 
-// Top Products Bar Chart
 export const TopProductsChart = ({ data, title }) => {
   const { t } = useLanguage();
   
@@ -61,12 +59,12 @@ export const TopProductsChart = ({ data, title }) => {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ left: 80 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis type="number" stroke="#9ca3af" tickFormatter={(value) => Br } />
+          <XAxis type="number" stroke="#9ca3af" tickFormatter={function(value) { return 'Br ' + value; }} />
           <YAxis type="category" dataKey="name" stroke="#9ca3af" width={100} />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
-            formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => ${t('product')}: }
+            formatter={function(value) { return formatCurrency(value); }}
+            labelFormatter={function(label) { return t('product') + ': ' + label; }}
           />
           <Bar dataKey="revenue" fill="#8b5cf6" name={t('revenue')} radius={[0, 4, 4, 0]} />
         </BarChart>
@@ -75,7 +73,6 @@ export const TopProductsChart = ({ data, title }) => {
   );
 };
 
-// Payment Methods Pie Chart
 export const PaymentMethodsChart = ({ data, title }) => {
   const { t } = useLanguage();
   
@@ -87,7 +84,7 @@ export const PaymentMethodsChart = ({ data, title }) => {
     );
   }
 
-  const translatePaymentMethod = (method) => {
+  const translatePaymentMethod = function(method) {
     const methods = {
       'cash': t('cash'),
       'card': t('card'),
@@ -96,10 +93,12 @@ export const PaymentMethodsChart = ({ data, title }) => {
     return methods[method] || method;
   };
 
-  const translatedData = data.map(item => ({
-    ...item,
-    payment_method: translatePaymentMethod(item.payment_method)
-  }));
+  const translatedData = data.map(function(item) {
+    return {
+      ...item,
+      payment_method: translatePaymentMethod(item.payment_method)
+    };
+  });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -111,19 +110,19 @@ export const PaymentMethodsChart = ({ data, title }) => {
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => ${name}: %}
+            label={function({ name, percent }) { return name + ': ' + (percent * 100).toFixed(0) + '%'; }}
             outerRadius={100}
             fill="#8884d8"
             dataKey="total"
             nameKey="payment_method"
           >
-            {translatedData.map((entry, index) => (
-              <Cell key={cell-} fill={COLORS[index % COLORS.length]} />
-            ))}
+            {translatedData.map(function(entry, index) {
+              return <Cell key={'cell-' + index} fill={COLORS[index % COLORS.length]} />;
+            })}
           </Pie>
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
-            formatter={(value) => formatCurrency(value)}
+            formatter={function(value) { return formatCurrency(value); }}
           />
           <Legend />
         </PieChart>
@@ -132,7 +131,6 @@ export const PaymentMethodsChart = ({ data, title }) => {
   );
 };
 
-// Hourly Sales Area Chart
 export const HourlySalesChart = ({ data, title }) => {
   const { t } = useLanguage();
   
@@ -144,10 +142,12 @@ export const HourlySalesChart = ({ data, title }) => {
     );
   }
 
-  const formattedData = data.map(item => ({
-    ...item,
-    hour: ${String(item.hour).padStart(2, '0')}:00
-  }));
+  const formattedData = data.map(function(item) {
+    return {
+      ...item,
+      hour: String(item.hour).padStart(2, '0') + ':00'
+    };
+  });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -156,13 +156,13 @@ export const HourlySalesChart = ({ data, title }) => {
         <AreaChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="hour" stroke="#9ca3af" label={{ value: t('hour'), position: 'insideBottom', offset: -5 }} />
-          <YAxis stroke="#9ca3af" tickFormatter={(value) => Br } />
+          <YAxis stroke="#9ca3af" tickFormatter={function(value) { return 'Br ' + value; }} />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
-            formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => ${t('hour')}: }
+            formatter={function(value) { return formatCurrency(value); }}
+            labelFormatter={function(label) { return t('hour') + ': ' + label; }}
           />
-          <Legend formatter={(value) => t(value.toLowerCase())} />
+          <Legend formatter={function(value) { return t(value.toLowerCase()); }} />
           <Area type="monotone" dataKey="revenue" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} name="revenue" />
           <Area type="monotone" dataKey="orders" stackId="2" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} name="orders" />
         </AreaChart>

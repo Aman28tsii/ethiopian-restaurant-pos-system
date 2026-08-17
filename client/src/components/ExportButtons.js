@@ -8,8 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 const ExportButtons = ({ data, filename, type = 'both' }) => {
   const { t } = useLanguage();
   
-  // Export to Excel
-  const exportToExcel = () => {
+  const exportToExcel = function() {
     if (!data || data.length === 0) {
       alert(t('noDataToExport'));
       return;
@@ -19,15 +18,14 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, t('report'));
-      XLSX.writeFile(wb, ${filename}.xlsx);
+      XLSX.writeFile(wb, filename + '.xlsx');
     } catch (error) {
       console.error('Excel export error:', error);
       alert(t('exportFailed'));
     }
   };
 
-  // Export to PDF
-  const exportToPDF = () => {
+  const exportToPDF = function() {
     if (!data || data.length === 0) {
       alert(t('noDataToExport'));
       return;
@@ -39,10 +37,10 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       doc.setFontSize(16);
       doc.text(filename, 14, 15);
       doc.setFontSize(9);
-      doc.text(${t('generated')}: , 14, 25);
+      doc.text(t('generated') + ': ' + new Date().toLocaleString(), 14, 25);
       
       const tableColumn = Object.keys(data[0]);
-      const tableRows = data.map(item => Object.values(item));
+      const tableRows = data.map(function(item) { return Object.values(item); });
       
       autoTable(doc, {
         head: [tableColumn],
@@ -63,11 +61,11 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
         }
       });
       
-      doc.save(${filename}.pdf);
+      doc.save(filename + '.pdf');
       
     } catch (error) {
       console.error('PDF export error:', error);
-      alert(${t('pdfExportError')}: );
+      alert(t('pdfExportError') + ': ' + error.message);
     }
   };
 

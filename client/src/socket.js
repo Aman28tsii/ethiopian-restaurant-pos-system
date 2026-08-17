@@ -1,25 +1,12 @@
-﻿import io from 'socket.io-client';
+﻿// Dummy socket - no real connection
+console.log('WebSocket disabled - using API polling only');
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'https://ethiopos-backend.onrender.com';
-
-const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
-  reconnection: true,
-  reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000
-});
-
-socket.on('connect', () => {
-  console.log('🔌 Socket connected:', socket.id);
-});
-
-socket.on('disconnect', () => {
-  console.log('🔌 Socket disconnected');
-});
-
-socket.on('connect_error', (error) => {
-  console.log('❌ Socket connection error:', error.message);
-});
+const socket = {
+  on: function() { return this; },
+  off: function() { return this; },
+  emit: function() { return this; },
+  connect: function() { return this; },
+  disconnect: function() { return this; }
+};
 
 export default socket;

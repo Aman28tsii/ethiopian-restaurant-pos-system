@@ -30,7 +30,7 @@ export const createSale = catchAsync(async function(req, res) {
     
     for (const item of items) {
       const productResult = await client.query(
-        'SELECT id, name, price FROM products WHERE id =  AND is_available = true',
+        'SELECT id, name, price FROM products WHERE id = $1 AND is_available = true',
         [item.product_id]
       );
       
@@ -57,7 +57,7 @@ export const createSale = catchAsync(async function(req, res) {
     const saleNumber = generateSaleNumber();
     
     const saleResult = await client.query(
-      'INSERT INTO sales (business_id, user_id, sale_number, total_amount, payment_method, customer_name, customer_phone, status) VALUES (, , , , , , , ) RETURNING id, sale_number, created_at',
+      'INSERT INTO sales (business_id, user_id, sale_number, total_amount, payment_method, customer_name, customer_phone, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, sale_number, created_at',
       [businessId, userId, saleNumber, totalAmount, payment_method, customer_name, customer_phone, 'completed']
     );
     
@@ -65,7 +65,7 @@ export const createSale = catchAsync(async function(req, res) {
     
     for (const item of saleItems) {
       await client.query(
-        'INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price) VALUES (, , , , )',
+        'INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price) VALUES ($1, $2, $3, $4, $5)',
         [saleId, item.product_id, item.quantity, item.unit_price, item.total_price]
       );
     }
@@ -115,7 +115,7 @@ export const getSales = catchAsync(async function(req, res) {
   const { startDate, endDate, page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   
-  let sql = 'SELECT s.*, u.name as cashier_name, COUNT(si.id) as item_count FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id WHERE s.status = ';
+  let sql = 'SELECT s.*, u.name as cashier_name, COUNT(si.id) as item_count FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id WHERE s.status = $1';
   const params = ['completed'];
   let paramIndex = 2;
   
@@ -134,7 +134,7 @@ export const getSales = catchAsync(async function(req, res) {
   
   const result = await query(sql, params);
   
-  const countResult = await query('SELECT COUNT(*) FROM sales WHERE status = ', ['completed']);
+  const countResult = await query('SELECT COUNT(*) FROM sales WHERE status = $1', ['completed']);
   
   res.json({
     success: true,
@@ -153,7 +153,7 @@ export const getSaleById = catchAsync(async function(req, res) {
   const { id } = req.params;
   
   const saleResult = await query(
-    'SELECT s.*, u.name as cashier_name FROM sales s LEFT JOIN users u ON s.user_id = u.id WHERE s.id = ',
+    'SELECT s.*, u.name as cashier_name FROM sales s LEFT JOIN users u ON s.user_id = u.id WHERE s.id = $1',
     [id]
   );
   
@@ -162,7 +162,7 @@ export const getSaleById = catchAsync(async function(req, res) {
   }
   
   const itemsResult = await query(
-    'SELECT si.*, p.name as product_name, p.category FROM sale_items si JOIN products p ON si.product_id = p.id WHERE si.sale_id = ',
+    'SELECT si.*, p.name as product_name, p.category FROM sale_items si JOIN products p ON si.product_id = p.id WHERE si.sale_id = $1',
     [id]
   );
   
@@ -175,12 +175,12 @@ export const getSaleById = catchAsync(async function(req, res) {
   });
 });
 
-// Get today's sales summary
+// Get today's sales summary - FIXED
 export const getTodaySales = catchAsync(async function(req, res) {
   const today = new Date().toISOString().split('T')[0];
   
   const result = await query(
-    'SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue, COALESCE(SUM(profit), 0) as total_profit, COALESCE(AVG(total_amount), 0) as average_order FROM sales WHERE DATE(created_at) =  AND status = ',
+    'SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue, COALESCE(SUM(profit), 0) as total_profit, COALESCE(AVG(total_amount), 0) as average_order FROM sales WHERE DATE(created_at) = $1 AND status = $2',
     [today, 'completed']
   );
   

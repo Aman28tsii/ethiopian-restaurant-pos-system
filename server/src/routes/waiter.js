@@ -10,7 +10,7 @@ router.get('/my-tables', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
   
   try {
     const result = await pool.query(
-      'SELECT t.*, CASE WHEN t.self_assigned THEN  ELSE  END as assignment_type FROM tables t WHERE t.assigned_waiter_id =  ORDER BY t.status =  DESC, t.table_number ASC',
+      'SELECT t.*, CASE WHEN t.self_assigned = true THEN  ELSE  END as assignment_type FROM tables t WHERE t.assigned_waiter_id =  ORDER BY t.status =  DESC, t.table_number ASC',
       ['Self-Assigned', 'Manager-Assigned', waiterId, 'occupied']
     );
     

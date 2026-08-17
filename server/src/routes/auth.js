@@ -1,4 +1,4 @@
-// backend/src/routes/auth.js
+﻿// backend/src/routes/auth.js
 import express from 'express';
 import {
   login,
@@ -12,7 +12,7 @@ import {
   getStaffPerformance,
   logout
 } from '../controllers/authController.js';
-import { protect, allowOwner } from '../middleware/auth.js';
+import { protect, restrictTo } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -26,11 +26,11 @@ router.use(protect);
 router.get('/me', getCurrentUser);
 router.post('/logout', logout);
 
-// Owner only routes - using allowOwner
-router.get('/users', allowOwner, getAllUsers);
-router.get('/users/pending', allowOwner, getPendingUsers);
-router.put('/users/:id/approve', allowOwner, approveUser);
-router.delete('/users/:id/reject', allowOwner, rejectUser);
-router.get('/performance', allowOwner, getStaffPerformance);
+// Owner/Admin only routes
+router.get('/users', restrictTo('owner', 'admin'), getAllUsers);
+router.get('/users/pending', restrictTo('owner', 'admin'), getPendingUsers);
+router.put('/users/:id/approve', restrictTo('owner', 'admin'), approveUser);
+router.delete('/users/:id/reject', restrictTo('owner', 'admin'), rejectUser);
+router.get('/performance', restrictTo('owner', 'admin'), getStaffPerformance);
 
 export default router;

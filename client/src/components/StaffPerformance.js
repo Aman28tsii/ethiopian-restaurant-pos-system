@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import API from '../api/axios';
 import { Award, Loader2, Medal, Crown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { formatCurrency } from '../utils/formatting';
 
 const StaffPerformance = memo(() => {
   const { t } = useLanguage();
@@ -10,10 +11,6 @@ const StaffPerformance = memo(() => {
   const [period, setPeriod] = useState('month');
   const intervalRef = useRef(null);
   const isMounted = useRef(true);
-
-  const formatCurrency = useCallback((value) => {
-    return `Br ${parseFloat(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }, []);
 
   const fetchPerformance = useCallback(async () => {
     if (!isMounted.current) return;
@@ -91,19 +88,19 @@ const StaffPerformance = memo(() => {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1 rounded-lg text-sm transition ${period === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+            className={"px-3 py-1 rounded-lg text-sm transition " + (period === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white')}
           >
             {t('week')}
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1 rounded-lg text-sm transition ${period === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+            className={"px-3 py-1 rounded-lg text-sm transition " + (period === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white')}
           >
             {t('month')}
           </button>
           <button
             onClick={() => setPeriod('year')}
-            className={`px-3 py-1 rounded-lg text-sm transition ${period === 'year' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+            className={"px-3 py-1 rounded-lg text-sm transition " + (period === 'year' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white')}
           >
             {t('year')}
           </button>

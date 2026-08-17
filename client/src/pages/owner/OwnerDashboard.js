@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../api/axios';
 import { Loader2, DollarSign, TrendingUp, Users, Calendar } from 'lucide-react';
 import { RevenueChart, TopProductsChart, PaymentMethodsChart, HourlySalesChart } from '../../components/Charts';
 import LowStockAlert from '../../components/LowStockAlert';
 import StaffPerformance from '../../components/StaffPerformance';
 import { useLanguage } from '../../context/LanguageContext';
+import { formatCurrency } from '../../utils/formatting';
 
 const OwnerDashboard = () => {
   const { t } = useLanguage();
@@ -33,12 +34,6 @@ const OwnerDashboard = () => {
     }
   };
 
-  const formatCurrency = (value) => {
-    const num = parseFloat(value || 0);
-    const rounded = Math.round(num * 100) / 100;
-    return `Br ${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -51,26 +46,26 @@ const OwnerDashboard = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{t('ownerDashboard')}</h1>
-          <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 mt-1">{t('fullBusinessAnalytics')}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('ownerDashboard')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('fullBusinessAnalytics')}</p>
         </div>
         
-        <div className="flex gap-2 bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'week' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-900 dark:text-white'}`}
+            className={"px-4 py-2 rounded-lg font-semibold transition " + (period === 'week' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white')}
           >
             {t('last7Days')}
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'month' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-900 dark:text-white'}`}
+            className={"px-4 py-2 rounded-lg font-semibold transition " + (period === 'month' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white')}
           >
             {t('last30Days')}
           </button>
           <button
             onClick={() => setPeriod('year')}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${period === 'year' ? 'bg-blue-600 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-900 dark:text-white'}`}
+            className={"px-4 py-2 rounded-lg font-semibold transition " + (period === 'year' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white')}
           >
             {t('last365Days')}
           </button>
@@ -80,28 +75,28 @@ const OwnerDashboard = () => {
       <LowStockAlert />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-gray-900 dark:text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
           <DollarSign size={24} className="mb-2" />
           <p className="text-blue-200 text-sm">{t('totalRevenue')}</p>
           <p className="text-2xl font-bold">{formatCurrency(data?.month?.revenue)}</p>
           <p className="text-blue-200 text-xs mt-2">{t('last30Days')}</p>
         </div>
         
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-gray-900 dark:text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white">
           <TrendingUp size={24} className="mb-2" />
           <p className="text-green-200 text-sm">{t('totalProfit')}</p>
           <p className="text-2xl font-bold">{formatCurrency(data?.month?.profit)}</p>
           <p className="text-green-200 text-xs mt-2">{t('last30Days')}</p>
         </div>
         
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-gray-900 dark:text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-white">
           <Users size={24} className="mb-2" />
           <p className="text-purple-200 text-sm">{t('totalStaff')}</p>
           <p className="text-2xl font-bold">{data?.users?.length || 0}</p>
           <p className="text-purple-200 text-xs mt-2">{t('activeEmployees')}</p>
         </div>
         
-        <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-xl p-6 text-gray-900 dark:text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-xl p-6 text-white">
           <Calendar size={24} className="mb-2" />
           <p className="text-orange-200 text-sm">{t('totalOrders')}</p>
           <p className="text-2xl font-bold">{data?.month?.orders || 0}</p>
@@ -121,24 +116,23 @@ const OwnerDashboard = () => {
 
       <StaffPerformance />
 
-      {/* Summary Cards */}
-      <div className="bg-white dark:bg-white dark:bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-200 dark:border-gray-200 dark:border-gray-700">
-        <h3 className="text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white font-semibold mb-4">{t('quickSummary')}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 className="text-gray-900 dark:text-white font-semibold mb-4">{t('quickSummary')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('avgOrderValue')}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(data?.today?.average_order)}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('avgOrderValue')}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(data?.today?.average_order)}</p>
           </div>
           <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('profitMargin')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('profitMargin')}</p>
             <p className="text-xl font-bold text-green-600 dark:text-green-400">{((data?.month?.profit_margin) || 0).toFixed(2)}%</p>
           </div>
           <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('netProfit')}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-900 dark:text-gray-900 dark:text-white">{formatCurrency(data?.month?.net_profit)}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('netProfit')}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(data?.month?.net_profit)}</p>
           </div>
           <div className="text-center">
-            <p className="text-gray-500 dark:text-gray-500 dark:text-gray-500 dark:text-gray-400 text-sm">{t('expenses')}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('expenses')}</p>
             <p className="text-xl font-bold text-red-600 dark:text-red-400">{formatCurrency(data?.month?.expenses)}</p>
           </div>
         </div>

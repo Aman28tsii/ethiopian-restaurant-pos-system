@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import API from '../api/axios';
 import socket from '../socket';
 import { Bell, AlertTriangle, ShoppingBag, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { formatCurrency } from '../utils/formatting';
 
 const RealTimeNotifications = memo(() => {
   const { t } = useLanguage();
@@ -10,18 +11,10 @@ const RealTimeNotifications = memo(() => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   
-  // Refs for preventing duplicate notifications
   const lastNotificationRef = useRef({});
   const isFetchingRef = useRef(false);
   const socketInitializedRef = useRef(false);
   const intervalRef = useRef(null);
-
-  // Format currency without decimals for notifications
-  const formatMoney = useCallback((value) => {
-    const num = parseFloat(value || 0);
-    const rounded = Math.round(num * 100) / 100;
-    return `Br ${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }, []);
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
@@ -41,9 +34,9 @@ const RealTimeNotifications = memo(() => {
           
           lowStockItems.forEach(item => {
             newNotifications.push({
-              id: `lowstock-${item.id}-${Date.now()}`,
+              id: lowstock--,
               type: 'warning',
-              message: `${item.name} - ${t('only')} ${item.quantity} ${item.unit} ${t('left')} (${t('min')}: ${item.min_stock})`,
+              message: ${item.name} -     (: ),
               time: new Date().toLocaleTimeString(),
               read: false,
               link: '/owner/inventory'
@@ -63,9 +56,9 @@ const RealTimeNotifications = memo(() => {
           
           if (pendingCount > 0) {
             newNotifications.push({
-              id: `pending-orders-${Date.now()}`,
+              id: pending-orders-,
               type: 'info',
-              message: `${pendingCount} ${t('newOrdersWaiting')}`,
+              message: ${pendingCount} ,
               time: new Date().toLocaleTimeString(),
               read: false,
               link: '/kitchen/orders'
@@ -95,28 +88,25 @@ const RealTimeNotifications = memo(() => {
   useEffect(() => {
     fetchNotifications();
     
-    // Set up polling interval
     intervalRef.current = setInterval(fetchNotifications, 60000);
     
-    // Initialize socket event listeners only once
     if (socket && socket.on && !socketInitializedRef.current) {
       socketInitializedRef.current = true;
       
-      // Socket event for new orders (with debounce)
       const handleNewOrder = (data) => {
-        const notificationKey = `new_order_${data.order_id || data.order_number || data.id}`;
+        const notificationKey = 
+ew_order_;
         const now = Date.now();
         
-        // Prevent duplicate notifications within 5 seconds
         if (lastNotificationRef.current[notificationKey] && now - lastNotificationRef.current[notificationKey] < 5000) {
           return;
         }
         lastNotificationRef.current[notificationKey] = now;
         
         const newNotif = {
-          id: `socket-order-${Date.now()}-${Math.random()}`,
+          id: socket-order--,
           type: 'info',
-          message: `${t('newOrderReceived')} #${data.order_number || data.order_id || data.id}!`,
+          message: ${t('newOrderReceived')} #!,
           time: new Date().toLocaleTimeString(),
           read: false,
           link: '/kitchen/orders'
@@ -130,7 +120,6 @@ const RealTimeNotifications = memo(() => {
           return result;
         });
         
-        // Play sound only once
         try {
           const audio = new Audio('/notification.mp3');
           audio.play().catch(e => console.log('Audio not supported'));
@@ -139,9 +128,8 @@ const RealTimeNotifications = memo(() => {
         }
       };
       
-      // Socket event for order status updates (with debounce)
       const handleOrderStatusUpdate = (data) => {
-        const notificationKey = `status_${data.order_id}_${data.status}`;
+        const notificationKey = status__;
         const now = Date.now();
         
         if (lastNotificationRef.current[notificationKey] && now - lastNotificationRef.current[notificationKey] < 5000) {
@@ -150,9 +138,9 @@ const RealTimeNotifications = memo(() => {
         lastNotificationRef.current[notificationKey] = now;
         
         const newNotif = {
-          id: `socket-status-${Date.now()}-${Math.random()}`,
+          id: socket-status--,
           type: 'success',
-          message: `${t('order')} #${data.order_id} ${t('isNow')} ${data.status}!`,
+          message: ${t('order')} #  !,
           time: new Date().toLocaleTimeString(),
           read: false,
           link: data.status === 'ready' ? '/cashier/pos' : '/kitchen/orders'
@@ -253,7 +241,7 @@ const RealTimeNotifications = memo(() => {
               notifications.map(notif => (
                 <div
                   key={notif.id}
-                  className={`p-3 border-b border-gray-700 hover:bg-gray-700/50 transition cursor-pointer ${getBgColor(notif.type, notif.read)}`}
+                  className={"p-3 border-b border-gray-700 hover:bg-gray-700/50 transition cursor-pointer " + getBgColor(notif.type, notif.read)}
                   onClick={() => markAsRead(notif.id)}
                 >
                   <div className="flex items-start gap-3">
@@ -261,7 +249,7 @@ const RealTimeNotifications = memo(() => {
                       {getIcon(notif.type)}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm ${notif.read ? 'text-gray-400' : 'text-white'}`}>
+                      <p className={"text-sm " + (notif.read ? 'text-gray-400' : 'text-white')}>
                         {notif.message}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">{notif.time}</p>

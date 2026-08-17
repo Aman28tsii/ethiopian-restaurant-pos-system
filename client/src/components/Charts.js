@@ -1,17 +1,13 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
+import { formatCurrency } from '../utils/formatting';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-// Format currency
-const formatCurrency = (value) => {
-  return `Br ${(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-};
 
 // Revenue & Profit Line Chart
 export const RevenueChart = ({ data, title }) => {
@@ -32,11 +28,11 @@ export const RevenueChart = ({ data, title }) => {
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="date" stroke="#9ca3af" />
-          <YAxis stroke="#9ca3af" tickFormatter={(value) => `Br ${value}`} />
+          <YAxis stroke="#9ca3af" tickFormatter={(value) => Br } />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
             formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => `${t('date')}: ${label}`}
+            labelFormatter={(label) => ${t('date')}: }
           />
           <Legend formatter={(value) => t(value.toLowerCase())} />
           <Line type="monotone" dataKey="revenue" stroke="#3b82f6" name="revenue" strokeWidth={2} dot={{ r: 4 }} />
@@ -65,12 +61,12 @@ export const TopProductsChart = ({ data, title }) => {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ left: 80 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis type="number" stroke="#9ca3af" tickFormatter={(value) => `Br ${value}`} />
+          <XAxis type="number" stroke="#9ca3af" tickFormatter={(value) => Br } />
           <YAxis type="category" dataKey="name" stroke="#9ca3af" width={100} />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
             formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => `${t('product')}: ${label}`}
+            labelFormatter={(label) => ${t('product')}: }
           />
           <Bar dataKey="revenue" fill="#8b5cf6" name={t('revenue')} radius={[0, 4, 4, 0]} />
         </BarChart>
@@ -91,7 +87,6 @@ export const PaymentMethodsChart = ({ data, title }) => {
     );
   }
 
-  // Translate payment method names
   const translatePaymentMethod = (method) => {
     const methods = {
       'cash': t('cash'),
@@ -116,14 +111,14 @@ export const PaymentMethodsChart = ({ data, title }) => {
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }) => ${name}: %}
             outerRadius={100}
             fill="#8884d8"
             dataKey="total"
             nameKey="payment_method"
           >
             {translatedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell key={cell-} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip 
@@ -149,10 +144,9 @@ export const HourlySalesChart = ({ data, title }) => {
     );
   }
 
-  // Format hour display
   const formattedData = data.map(item => ({
     ...item,
-    hour: `${String(item.hour).padStart(2, '0')}:00`
+    hour: ${String(item.hour).padStart(2, '0')}:00
   }));
 
   return (
@@ -162,11 +156,11 @@ export const HourlySalesChart = ({ data, title }) => {
         <AreaChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="hour" stroke="#9ca3af" label={{ value: t('hour'), position: 'insideBottom', offset: -5 }} />
-          <YAxis stroke="#9ca3af" tickFormatter={(value) => `Br ${value}`} />
+          <YAxis stroke="#9ca3af" tickFormatter={(value) => Br } />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
             formatter={(value) => formatCurrency(value)}
-            labelFormatter={(label) => `${t('hour')}: ${label}`}
+            labelFormatter={(label) => ${t('hour')}: }
           />
           <Legend formatter={(value) => t(value.toLowerCase())} />
           <Area type="monotone" dataKey="revenue" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} name="revenue" />

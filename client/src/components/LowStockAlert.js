@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { AlertTriangle, Package, X, Bell } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { formatCurrency } from '../utils/formatting';
 
 const LowStockAlert = () => {
   const { t } = useLanguage();

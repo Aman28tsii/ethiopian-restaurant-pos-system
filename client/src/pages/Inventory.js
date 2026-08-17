@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../api/axios';
 import { 
     Package, Plus, Edit2, Trash2, AlertTriangle, Search, X, Loader2,
@@ -7,11 +7,12 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { useDebounce } from '../hooks/useDebounce';
 import RecipeManager from '../components/RecipeManager';
+import { formatCurrency } from '../utils/formatting';
 
 // ============================================
 // INGREDIENT ROW
 // ============================================
-const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
+const IngredientRow = ({ ingredient, onEdit, onDelete }) => {
     const { t } = useLanguage();
     const isLowStock = ingredient.quantity <= ingredient.min_stock;
     
@@ -20,7 +21,7 @@ const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
             <td className="px-6 py-4 text-gray-900 dark:text-white">{ingredient.name}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.unit}</td>
             <td className="px-6 py-4">
-                <span className={`font-semibold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                <span className={"font-semibold " + (isLowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')}>
                     {ingredient.quantity}
                 </span>
             </td>
@@ -44,7 +45,7 @@ const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
 // ============================================
 // PRODUCT CARD
 // ============================================
-const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) => {
+const ProductCard = ({ product, onEdit, onDelete, onRecipe }) => {
     const { t } = useLanguage();
     
     const getCategoryEmoji = (category) => {
@@ -85,11 +86,7 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) =>
                     </div>
                     <button
                         onClick={() => onEdit(product)}
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            product.is_available 
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        }`}
+                        className={"px-2 py-1 rounded-full text-xs font-semibold " + (product.is_available ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400')}
                     >
                         {product.is_available ? 'Available' : 'Unavailable'}
                     </button>
@@ -224,13 +221,13 @@ const Inventory = () => {
         try {
             if (editType === 'ingredient') {
                 if (editingItem) {
-                    await API.put(`/ingredients/${editingItem.id}`, ingredientForm);
+                    await API.put(/ingredients/, ingredientForm);
                 } else {
                     await API.post('/ingredients', ingredientForm);
                 }
             } else {
                 if (editingItem) {
-                    await API.put(`/products/${editingItem.id}`, productForm);
+                    await API.put(/products/, productForm);
                 } else {
                     await API.post('/products', productForm);
                 }
@@ -249,9 +246,9 @@ const Inventory = () => {
         if (window.confirm('Are you sure you want to delete this?')) {
             try {
                 if (type === 'ingredient') {
-                    await API.delete(`/ingredients/${id}`);
+                    await API.delete(/ingredients/);
                 } else {
-                    await API.delete(`/products/${id}`);
+                    await API.delete(/products/);
                 }
                 fetchData();
             } catch (err) {
@@ -312,11 +309,6 @@ const Inventory = () => {
         setShowRecipeManager(true);
     };
 
-    const formatCurrency = (value) => {
-        const num = parseFloat(value || 0);
-        return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    };
-
     // ============================================
     // LOADING
     // ============================================
@@ -375,21 +367,13 @@ const Inventory = () => {
             <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
                 <button
                     onClick={() => setActiveTab('ingredients')}
-                    className={`px-6 py-3 font-semibold transition-all ${
-                        activeTab === 'ingredients'
-                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                    }`}
+                    className={"px-6 py-3 font-semibold transition-all " + (activeTab === 'ingredients' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200')}
                 >
                     🧂 Ingredients
                 </button>
                 <button
                     onClick={() => setActiveTab('products')}
-                    className={`px-6 py-3 font-semibold transition-all ${
-                        activeTab === 'products'
-                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                    }`}
+                    className={"px-6 py-3 font-semibold transition-all " + (activeTab === 'products' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200')}
                 >
                     🛒 Products
                 </button>
@@ -400,7 +384,7 @@ const Inventory = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
                 <input
                     type="text"
-                    placeholder={`Search ${activeTab === 'ingredients' ? 'ingredients' : 'products'}...`}
+                    placeholder={"Search " + (activeTab === 'ingredients' ? 'ingredients' : 'products') + "..."}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -435,7 +419,6 @@ const Inventory = () => {
                                         ingredient={ing}
                                         onEdit={(item) => handleEdit(item, 'ingredient')}
                                         onDelete={handleDelete}
-                                        formatCurrency={formatCurrency}
                                     />
                                 ))}
                             </tbody>
@@ -460,7 +443,6 @@ const Inventory = () => {
                             onEdit={(item) => handleEdit(item, 'product')}
                             onDelete={handleDelete}
                             onRecipe={openRecipeManager}
-                            formatCurrency={formatCurrency}
                         />
                     ))}
                 </div>
@@ -497,7 +479,7 @@ const Inventory = () => {
                         <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {editingItem ? `Edit ${editType}` : `Add New ${editType}`}
+                                    {editingItem ? "Edit " + editType : "Add New " + editType}
                                 </h2>
                                 <button onClick={resetModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                     <X size={24} />
@@ -507,7 +489,6 @@ const Inventory = () => {
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {editType === 'ingredient' ? (
-                                // INGREDIENT FORM
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
@@ -589,7 +570,6 @@ const Inventory = () => {
                                     </div>
                                 </>
                             ) : (
-                                // PRODUCT FORM
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>

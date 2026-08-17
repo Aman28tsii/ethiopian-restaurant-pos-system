@@ -1,5 +1,4 @@
-// client/src/pages/TrackOrder.js
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { 
   Clock, CheckCircle, Coffee, ChefHat, Truck, AlertCircle, 
@@ -7,6 +6,8 @@ import {
   Package, Utensils, Timer, Search
 } from 'lucide-react';
 import socket from '../socket';
+import { formatCurrency, formatDate, getOrderStatusInfo } from '../utils/formatting';
+import StatusBadge from '../components/StatusBadge';
 
 const TrackOrder = () => {
   const [orderNumber, setOrderNumber] = useState('');
@@ -21,7 +22,7 @@ const TrackOrder = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [progress, setProgress] = useState(0);
   const [timeline, setTimeline] = useState([]);
-  const [searchMode, setSearchMode] = useState('order'); // 'order' or 'phone'
+  const [searchMode, setSearchMode] = useState('order');
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -105,7 +106,7 @@ const TrackOrder = () => {
       if (response.data.success && response.data.data.length > 0) {
         setOrders(response.data.data);
         setSearched(true);
-        setOrder(null); // Clear single order view
+        setOrder(null);
       } else {
         setError('No orders found for this phone number');
         setOrders([]);
@@ -126,16 +127,6 @@ const TrackOrder = () => {
       return;
     }
     await fetchOrder(orderNumber.trim());
-  };
-
-  const formatCurrency = (value) => {
-    return `Br ${parseFloat(value || 0).toFixed(2)}`;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
   };
 
   const getStatusIcon = (status) => {
@@ -201,21 +192,13 @@ const TrackOrder = () => {
         <div className="flex justify-center gap-4 mb-6">
           <button
             onClick={() => setSearchMode('order')}
-            className={`px-6 py-2 rounded-xl font-semibold transition ${
-              searchMode === 'order' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-            }`}
+            className={"px-6 py-2 rounded-xl font-semibold transition " + (searchMode === 'order' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400')}
           >
             By Order Number
           </button>
           <button
             onClick={() => setSearchMode('phone')}
-            className={`px-6 py-2 rounded-xl font-semibold transition ${
-              searchMode === 'phone' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-            }`}
+            className={"px-6 py-2 rounded-xl font-semibold transition " + (searchMode === 'phone' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400')}
           >
             By Phone Number
           </button>
@@ -302,12 +285,12 @@ const TrackOrder = () => {
                     <p className="text-green-600 dark:text-green-400 font-bold">
                       {formatCurrency(o.total_amount)}
                     </p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
+                    <span className={"text-xs px-2 py-1 rounded-full " + (
                       o.status === 'ready' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
                       o.status === 'pending_confirmation' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
                       o.status === 'preparing' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
                       'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                    }`}>
+                    )}>
                       {o.status}
                     </span>
                   </div>
@@ -339,7 +322,7 @@ const TrackOrder = () => {
                   <p className="text-gray-500 dark:text-gray-400 text-sm">Total Amount</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(order.total_amount)}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Status: <span className={`font-semibold ${getStatusColor(order.status)}`}>
+                    Status: <span className={"font-semibold " + getStatusColor(order.status)}>
                       {getStatusText(order.status)}
                     </span>
                   </p>
@@ -347,9 +330,9 @@ const TrackOrder = () => {
               </div>
 
               {/* Status Badge */}
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${getStatusColor(order.status)}/20 mb-6`}>
+              <div className={"inline-flex items-center gap-2 px-4 py-2 rounded-full " + getStatusColor(order.status) + "/20 mb-6"}>
                 {getStatusIcon(order.status)}
-                <span className={`font-semibold ${getStatusColor(order.status)}`}>
+                <span className={"font-semibold " + getStatusColor(order.status)}>
                   {getStatusText(order.status)}
                 </span>
               </div>
@@ -405,7 +388,7 @@ const TrackOrder = () => {
                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
+                    style={{ width: progress + '%' }}
                   />
                 </div>
                 <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -425,9 +408,9 @@ const TrackOrder = () => {
                   <div className="space-y-2">
                     {timeline.map((step, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${step.completed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                        <div className={"w-3 h-3 rounded-full " + (step.completed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600')} />
                         <div className="flex-1">
-                          <p className={`text-sm ${step.completed ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                          <p className={"text-sm " + (step.completed ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500')}>
                             {step.status}
                           </p>
                         </div>

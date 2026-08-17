@@ -1,5 +1,5 @@
-import express from 'express';
-import { protect, allowManager, allowOwner } from '../middleware/auth.js';
+﻿import express from 'express';
+import { protect, restrictTo } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 const router = express.Router();
@@ -8,11 +8,11 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
+      SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
               u.name as waiter_name
        FROM tables t
        LEFT JOIN users u ON t.waiter_id = u.id
-       ORDER BY t.table_number ASC`
+       ORDER BY t.table_number ASC
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -21,10 +21,10 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// ==================== TABLE MANAGEMENT (Manager/Owner only) ====================
+// ==================== TABLE MANAGEMENT ====================
 
 // CREATE new table
-router.post('/', protect, allowManager, async (req, res) => {
+router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { table_number, capacity, status } = req.body;
   
   if (!table_number || !capacity) {
@@ -32,24 +32,23 @@ router.post('/', protect, allowManager, async (req, res) => {
   }
   
   try {
-    // Check if table number already exists
     const existing = await pool.query(
-      'SELECT id FROM tables WHERE table_number = $1',
+      'SELECT id FROM tables WHERE table_number = ',
       [table_number]
     );
     
     if (existing.rows.length > 0) {
-      return res.status(400).json({ success: false, error: `Table ${table_number} already exists` });
+      return res.status(400).json({ success: false, error: Table  already exists });
     }
     
     const result = await pool.query(
-      `INSERT INTO tables (table_number, capacity, status) 
-       VALUES ($1, $2, $3) 
-       RETURNING id, table_number, capacity, status`,
+      INSERT INTO tables (table_number, capacity, status) 
+       VALUES (, , ) 
+       RETURNING id, table_number, capacity, status,
       [table_number, capacity, status || 'available']
     );
     
-    res.status(201).json({ success: true, data: result.rows[0], message: `Table ${table_number} created successfully` });
+    res.status(201).json({ success: true, data: result.rows[0], message: Table  created successfully });
   } catch (err) {
     console.error('Create table error:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -57,40 +56,38 @@ router.post('/', protect, allowManager, async (req, res) => {
 });
 
 // UPDATE table
-router.put('/:id', protect, allowManager, async (req, res) => {
+router.put('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { table_number, capacity, status } = req.body;
   
   try {
-    // Check if table exists
-    const tableCheck = await pool.query('SELECT id FROM tables WHERE id = $1', [id]);
+    const tableCheck = await pool.query('SELECT id FROM tables WHERE id = ', [id]);
     if (tableCheck.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Table not found' });
     }
     
-    // If changing table number, check for duplicate
     if (table_number) {
       const duplicate = await pool.query(
-        'SELECT id FROM tables WHERE table_number = $1 AND id != $2',
+        'SELECT id FROM tables WHERE table_number =  AND id != ',
         [table_number, id]
       );
       if (duplicate.rows.length > 0) {
-        return res.status(400).json({ success: false, error: `Table ${table_number} already exists` });
+        return res.status(400).json({ success: false, error: Table  already exists });
       }
     }
     
     const result = await pool.query(
-      `UPDATE tables 
-       SET table_number = COALESCE($1, table_number),
-           capacity = COALESCE($2, capacity),
-           status = COALESCE($3, status),
+      UPDATE tables 
+       SET table_number = COALESCE(, table_number),
+           capacity = COALESCE(, capacity),
+           status = COALESCE(, status),
            updated_at = NOW()
-       WHERE id = $4
-       RETURNING id, table_number, capacity, status`,
+       WHERE id = 
+       RETURNING id, table_number, capacity, status,
       [table_number, capacity, status, id]
     );
     
-    res.json({ success: true, data: result.rows[0], message: `Table updated successfully` });
+    res.json({ success: true, data: result.rows[0], message: Table updated successfully });
   } catch (err) {
     console.error('Update table error:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -98,34 +95,32 @@ router.put('/:id', protect, allowManager, async (req, res) => {
 });
 
 // DELETE table
-router.delete('/:id', protect, allowManager, async (req, res) => {
+router.delete('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Check if table exists
-    const tableCheck = await pool.query('SELECT id, table_number FROM tables WHERE id = $1', [id]);
+    const tableCheck = await pool.query('SELECT id, table_number FROM tables WHERE id = ', [id]);
     if (tableCheck.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Table not found' });
     }
     
     const tableNumber = tableCheck.rows[0].table_number;
     
-    // Check if table has active orders
     const activeOrders = await pool.query(
-      `SELECT id FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'cancelled')`,
+      SELECT id FROM orders WHERE table_id =  AND status NOT IN ('completed', 'cancelled'),
       [id]
     );
     
     if (activeOrders.rows.length > 0) {
       return res.status(400).json({ 
         success: false, 
-        error: `Cannot delete Table ${tableNumber} because it has active orders. Please wait for orders to complete.` 
+        error: Cannot delete Table  because it has active orders. 
       });
     }
     
-    await pool.query('DELETE FROM tables WHERE id = $1', [id]);
+    await pool.query('DELETE FROM tables WHERE id = ', [id]);
     
-    res.json({ success: true, message: `Table ${tableNumber} deleted successfully` });
+    res.json({ success: true, message: Table  deleted successfully });
   } catch (err) {
     console.error('Delete table error:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -138,11 +133,11 @@ router.get('/:id', protect, async (req, res) => {
   
   try {
     const result = await pool.query(
-      `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
+      SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
               u.name as waiter_name
        FROM tables t
        LEFT JOIN users u ON t.waiter_id = u.id
-       WHERE t.id = $1`,
+       WHERE t.id = ,
       [id]
     );
     

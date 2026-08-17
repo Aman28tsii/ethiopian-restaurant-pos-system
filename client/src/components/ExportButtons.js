@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { FileText, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -19,7 +19,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, t('report'));
-      XLSX.writeFile(wb, `${filename}.xlsx`);
+      XLSX.writeFile(wb, ${filename}.xlsx);
     } catch (error) {
       console.error('Excel export error:', error);
       alert(t('exportFailed'));
@@ -39,7 +39,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       doc.setFontSize(16);
       doc.text(filename, 14, 15);
       doc.setFontSize(9);
-      doc.text(`${t('generated')}: ${new Date().toLocaleString()}`, 14, 25);
+      doc.text(${t('generated')}: , 14, 25);
       
       const tableColumn = Object.keys(data[0]);
       const tableRows = data.map(item => Object.values(item));
@@ -63,11 +63,11 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
         }
       });
       
-      doc.save(`${filename}.pdf`);
+      doc.save(${filename}.pdf);
       
     } catch (error) {
       console.error('PDF export error:', error);
-      alert(`${t('pdfExportError')}: ${error.message}`);
+      alert(${t('pdfExportError')}: );
     }
   };
 
@@ -76,7 +76,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       {(type === 'excel' || type === 'both') && (
         <button
           onClick={exportToExcel}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-xl flex items-center gap-2 transition"
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileSpreadsheet size={16} />
           {t('exportExcel')}
@@ -85,7 +85,7 @@ const ExportButtons = ({ data, filename, type = 'both' }) => {
       {(type === 'pdf' || type === 'both') && (
         <button
           onClick={exportToPDF}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-gray-900 dark:text-white rounded-xl flex items-center gap-2 transition"
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition"
         >
           <FileText size={16} />
           {t('exportPDF')}

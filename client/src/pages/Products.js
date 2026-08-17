@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { 
     Package, Plus, Edit2, Trash2, Search, X, UtensilsCrossed,
@@ -6,45 +6,18 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import RecipeManager from '../components/RecipeManager';
-
-// ============================================
-// CATEGORY EMOJI MAP
-// ============================================
-const getCategoryEmoji = (category) => {
-    const emojis = {
-        'Main Course': '🍛',
-        'Beverage': '🥤',
-        'Drink': '🥤',
-        'Juice': '🧃',
-        'Coffee': '☕',
-        'Tea': '🍵',
-        'Dessert': '🍰',
-        'Appetizer': '🍢',
-        'Soup': '🍲',
-        'Salad': '🥗',
-        'Breakfast': '🍳',
-        'Traditional': '🇪🇹',
-        'Ethiopian': '🇪🇹',
-        'Side': '🥗',
-        'Main Dish': '🍛',
-        'Vegetarian': '🥬',
-        'Bread': '🍞',
-        'Spices': '🌶️',
-        'Meat': '🥩'
-    };
-    return emojis[category] || '🍽️';
-};
+import { formatCurrency, getProductEmoji } from '../utils/formatting';
 
 // ============================================
 // PRODUCT CARD COMPONENT
 // ============================================
-const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency, hasRecipe }) => {
+const ProductCard = ({ product, onEdit, onDelete, onRecipe, hasRecipe }) => {
     const { t } = useLanguage();
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-purple-500/50 transition-all shadow-sm hover:shadow-md">
             <div className="h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center relative">
-                <span className="text-6xl">{getCategoryEmoji(product.category)}</span>
+                <span className="text-6xl">{getProductEmoji(product.category)}</span>
                 {hasRecipe ? (
                     <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                         <CheckCircle size={12} />
@@ -68,11 +41,7 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency, hasR
                     </div>
                     <button
                         onClick={() => onEdit(product)}
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            product.is_available 
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        }`}
+                        className={"px-2 py-1 rounded-full text-xs font-semibold " + (product.is_available ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400')}
                     >
                         {product.is_available ? 'Available' : 'Unavailable'}
                     </button>
@@ -83,11 +52,7 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency, hasR
                 <div className="flex gap-2 mt-4">
                     <button
                         onClick={() => onRecipe(product)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1 ${
-                            hasRecipe 
-                                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                                : 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                        }`}
+                        className={"flex-1 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1 " + (hasRecipe ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white animate-pulse')}
                     >
                         <UtensilsCrossed size={14} />
                         {hasRecipe ? 'Recipe' : 'Add Recipe!'}
@@ -190,26 +155,17 @@ const Products = () => {
         try {
             let response;
             if (editingProduct) {
-                response = await API.put(`/products/${editingProduct.id}`, formData);
+                response = await API.put(/products/, formData);
                 alert('Product updated successfully!');
                 resetModal();
                 fetchData();
             } else {
-                // ✅ CREATE NEW PRODUCT
                 response = await API.post('/products', formData);
                 alert('Product created successfully!');
-                
-                // ✅ GET THE NEW PRODUCT
                 const newProduct = response.data.data;
-                
-                // ✅ CLOSE PRODUCT FORM
                 resetModal();
-                
-                // ✅ OPEN RECIPE MANAGER AUTOMATICALLY
                 setSelectedProductForRecipe(newProduct);
                 setShowRecipeManager(true);
-                
-                // ✅ REFRESH PRODUCTS LIST
                 fetchData();
             }
         } catch (err) {
@@ -223,7 +179,7 @@ const Products = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this product?')) {
             try {
-                await API.delete(`/products/${id}`);
+                await API.delete(/products/);
                 alert('Product deleted successfully');
                 fetchData();
             } catch (err) {
@@ -259,11 +215,6 @@ const Products = () => {
             description: '',
             is_available: true
         });
-    };
-
-    const formatCurrency = (value) => {
-        const num = parseFloat(value || 0);
-        return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // ============================================
@@ -366,11 +317,7 @@ const Products = () => {
                     <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
-                            selectedCategory === cat
-                                ? 'bg-blue-600 text-white shadow-lg'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
+                        className={"px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition " + (selectedCategory === cat ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600')}
                     >
                         {cat === 'all' ? 'All Items' : cat}
                     </button>
@@ -407,7 +354,6 @@ const Products = () => {
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                         onRecipe={openRecipeManager}
-                        formatCurrency={formatCurrency}
                         hasRecipe={hasRecipe(product.id)}
                     />
                 ))}

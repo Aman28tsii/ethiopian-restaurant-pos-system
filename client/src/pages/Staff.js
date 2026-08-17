@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../api/axios';
 import { Users, Plus, Edit2, Trash2, Search, X, Loader2, RefreshCw, ChefHat, Wine, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { formatCurrency } from '../utils/formatting';
 
 const Staff = () => {
   const { t } = useLanguage();
@@ -66,11 +67,10 @@ const Staff = () => {
           role: formData.role,
           phone: formData.phone
         };
-        // Only send station_type if role is kitchen
         if (formData.role === 'kitchen') {
           updateData.station_type = formData.station_type;
         }
-        await API.put(`/auth/users/${editingStaff.id}`, updateData);
+        await API.put(/auth/users/, updateData);
         alert(t('staffUpdatedSuccessfully'));
       } else {
         if (formData.password.length < 6) {
@@ -101,7 +101,7 @@ const Staff = () => {
   const handleDelete = async (id) => {
     if (window.confirm(t('deleteStaffConfirm'))) {
       try {
-        await API.delete(`/auth/users/${id}`);
+        await API.delete(/auth/users/);
         alert(t('staffDeletedSuccessfully'));
         fetchStaff();
       } catch (err) {
@@ -141,11 +141,8 @@ const Staff = () => {
   };
 
   const getStationDisplay = (member) => {
-    // For both role, show Both Stations
     if (member.role === 'both') return '📋 Both Stations';
-    // For bar role, always show Bar
     if (member.role === 'bar') return '🍺 Bar';
-    // For kitchen role, show their station type
     if (member.role === 'kitchen') {
       const stationMap = {
         kitchen: '🍳 Kitchen Only',
@@ -235,7 +232,7 @@ const Staff = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
         <input
           type="text"
-          placeholder={`${t('search')} ${t('staff')}...`}
+          placeholder={t('search') + ' ' + t('staff') + '...'}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -278,7 +275,7 @@ const Staff = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.email}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 ${getRoleColor(member.role)}`}>
+                      <span className={"px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 " + getRoleColor(member.role)}>
                         {getRoleIcon(member.role)}
                         {member.role === 'both' ? 'Both Stations' : t(member.role)}
                       </span>
@@ -398,7 +395,6 @@ const Staff = () => {
                       setFormData({ 
                         ...formData, 
                         role: newRole,
-                        // Reset station_type if not kitchen
                         station_type: newRole === 'kitchen' ? formData.station_type : 'kitchen'
                       });
                     }}
@@ -414,7 +410,6 @@ const Staff = () => {
                   </select>
                 </div>
 
-                {/* Station Type Dropdown - ONLY for Kitchen role */}
                 {formData.role === 'kitchen' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -437,7 +432,6 @@ const Staff = () => {
                   </div>
                 )}
 
-                {/* Bar role info message */}
                 {formData.role === 'bar' && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
                     <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
@@ -447,7 +441,6 @@ const Staff = () => {
                   </div>
                 )}
 
-                {/* Both role info message */}
                 {formData.role === 'both' && (
                   <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
                     <p className="text-purple-700 dark:text-purple-400 text-sm flex items-center gap-2">

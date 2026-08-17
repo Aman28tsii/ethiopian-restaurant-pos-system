@@ -1,20 +1,20 @@
-import express from 'express';
-import { protect, allowWaiter, allowOwner } from '../middleware/auth.js';
+﻿import express from 'express';
+import { protect, restrictTo } from '../middleware/auth.js';
 import { pool } from '../config/database.js';
 
 const router = express.Router();
 
 // ==================== WAITER'S ASSIGNED TABLES ====================
-router.get('/my-tables', protect, allowWaiter, async (req, res) => {
+router.get('/my-tables', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT t.*, 
+      SELECT t.*, 
               CASE WHEN t.self_assigned THEN 'Self-Assigned' ELSE 'Manager-Assigned' END as assignment_type
        FROM tables t
-       WHERE t.assigned_waiter_id = $1
-       ORDER BY t.status = 'occupied' DESC, t.table_number ASC`,
+       WHERE t.assigned_waiter_id = 
+       ORDER BY t.status = 'occupied' DESC, t.table_number ASC,
       [waiterId]
     );
     
@@ -26,16 +26,16 @@ router.get('/my-tables', protect, allowWaiter, async (req, res) => {
 });
 
 // ==================== AVAILABLE TABLES FOR SELF-ASSIGNMENT ====================
-router.get('/available-tables', protect, allowWaiter, async (req, res) => {
+router.get('/available-tables', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT t.* 
+      SELECT t.* 
        FROM tables t
        WHERE t.status = 'available' 
-         AND (t.assigned_waiter_id IS NULL OR t.assigned_waiter_id = $1)
-       ORDER BY t.table_number ASC`,
+         AND (t.assigned_waiter_id IS NULL OR t.assigned_waiter_id = )
+       ORDER BY t.table_number ASC,
       [waiterId]
     );
     
@@ -47,7 +47,7 @@ router.get('/available-tables', protect, allowWaiter, async (req, res) => {
 });
 
 // ==================== WAITER SELF-ASSIGN TABLE ====================
-router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => {
+router.post('/assign-table/:tableId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;
   const waiterId = req.user.id;
   
@@ -57,9 +57,9 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
     await client.query('BEGIN');
     
     const tableCheck = await client.query(
-      `SELECT id, table_number, status, assigned_waiter_id 
+      SELECT id, table_number, status, assigned_waiter_id 
        FROM tables 
-       WHERE id = $1`,
+       WHERE id = ,
       [tableId]
     );
     
@@ -74,15 +74,15 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        error: `Table ${table.table_number} is ${table.status}. Only available tables can be assigned.` 
+        error: Table  is . Only available tables can be assigned. 
       });
     }
     
     const currentAssignments = await client.query(
-      `SELECT COUNT(*) as count 
+      SELECT COUNT(*) as count 
        FROM tables 
-       WHERE assigned_waiter_id = $1 
-         AND status IN ('available', 'occupied', 'reserved')`,
+       WHERE assigned_waiter_id =  
+         AND status IN ('available', 'occupied', 'reserved'),
       [waiterId]
     );
     
@@ -95,20 +95,20 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
     }
     
     await client.query(
-      `UPDATE tables 
-       SET assigned_waiter_id = $1, 
+      UPDATE tables 
+       SET assigned_waiter_id = , 
            assignment_date = CURRENT_DATE,
            assignment_method = 'self',
-           assigned_by = $1,
+           assigned_by = ,
            self_assigned = true,
            updated_at = NOW()
-       WHERE id = $2`,
+       WHERE id = ,
       [waiterId, tableId]
     );
     
     await client.query(
-      `INSERT INTO waiter_self_assignments (waiter_id, table_id, status)
-       VALUES ($1, $2, 'active')`,
+      INSERT INTO waiter_self_assignments (waiter_id, table_id, status)
+       VALUES (, , 'active'),
       [waiterId, tableId]
     );
     
@@ -126,7 +126,7 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
     
     res.json({ 
       success: true, 
-      message: `Table ${table.table_number} assigned to you successfully!`,
+      message: Table  assigned to you successfully!,
       data: { table_id: tableId, table_number: table.table_number }
     });
     
@@ -140,7 +140,7 @@ router.post('/assign-table/:tableId', protect, allowWaiter, async (req, res) => 
 });
 
 // ==================== WAITER UNASSIGN TABLE ====================
-router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res) => {
+router.delete('/unassign-table/:tableId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;
   const waiterId = req.user.id;
   
@@ -150,9 +150,9 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
     await client.query('BEGIN');
     
     const tableCheck = await client.query(
-      `SELECT id, table_number, status, assigned_waiter_id 
+      SELECT id, table_number, status, assigned_waiter_id 
        FROM tables 
-       WHERE id = $1 AND assigned_waiter_id = $2`,
+       WHERE id =  AND assigned_waiter_id = ,
       [tableId, waiterId]
     );
     
@@ -170,25 +170,25 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
       await client.query('ROLLBACK');
       return res.status(400).json({ 
         success: false, 
-        error: `Table ${table.table_number} is occupied. Cannot unassign until table is available.` 
+        error: Table  is occupied. Cannot unassign until table is available. 
       });
     }
     
     await client.query(
-      `UPDATE tables 
+      UPDATE tables 
        SET assigned_waiter_id = NULL, 
            assignment_date = NULL,
            assignment_method = NULL,
            self_assigned = false,
            updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = ,
       [tableId]
     );
     
     await client.query(
-      `UPDATE waiter_self_assignments 
+      UPDATE waiter_self_assignments 
        SET unassigned_at = NOW(), status = 'inactive'
-       WHERE table_id = $1 AND status = 'active'`,
+       WHERE table_id =  AND status = 'active',
       [tableId]
     );
     
@@ -205,7 +205,7 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
     
     res.json({ 
       success: true, 
-      message: `Table ${table.table_number} unassigned successfully!` 
+      message: Table  unassigned successfully! 
     });
     
   } catch (err) {
@@ -218,15 +218,15 @@ router.delete('/unassign-table/:tableId', protect, allowWaiter, async (req, res)
 });
 
 // ==================== WAITER'S CURRENT SHIFT ====================
-router.get('/my-shift', protect, allowWaiter, async (req, res) => {
+router.get('/my-shift', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT * FROM waiter_shifts 
-       WHERE waiter_id = $1 
+      SELECT * FROM waiter_shifts 
+       WHERE waiter_id =  
        AND shift_date = CURRENT_DATE 
-       AND is_active = true`,
+       AND is_active = true,
       [waiterId]
     );
     
@@ -237,13 +237,13 @@ router.get('/my-shift', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== WAITER'S ACTIVE ORDERS (Filtered by assigned tables) ====================
-router.get('/my-orders', protect, allowWaiter, async (req, res) => {
+// ==================== WAITER'S ACTIVE ORDERS ====================
+router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
+      SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
               o.customer_name, o.table_id, o.created_at,
               o.source,
               t.table_number,
@@ -261,10 +261,9 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
        JOIN tables t ON o.table_id = t.id
        LEFT JOIN order_items oi ON o.id = oi.order_id
        LEFT JOIN products p ON oi.product_id = p.id
-       WHERE t.assigned_waiter_id = $1
-         AND o.status NOT IN ('completed', 'cancelled')
+       WHERE t.assigned_waiter_id =          AND o.status NOT IN ('completed', 'cancelled')
        GROUP BY o.id, t.table_number, o.source
-       ORDER BY o.created_at DESC`,
+       ORDER BY o.created_at DESC,
       [waiterId]
     );
     
@@ -275,13 +274,13 @@ router.get('/my-orders', protect, allowWaiter, async (req, res) => {
   }
 });
 
-// ==================== PENDING CONFIRMATIONS (Filtered by assigned tables) ====================
-router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
+// ==================== PENDING CONFIRMATIONS ====================
+router.get('/pending-confirmations', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
     const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
+      SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, 
               o.table_id, o.notes, o.created_at, o.status,
               o.source,
               t.table_number,
@@ -301,93 +300,15 @@ router.get('/pending-confirmations', protect, allowWaiter, async (req, res) => {
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE o.status = 'pending_confirmation' 
          AND o.source = 'qr_menu'
-         AND t.assigned_waiter_id = $1
+         AND t.assigned_waiter_id = 
        GROUP BY o.id, t.table_number, o.source
-       ORDER BY o.created_at ASC`,
+       ORDER BY o.created_at ASC,
       [waiterId]
     );
     
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Get pending confirmations error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== WAITER'S ACTIVE ORDERS (All orders they created - legacy support) ====================
-router.get('/my-created-orders', protect, allowWaiter, async (req, res) => {
-  const waiterId = req.user.id;
-  
-  try {
-    const result = await pool.query(
-      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status,
-              o.customer_name, o.table_id, o.created_at,
-              o.source,
-              t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.created_by = $1
-         AND o.status NOT IN ('completed', 'cancelled')
-       GROUP BY o.id, t.table_number, o.source
-       ORDER BY o.created_at DESC`,
-      [waiterId]
-    );
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get waiter created orders error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==================== GET ORDER DETAILS FOR WAITER ====================
-router.get('/order/:orderId', protect, allowWaiter, async (req, res) => {
-  const { orderId } = req.params;
-  const waiterId = req.user.id;
-  
-  try {
-    const result = await pool.query(
-      `SELECT o.*, t.table_number,
-              COALESCE(
-                json_agg(
-                  json_build_object(
-                    'name', p.name,
-                    'quantity', oi.quantity,
-                    'price', oi.unit_price,
-                    'total', oi.total_price
-                  )
-                ) FILTER (WHERE p.id IS NOT NULL), 
-                '[]'
-              ) as items
-       FROM orders o
-       LEFT JOIN tables t ON o.table_id = t.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE o.id = $1
-         AND (o.waiter_id = $2 OR o.created_by = $2)
-       GROUP BY o.id, t.table_number`,
-      [orderId, waiterId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Order not found or not assigned to you' });
-    }
-    
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    console.error('Get order details error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import {
   getAllExpenses,
   getExpenseById,
@@ -8,13 +8,13 @@ import {
   getExpenseSummary,
   getExpenseCategories
 } from '../controllers/expenseController.js';
-import { protect, allowOwner } from '../middleware/auth.js';
+import { protect, restrictTo } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All expense routes require authentication and owner role
+// All expense routes require authentication and owner/admin role
 router.use(protect);
-router.use(allowOwner);
+router.use(restrictTo('owner', 'admin'));
 
 router.get('/', getAllExpenses);
 router.get('/summary', getExpenseSummary);

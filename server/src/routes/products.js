@@ -17,25 +17,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET all products (admin view - includes unavailable)
-router.get('/all', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, name, price, category, description, is_available, created_at FROM products ORDER BY name'
-    );
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    console.error('Get all products error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// GET product by ID
+// GET product by ID (public) - FIXED
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, name, price, category, description, is_available FROM products WHERE id = ',
+      'SELECT id, name, price, category, description, is_available FROM products WHERE id = $1',
       [id]
     );
     if (result.rows.length === 0) {
@@ -48,7 +35,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET categories
+// GET categories (public) - FIXED
 router.get('/categories', async (req, res) => {
   try {
     const result = await pool.query(
@@ -61,7 +48,20 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// POST create product (owner/admin only)
+// GET all products (admin view)
+router.get('/all', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, price, category, description, is_available, created_at FROM products ORDER BY name'
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get all products error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST create product
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { name, price, category, description } = req.body;
@@ -71,7 +71,7 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
     
     const result = await pool.query(
-      'INSERT INTO products (name, price, category, description, is_available) VALUES (, , , , true) RETURNING id, name, price, category, description, is_available',
+      'INSERT INTO products (name, price, category, description, is_available) VALUES ($1, $2, $3, $4, true) RETURNING id, name, price, category, description, is_available',
       [name.trim(), price, category || null, description || null]
     );
     
@@ -82,14 +82,14 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// PUT update product (owner/admin only)
+// PUT update product
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, category, is_available, description } = req.body;
     
     const result = await pool.query(
-      'UPDATE products SET name = COALESCE(, name), price = COALESCE(, price), category = COALESCE(, category), is_available = COALESCE(, is_available), description = COALESCE(, description), updated_at = CURRENT_TIMESTAMP WHERE id =  RETURNING id, name, price, category, is_available, description',
+      'UPDATE products SET name = COALESCE($1, name), price = COALESCE($2, price), category = COALESCE($3, category), is_available = COALESCE($4, is_available), description = COALESCE($5, description), updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING id, name, price, category, is_available, description',
       [name, price, category, is_available, description, id]
     );
     
@@ -104,12 +104,12 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   }
 });
 
-// DELETE product (soft delete - owner/admin only)
+// DELETE product
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE products SET is_available = false WHERE id =  RETURNING id',
+      'UPDATE products SET is_available = false WHERE id = $1 RETURNING id',
       [id]
     );
     if (result.rows.length === 0) {

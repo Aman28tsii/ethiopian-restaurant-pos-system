@@ -4,7 +4,7 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// Get all tables (any authenticated user)
+// GET all tables
 router.get('/', protect, async (req, res) => {
   try {
     const result = await pool.query(
@@ -17,7 +17,28 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// CREATE new table
+// GET table by ID - FIXED
+router.get('/:id', protect, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id, u.name as waiter_name FROM tables t LEFT JOIN users u ON t.waiter_id = u.id WHERE t.id = $1',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Table not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Get table error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST create table
 router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { table_number, capacity, status } = req.body;
   
@@ -27,7 +48,7 @@ router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, r
   
   try {
     const existing = await pool.query(
-      'SELECT id FROM tables WHERE table_number = ',
+      'SELECT id FROM tables WHERE table_number = $1',
       [table_number]
     );
     
@@ -36,7 +57,7 @@ router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, r
     }
     
     const result = await pool.query(
-      'INSERT INTO tables (table_number, capacity, status) VALUES (, , ) RETURNING id, table_number, capacity, status',
+      'INSERT INTO tables (table_number, capacity, status) VALUES ($1, $2, $3) RETURNING id, table_number, capacity, status',
       [table_number, capacity, status || 'available']
     );
     
@@ -47,20 +68,20 @@ router.post('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, r
   }
 });
 
-// UPDATE table
+// PUT update table
 router.put('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { table_number, capacity, status } = req.body;
   
   try {
-    const tableCheck = await pool.query('SELECT id FROM tables WHERE id = ', [id]);
+    const tableCheck = await pool.query('SELECT id FROM tables WHERE id = $1', [id]);
     if (tableCheck.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Table not found' });
     }
     
     if (table_number) {
       const duplicate = await pool.query(
-        'SELECT id FROM tables WHERE table_number =  AND id != ',
+        'SELECT id FROM tables WHERE table_number = $1 AND id != $2',
         [table_number, id]
       );
       if (duplicate.rows.length > 0) {
@@ -69,7 +90,7 @@ router.put('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req,
     }
     
     const result = await pool.query(
-      'UPDATE tables SET table_number = COALESCE(, table_number), capacity = COALESCE(, capacity), status = COALESCE(, status), updated_at = NOW() WHERE id =  RETURNING id, table_number, capacity, status',
+      'UPDATE tables SET table_number = COALESCE($1, table_number), capacity = COALESCE($2, capacity), status = COALESCE($3, status), updated_at = NOW() WHERE id = $4 RETURNING id, table_number, capacity, status',
       [table_number, capacity, status, id]
     );
     
@@ -85,7 +106,7 @@ router.delete('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (r
   const { id } = req.params;
   
   try {
-    const tableCheck = await pool.query('SELECT id, table_number FROM tables WHERE id = ', [id]);
+    const tableCheck = await pool.query('SELECT id, table_number FROM tables WHERE id = $1', [id]);
     if (tableCheck.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Table not found' });
     }
@@ -93,7 +114,7 @@ router.delete('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (r
     const tableNumber = tableCheck.rows[0].table_number;
     
     const activeOrders = await pool.query(
-      'SELECT id FROM orders WHERE table_id =  AND status NOT IN (, )',
+      'SELECT id FROM orders WHERE table_id = $1 AND status NOT IN ($2, $3)',
       [id, 'completed', 'cancelled']
     );
     
@@ -104,32 +125,11 @@ router.delete('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (r
       });
     }
     
-    await pool.query('DELETE FROM tables WHERE id = ', [id]);
+    await pool.query('DELETE FROM tables WHERE id = $1', [id]);
     
     res.json({ success: true, message: 'Table ' + tableNumber + ' deleted successfully' });
   } catch (err) {
     console.error('Delete table error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Get single table
-router.get('/:id', protect, async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    const result = await pool.query(
-      'SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id, u.name as waiter_name FROM tables t LEFT JOIN users u ON t.waiter_id = u.id WHERE t.id = ',
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Table not found' });
-    }
-    
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    console.error('Get table error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

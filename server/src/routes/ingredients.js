@@ -17,6 +17,34 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
+// GET ingredient by ID - FIXED
+router.get('/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM ingredients WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Ingredient not found' });
+        }
+        res.json({ success: true, data: result.rows[0] });
+    } catch (err) {
+        console.error('Get ingredient error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET ingredient categories - FIXED
+router.get('/categories', protect, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT DISTINCT category FROM ingredients WHERE category IS NOT NULL ORDER BY category'
+        );
+        res.json({ success: true, data: result.rows.map(function(r) { return r.category; }) });
+    } catch (err) {
+        console.error('Get ingredient categories error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // GET low stock alert
 router.get('/low-stock-alert', protect, async (req, res) => {
     try {
@@ -43,35 +71,7 @@ router.get('/low-stock', protect, async (req, res) => {
     }
 });
 
-// GET ingredient by ID
-router.get('/:id', protect, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const result = await pool.query('SELECT * FROM ingredients WHERE id = ', [id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Ingredient not found' });
-        }
-        res.json({ success: true, data: result.rows[0] });
-    } catch (err) {
-        console.error('Get ingredient error:', err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// GET ingredient categories
-router.get('/categories', protect, async (req, res) => {
-    try {
-        const result = await pool.query(
-            'SELECT DISTINCT category FROM ingredients WHERE category IS NOT NULL ORDER BY category'
-        );
-        res.json({ success: true, data: result.rows.map(function(r) { return r.category; }) });
-    } catch (err) {
-        console.error('Get ingredient categories error:', err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// POST create ingredient (owner/admin only)
+// POST create ingredient
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
@@ -81,7 +81,7 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
         }
         
         const result = await pool.query(
-            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES (, , , , , , ) RETURNING *',
+            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [name.trim(), unit, quantity || 0, min_stock || 0, unit_cost || 0, category, supplier]
         );
         
@@ -92,14 +92,14 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
 });
 
-// PUT update ingredient (owner/admin only)
+// PUT update ingredient
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
         
         const result = await pool.query(
-            'UPDATE ingredients SET name = , unit = , quantity = , min_stock = , unit_cost = , category = , supplier = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET name = $1, unit = $2, quantity = $3, min_stock = $4, unit_cost = $5, category = $6, supplier = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
             [name, unit, quantity, min_stock, unit_cost, category, supplier, id]
         );
         
@@ -114,13 +114,13 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     }
 });
 
-// DELETE ingredient (owner/admin only)
+// DELETE ingredient
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         
         const recipeCheck = await pool.query(
-            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = ',
+            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = $1',
             [id]
         );
         
@@ -131,7 +131,7 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
             });
         }
         
-        await pool.query('DELETE FROM ingredients WHERE id = ', [id]);
+        await pool.query('DELETE FROM ingredients WHERE id = $1', [id]);
         res.json({ success: true, message: 'Ingredient deleted successfully' });
     } catch (err) {
         console.error('Delete ingredient error:', err);
@@ -139,14 +139,14 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
     }
 });
 
-// PUT adjust stock (owner/admin only)
+// PUT adjust stock
 router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { amount, reason } = req.body;
         
         const currentIngredient = await pool.query(
-            'SELECT name, quantity, unit FROM ingredients WHERE id = ',
+            'SELECT name, quantity, unit FROM ingredients WHERE id = $1',
             [id]
         );
         
@@ -162,7 +162,7 @@ router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (re
         }
         
         const result = await pool.query(
-            'UPDATE ingredients SET quantity = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET quantity = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
             [newQuantity, id]
         );
         

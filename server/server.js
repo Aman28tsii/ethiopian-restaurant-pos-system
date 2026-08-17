@@ -1,157 +1,105 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
 import dotenv from 'dotenv';
-import http from 'http';
+import { createServer } from 'http';
 import { Server } from 'socket.io';
-import rateLimit from 'express-rate-limit';
-import { testConnection } from './src/config/database.js';
-import { errorHandler, notFound } from './src/middleware/errorHandler.js';
-import productRoutes from './src/routes/products.js';
-import saleRoutes from './src/routes/sales.js';
-import ingredientRoutes from './src/routes/ingredients.js';
-import recipeRoutes from './src/routes/recipes.js';
-import profitRoutes from './src/routes/profit.js';
-import expenseRoutes from './src/routes/expenses.js';
-import dashboardRoutes from './src/routes/dashboard.js';
-import authRoutes from './src/routes/auth.js';
-import orderRoutes from './src/routes/orders.js';
-import tableRoutes from './src/routes/tables.js';
-import waiterRoutes from './src/routes/waiter.js';
-import kitchenRoutes from './src/routes/kitchen.js';
-import customerRoutes from './src/routes/customers.js';
-import categoryRoutes from './src/routes/categories.js';
+import { testConnection } from './config/database.js';
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import saleRoutes from './routes/sales.js';
+import orderRoutes from './routes/orders.js';
+import tableRoutes from './routes/tables.js';
+import waiterRoutes from './routes/waiter.js';
+import dashboardRoutes from './routes/dashboard.js';
+import expenseRoutes from './routes/expenses.js';
+import profitRoutes from './routes/profit.js';
+import ingredientRoutes from './routes/ingredients.js';
+import recipeRoutes from './routes/recipes.js';
+import categoryRoutes from './routes/categories.js';
+import customerRoutes from './routes/customers.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const server = http.createServer(app);
-
-// Trust proxy for rate limiter (required for Render)
-app.set('trust proxy', 1);
-
-// Socket.io setup
-const io = new Server(server, {
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://restaurant-pos-frontend-j7gd.onrender.com'
-    ],
-    credentials: true
-  },
-  transports: ['websocket', 'polling'],
-  pingTimeout: 60000,
-  pingInterval: 25000
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+  }
 });
 
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Make io accessible to routes
 app.set('io', io);
 
-io.on('connection', (socket) => {
-  console.log('✅ Client connected:', socket.id);
-  
-  socket.on('join_role', (role) => {
-    socket.join(role);
-    console.log(`Socket ${socket.id} joined ${role} room`);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id);
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/sales', saleRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/tables', tableRoutes);
+app.use('/api/waiter', waiterRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/profit', profitRoutes);
+app.use('/api/ingredients', ingredientRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/customers', customerRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
-const startServer = async () => {
+// 404 handler
+app.use(notFound);
+
+// Error handler
+app.use(errorHandler);
+
+// Socket.io connection
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Start server
+async function startServer() {
   const dbConnected = await testConnection();
   
   if (!dbConnected) {
-    console.error('Database connection failed');
+    console.error('Database connection failed. Exiting...');
     process.exit(1);
   }
   
-  // Rate limiters - defined only once
-  const generalLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 300,
-    message: { success: false, error: 'Too many requests, please slow down.' },
-    skipSuccessfulRequests: true,
-    trustProxy: true,
+  httpServer.listen(PORT, () => {
+    console.log('Server running on http://localhost:' + PORT);
+    console.log('Products API: http://localhost:' + PORT + '/api/products');
+    console.log('Sales API: http://localhost:' + PORT + '/api/sales');
+    console.log('Orders API: http://localhost:' + PORT + '/api/orders');
+    console.log('Tables API: http://localhost:' + PORT + '/api/tables');
+    console.log('WebSocket enabled - Real-time updates active');
   });
+}
 
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20,
-    message: { success: false, error: 'Too many login attempts, please try again later.' },
-    skipSuccessfulRequests: true,
-    trustProxy: true,
-  });
-
-  app.use(helmet());
-  app.use(cors({ 
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://restaurant-pos-frontend-j7gd.onrender.com'
-    ], 
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
-  app.use(express.json());
-  app.use(morgan('dev'));
-  
-  app.use('/api/', generalLimiter);
-  app.use('/api/auth/login', authLimiter);
-  app.use('/api/auth/signup', authLimiter);
-
-  app.get('/api/health', async (req, res) => {
-    res.json({ success: true, status: 'healthy', timestamp: new Date().toISOString() });
-  });
-  
-  app.get('/', (req, res) => {
-    res.json({ 
-      message: 'EthioPOS API is running', 
-      version: '2.0.0',
-      endpoints: {
-        products: '/api/products',
-        ingredients: '/api/ingredients',
-        orders: '/api/orders',
-        kitchen: '/api/kitchen/orders',
-        auth: '/api/auth'
-      }
-    });
-  });
-
-  // ============================================
-  // API ROUTES
-  // ============================================
-  app.use('/api/products', productRoutes);
-  app.use('/api/sales', saleRoutes);
-  app.use('/api/ingredients', ingredientRoutes);
-  app.use('/api/recipes', recipeRoutes);
-  app.use('/api/profit', profitRoutes);
-  app.use('/api/expenses', expenseRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
-  app.use('/api/auth', authRoutes);
-  app.use('/api/orders', orderRoutes);
-  app.use('/api/tables', tableRoutes);
-  app.use('/api/waiter', waiterRoutes);
-  app.use('/api/kitchen', kitchenRoutes);
-  app.use('/api/customers', customerRoutes);
-  app.use('/api/categories', categoryRoutes);
-
-  app.use(notFound);
-  app.use(errorHandler);
-
-  server.listen(PORT, () => {
-    console.log(`\n✅ Server running on http://localhost:${PORT}`);
-    console.log(`📦 Products API: http://localhost:${PORT}/api/products`);
-    console.log(`💰 Sales API: http://localhost:${PORT}/api/sales`);
-    console.log(`🍽️  Kitchen API: http://localhost:${PORT}/api/kitchen/orders`);
-    console.log(`📋 Tables API: http://localhost:${PORT}/api/tables`);
-    console.log(`🔌 WebSocket enabled - Real-time updates active`);
-  });
-};
-
-startServer();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

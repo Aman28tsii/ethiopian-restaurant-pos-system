@@ -543,7 +543,6 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
       ['pending_confirmation', waiterId, 'qr_menu']
     );
     
-    // Get items for each order
     const ordersWithItems = [];
     for (const order of result.rows) {
       const itemsResult = await pool.query(
@@ -563,6 +562,9 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
   }
 });
 
+// ============================================
+// CONFIRM ORDER - FIXED
+// ============================================
 router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
@@ -573,11 +575,12 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
     await client.query('BEGIN');
     
     const orderCheck = await client.query(
-      'SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id FROM orders o WHERE o.id = $1 AND o.status = $2',
-      [orderId, 'pending_confirmation']
+      'SELECT o.id, o.status, o.table_id, o.customer_name, o.order_number, o.waiter_id FROM orders o WHERE o.id = $1 AND o.status IN ($2, $3)',
+      [orderId, 'pending', 'pending_confirmation']
     );
     
     if (orderCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({
         success: false,
         error: 'Order not found or already confirmed'
@@ -595,6 +598,7 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
     }
     
     if (order.waiter_id && order.waiter_id !== userId) {
+      await client.query('ROLLBACK');
       return res.status(403).json({
         success: false,
         error: 'This order is not assigned to you'
@@ -606,10 +610,22 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
       ['pending', userId, orderId]
     );
     
-    await client.query(
-      'INSERT INTO kitchen_orders (order_id, status, notes) VALUES ($1, $2, $3)',
-      [orderId, 'pending', 'Order confirmed by waiter']
+    const kitchenCheck = await client.query(
+      'SELECT id FROM kitchen_orders WHERE order_id = $1',
+      [orderId]
     );
+    
+    if (kitchenCheck.rows.length === 0) {
+      await client.query(
+        'INSERT INTO kitchen_orders (order_id, status, notes) VALUES ($1, $2, $3)',
+        [orderId, 'pending', 'Order confirmed by waiter']
+      );
+    } else {
+      await client.query(
+        'UPDATE kitchen_orders SET status = $1, updated_at = NOW() WHERE order_id = $2',
+        ['pending', orderId]
+      );
+    }
     
     if (order.table_id) {
       await client.query(
@@ -662,7 +678,6 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
       [userId, 'completed', 'cancelled', 'pending_confirmation']
     );
     
-    // Get items for each order
     const ordersWithItems = [];
     for (const order of result.rows) {
       const itemsResult = await pool.query(
@@ -683,7 +698,7 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
 });
 
 // ============================================
-// CANCEL ORDER - FIXED
+// CANCEL ORDER
 // ============================================
 router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
@@ -706,7 +721,6 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
     
     const order = orderCheck.rows[0];
     
-    // Check if the waiter owns this order
     if (order.waiter_id && order.waiter_id !== userId) {
       throw new Error('You can only cancel your own orders');
     }
@@ -761,10 +775,6 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
     client.release();
   }
 });
-
-// ============================================
-// OTHER ROUTES
-// ============================================
 
 router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;

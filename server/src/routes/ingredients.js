@@ -21,7 +21,10 @@ router.get('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, re
 router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query('SELECT * FROM ingredients WHERE id = ', [id]);
+        const result = await pool.query(
+            'SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier FROM ingredients WHERE id = $1',
+            [id]
+        );
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Ingredient not found' });
         }
@@ -82,7 +85,7 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
         }
         
         const result = await pool.query(
-            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES (, , , , , , ) RETURNING *',
+            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [name.trim(), unit, quantity || 0, min_stock || 0, unit_cost || 0, category || null, supplier || null]
         );
         
@@ -100,7 +103,7 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
         
         const result = await pool.query(
-            'UPDATE ingredients SET name = , unit = , quantity = , min_stock = , unit_cost = , category = , supplier = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET name = $1, unit = $2, quantity = $3, min_stock = $4, unit_cost = $5, category = $6, supplier = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
             [name, unit, quantity, min_stock, unit_cost, category, supplier, id]
         );
         
@@ -121,7 +124,7 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
         const { id } = req.params;
         
         const recipeCheck = await pool.query(
-            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = ',
+            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = $1',
             [id]
         );
         
@@ -132,7 +135,7 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
             });
         }
         
-        await pool.query('DELETE FROM ingredients WHERE id = ', [id]);
+        await pool.query('DELETE FROM ingredients WHERE id = $1', [id]);
         res.json({ success: true, message: 'Ingredient deleted successfully' });
     } catch (err) {
         console.error('Delete ingredient error:', err);
@@ -147,7 +150,7 @@ router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (re
         const { amount, reason } = req.body;
         
         const currentIngredient = await pool.query(
-            'SELECT name, quantity, unit FROM ingredients WHERE id = ',
+            'SELECT name, quantity, unit FROM ingredients WHERE id = $1',
             [id]
         );
         
@@ -163,7 +166,7 @@ router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (re
         }
         
         const result = await pool.query(
-            'UPDATE ingredients SET quantity = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET quantity = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
             [newQuantity, id]
         );
         

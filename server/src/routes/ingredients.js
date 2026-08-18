@@ -17,25 +17,37 @@ router.get('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, re
     }
 });
 
-// GET ingredient by ID
-router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
+// ============================================
+// SPECIFIC ROUTES FIRST (BEFORE /:id)
+// ============================================
+
+// GET low stock alert - MUST be before /:id
+router.get('/low-stock-alert', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
-        const { id } = req.params;
         const result = await pool.query(
-            'SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier FROM ingredients WHERE id = $1',
-            [id]
+            'SELECT id, name, quantity, min_stock, unit FROM ingredients WHERE quantity <= min_stock ORDER BY quantity ASC'
         );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Ingredient not found' });
-        }
-        res.json({ success: true, data: result.rows[0] });
+        res.json({ success: true, data: result.rows });
     } catch (err) {
-        console.error('Get ingredient error:', err);
+        console.error('Low stock alert error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// GET ingredient categories
+// GET low stock - MUST be before /:id
+router.get('/low-stock', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, name, quantity, min_stock, unit, unit_cost FROM ingredients WHERE quantity <= min_stock'
+        );
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error('Low stock error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET ingredient categories - MUST be before /:id
 router.get('/categories', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -49,28 +61,24 @@ router.get('/categories', protect, restrictTo('manager', 'owner', 'admin'), asyn
     }
 });
 
-// GET low stock alert - FIXED
-router.get('/low-stock-alert', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
+// GET ingredient by ID - MUST be LAST
+router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
+        const { id } = req.params;
+        // Check if id is a number
+        if (isNaN(parseInt(id))) {
+            return res.status(400).json({ success: false, error: 'Invalid ingredient ID' });
+        }
         const result = await pool.query(
-            'SELECT id, name, quantity, min_stock, unit FROM ingredients WHERE quantity <= min_stock ORDER BY quantity ASC'
+            'SELECT id, name, unit, quantity, min_stock, unit_cost, category, supplier FROM ingredients WHERE id = $1',
+            [id]
         );
-        res.json({ success: true, data: result.rows });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Ingredient not found' });
+        }
+        res.json({ success: true, data: result.rows[0] });
     } catch (err) {
-        console.error('Low stock alert error:', err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// GET low stock
-router.get('/low-stock', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
-    try {
-        const result = await pool.query(
-            'SELECT id, name, quantity, min_stock, unit, unit_cost FROM ingredients WHERE quantity <= min_stock'
-        );
-        res.json({ success: true, data: result.rows });
-    } catch (err) {
-        console.error('Low stock error:', err);
+        console.error('Get ingredient error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -100,6 +108,9 @@ router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(parseInt(id))) {
+            return res.status(400).json({ success: false, error: 'Invalid ingredient ID' });
+        }
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
         
         const result = await pool.query(
@@ -122,6 +133,9 @@ router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(parseInt(id))) {
+            return res.status(400).json({ success: false, error: 'Invalid ingredient ID' });
+        }
         
         const recipeCheck = await pool.query(
             'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = $1',
@@ -147,6 +161,9 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
 router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(parseInt(id))) {
+            return res.status(400).json({ success: false, error: 'Invalid ingredient ID' });
+        }
         const { amount, reason } = req.body;
         
         const currentIngredient = await pool.query(

@@ -4,7 +4,7 @@ import { pool } from '../config/database.js';
 
 const router = express.Router();
 
-// GET all ingredients - RESTRICTED to Manager/Owner/Admin
+// GET all ingredients
 router.get('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -17,11 +17,11 @@ router.get('/', protect, restrictTo('manager', 'owner', 'admin'), async (req, re
     }
 });
 
-// GET ingredient by ID - RESTRICTED
+// GET ingredient by ID
 router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query('SELECT * FROM ingredients WHERE id = ', [id]);
+        const result = await pool.query('SELECT * FROM ingredients WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Ingredient not found' });
         }
@@ -32,7 +32,7 @@ router.get('/:id', protect, restrictTo('manager', 'owner', 'admin'), async (req,
     }
 });
 
-// GET ingredient categories - RESTRICTED
+// GET ingredient categories
 router.get('/categories', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -46,20 +46,20 @@ router.get('/categories', protect, restrictTo('manager', 'owner', 'admin'), asyn
     }
 });
 
-// GET low stock alert - RESTRICTED
+// GET low stock alert - FIXED
 router.get('/low-stock-alert', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
             'SELECT id, name, quantity, min_stock, unit FROM ingredients WHERE quantity <= min_stock ORDER BY quantity ASC'
         );
-        res.json({ success: true, data: result.rows });
+        res.json({ success: true, data: result.rows, count: result.rows.length });
     } catch (err) {
         console.error('Low stock alert error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// GET low stock - RESTRICTED
+// GET low stock
 router.get('/low-stock', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -72,58 +72,67 @@ router.get('/low-stock', protect, restrictTo('manager', 'owner', 'admin'), async
     }
 });
 
-// POST create ingredient - RESTRICTED
+// POST create ingredient - FIXED
 router.post('/', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
+        
         if (!name || !unit) {
             return res.status(400).json({ success: false, error: 'Name and unit are required' });
         }
+        
         const result = await pool.query(
-            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES (, , , , , , ) RETURNING *',
-            [name.trim(), unit, quantity || 0, min_stock || 0, unit_cost || 0, category, supplier]
+            'INSERT INTO ingredients (name, unit, quantity, min_stock, unit_cost, category, supplier) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [name.trim(), unit, quantity || 0, min_stock || 0, unit_cost || 0, category || null, supplier || null]
         );
-        res.status(201).json({ success: true, data: result.rows[0] });
+        
+        res.status(201).json({ success: true, message: 'Ingredient created successfully', data: result.rows[0] });
     } catch (err) {
         console.error('Create ingredient error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// PUT update ingredient - RESTRICTED
+// PUT update ingredient - FIXED
 router.put('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, unit, quantity, min_stock, unit_cost, category, supplier } = req.body;
+        
         const result = await pool.query(
-            'UPDATE ingredients SET name = , unit = , quantity = , min_stock = , unit_cost = , category = , supplier = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET name = $1, unit = $2, quantity = $3, min_stock = $4, unit_cost = $5, category = $6, supplier = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
             [name, unit, quantity, min_stock, unit_cost, category, supplier, id]
         );
+        
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Ingredient not found' });
         }
-        res.json({ success: true, data: result.rows[0] });
+        
+        res.json({ success: true, message: 'Ingredient updated successfully', data: result.rows[0] });
     } catch (err) {
         console.error('Update ingredient error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// DELETE ingredient - RESTRICTED
+// DELETE ingredient
 router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
+        
         const recipeCheck = await pool.query(
-            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = ',
+            'SELECT COUNT(*) FROM recipe_ingredients WHERE ingredient_id = $1',
             [id]
         );
+        
         if (parseInt(recipeCheck.rows[0].count) > 0) {
             return res.status(400).json({
                 success: false,
                 error: 'Cannot delete ingredient that is used in recipes'
             });
         }
-        await pool.query('DELETE FROM ingredients WHERE id = ', [id]);
+        
+        await pool.query('DELETE FROM ingredients WHERE id = $1', [id]);
         res.json({ success: true, message: 'Ingredient deleted successfully' });
     } catch (err) {
         console.error('Delete ingredient error:', err);
@@ -131,29 +140,36 @@ router.delete('/:id', protect, restrictTo('owner', 'admin'), async (req, res) =>
     }
 });
 
-// PUT adjust stock - RESTRICTED
+// PUT adjust stock
 router.put('/:id/adjust-stock', protect, restrictTo('owner', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
         const { amount, reason } = req.body;
+        
         const currentIngredient = await pool.query(
-            'SELECT name, quantity, unit FROM ingredients WHERE id = ',
+            'SELECT name, quantity, unit FROM ingredients WHERE id = $1',
             [id]
         );
+        
         if (currentIngredient.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Ingredient not found' });
         }
+        
         const currentQuantity = parseFloat(currentIngredient.rows[0].quantity);
         const newQuantity = currentQuantity + parseFloat(amount);
+        
         if (newQuantity < 0) {
             return res.status(400).json({ success: false, error: 'Cannot reduce stock below zero' });
         }
+        
         const result = await pool.query(
-            'UPDATE ingredients SET quantity = , updated_at = NOW() WHERE id =  RETURNING *',
+            'UPDATE ingredients SET quantity = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
             [newQuantity, id]
         );
+        
         const action = amount > 0 ? 'added to' : 'removed from';
         const absAmount = Math.abs(amount);
+        
         res.json({
             success: true,
             message: absAmount + ' ' + result.rows[0].unit + ' ' + action + ' ' + result.rows[0].name,

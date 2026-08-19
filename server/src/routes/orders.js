@@ -256,6 +256,9 @@ router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'a
   }
 });
 
+// ============================================
+// ADD ITEMS TO ORDER
+// ============================================
 router.post('/:orderId/add-items', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -531,7 +534,7 @@ router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager',
 });
 
 // ============================================
-// OTHER ROUTES
+// WAITER CONFIRMATION ROUTES
 // ============================================
 
 router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
@@ -539,8 +542,8 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
   
   try {
     const result = await pool.query(
-      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, o.table_id, o.notes, o.created_at, o.status, t.table_number FROM orders o JOIN tables t ON o.table_id = t.id WHERE o.status = $1 AND (o.waiter_id = $2 OR o.waiter_id IS NULL) AND o.source = $3 ORDER BY o.created_at ASC',
-      ['pending_confirmation', waiterId, 'qr_menu']
+      'SELECT o.id, o.order_number, o.total_amount, o.customer_name, o.customer_phone, o.table_id, o.notes, o.created_at, o.status, t.table_number FROM orders o JOIN tables t ON o.table_id = t.id WHERE o.status = $1 AND o.payment_status != $2 AND (o.waiter_id = $3 OR o.waiter_id IS NULL) AND o.source = $4 ORDER BY o.created_at ASC',
+      ['pending_confirmation', 'paid', waiterId, 'qr_menu']
     );
     
     const ordersWithItems = [];
@@ -562,9 +565,6 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
   }
 });
 
-// ============================================
-// CONFIRM ORDER - FIXED
-// ============================================
 router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
@@ -669,13 +669,22 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
   }
 });
 
+// ============================================
+// WAITER'S MY ORDERS - FIXED: Exclude paid orders
+// ============================================
 router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const userId = req.user.id;
   
   try {
     const result = await pool.query(
-      'SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.customer_name, o.table_id, o.created_at, t.table_number FROM orders o JOIN tables t ON o.table_id = t.id WHERE o.waiter_id = $1 AND o.status NOT IN ($2, $3, $4) ORDER BY o.created_at DESC',
-      [userId, 'completed', 'cancelled', 'pending_confirmation']
+      `SELECT o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.customer_name, o.table_id, o.created_at, t.table_number 
+       FROM orders o 
+       JOIN tables t ON o.table_id = t.id 
+       WHERE o.waiter_id = $1 
+         AND o.status NOT IN ($2, $3, $4) 
+         AND o.payment_status != $5
+       ORDER BY o.created_at DESC`,
+      [userId, 'completed', 'cancelled', 'pending_confirmation', 'paid']
     );
     
     const ordersWithItems = [];
@@ -698,7 +707,7 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
 });
 
 // ============================================
-// CANCEL ORDER
+// CANCEL ORDER - FIXED: Better error handling
 // ============================================
 router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
@@ -711,26 +720,46 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
     await client.query('BEGIN');
     
     const orderCheck = await client.query(
-      'SELECT status, payment_status, table_id, waiter_id FROM orders WHERE id = $1',
+      'SELECT id, status, payment_status, table_id, waiter_id, created_by, total_amount FROM orders WHERE id = $1',
       [orderId]
     );
     
     if (orderCheck.rows.length === 0) {
-      throw new Error('Order not found');
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Order not found' });
     }
     
     const order = orderCheck.rows[0];
     
-    if (order.waiter_id && order.waiter_id !== userId) {
-      throw new Error('You can only cancel your own orders');
+    // ✅ Check authorization
+    if (order.waiter_id && order.waiter_id !== userId && order.created_by !== userId) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You are not authorized to cancel this order' 
+      });
     }
     
+    // ✅ Check if already paid
     if (order.payment_status === 'paid') {
-      throw new Error('Cannot cancel a paid order. Please process refund instead.');
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        error: '❌ Cannot cancel a paid order (Total: ' + parseFloat(order.total_amount).toFixed(2) + ' ETB). Please process a refund instead.',
+        order_id: parseInt(orderId),
+        total_amount: parseFloat(order.total_amount),
+        suggestion: 'Use the refund endpoint to process a refund'
+      });
     }
     
     if (order.status === 'completed') {
-      throw new Error('Order already completed');
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'Order already completed' });
+    }
+    
+    if (order.status === 'cancelled') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'Order is already cancelled' });
     }
     
     await client.query(
@@ -755,27 +784,33 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
     const io = req.app.get('io');
     if (io) {
       io.emit('order_cancelled', {
-        order_id: orderId,
+        order_id: parseInt(orderId),
         status: 'cancelled',
-        message: 'Order has been cancelled'
+        message: 'Order #' + orderId + ' has been cancelled'
       });
     }
     
     res.json({
       success: true,
       message: 'Order cancelled successfully',
-      data: { order_id: orderId }
+      data: { order_id: parseInt(orderId) }
     });
     
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Cancel order error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ 
+      success: false, 
+      error: err.message || 'Failed to cancel order' 
+    });
   } finally {
     client.release();
   }
 });
 
+// ============================================
+// ACTIVE ORDER FOR TABLE - FIXED: Exclude paid orders
+// ============================================
 router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;
   
@@ -792,6 +827,9 @@ router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashie
   }
 });
 
+// ============================================
+// CUSTOMER ADD ITEMS
+// ============================================
 router.post('/:orderId/customer-add-items', async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -861,6 +899,9 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
   }
 });
 
+// ============================================
+// WASTAGE REPORT
+// ============================================
 router.get('/:orderId/wastage', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   
@@ -884,6 +925,30 @@ router.get('/:orderId/wastage', protect, restrictTo('manager', 'owner', 'admin')
     });
   } catch (err) {
     console.error('Get wastage report error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================
+// TABLES ROUTE - FIXED: Add missing /tables/all endpoint
+// ============================================
+router.get('/tables/all', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,
+              u.name as waiter_name,
+              o.order_number as current_order_number,
+              o.id as current_order_id,
+              o.payment_status as current_order_payment_status,
+              (SELECT COUNT(*) FROM orders o2 WHERE o2.table_id = t.id AND o2.status IN ('pending', 'preparing', 'ready') AND o2.payment_status != 'paid') as pending_orders
+       FROM tables t
+       LEFT JOIN users u ON t.waiter_id = u.id
+       LEFT JOIN orders o ON t.current_order_id = o.id
+       ORDER BY t.table_number ASC`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get tables error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

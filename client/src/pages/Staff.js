@@ -2,7 +2,6 @@
 import API from '../api/axios';
 import { Users, Plus, Edit2, Trash2, Search, X, Loader2, RefreshCw, ChefHat, Wine, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { formatCurrency } from '../utils/formatting';
 
 const Staff = () => {
   const { t } = useLanguage();
@@ -67,10 +66,11 @@ const Staff = () => {
           role: formData.role,
           phone: formData.phone
         };
+        // Only send station_type if role is kitchen
         if (formData.role === 'kitchen') {
           updateData.station_type = formData.station_type;
         }
-        await API.put('/auth/users/' + editingStaff.id, updateData);
+        await API.put(`/auth/users/${editingStaff.id}`, updateData);
         alert(t('staffUpdatedSuccessfully'));
       } else {
         if (formData.password.length < 6) {
@@ -101,7 +101,7 @@ const Staff = () => {
   const handleDelete = async (id) => {
     if (window.confirm(t('deleteStaffConfirm'))) {
       try {
-        await API.delete('/auth/users/' + id);
+        await API.delete(`/auth/users/${id}`);
         alert(t('staffDeletedSuccessfully'));
         fetchStaff();
       } catch (err) {
@@ -125,6 +125,7 @@ const Staff = () => {
       manager: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
       cashier: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
       waiter: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+      order_taker: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',  // ✅ ADDED
       kitchen: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
       bar: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
       both: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
@@ -134,45 +135,53 @@ const Staff = () => {
   };
 
   const getRoleIcon = (role) => {
-    if (role === 'kitchen') return React.createElement(ChefHat, { size: 14, className: 'inline mr-1' });
-    if (role === 'bar') return React.createElement(Wine, { size: 14, className: 'inline mr-1' });
-    if (role === 'both') return React.createElement(Layers, { size: 14, className: 'inline mr-1' });
+    if (role === 'kitchen') return <ChefHat size={14} className="inline mr-1" />;
+    if (role === 'bar') return <Wine size={14} className="inline mr-1" />;
+    if (role === 'both') return <Layers size={14} className="inline mr-1" />;
+    if (role === 'order_taker') return <Users size={14} className="inline mr-1" />;  // ✅ ADDED
     return null;
   };
 
   const getStationDisplay = (member) => {
-    if (member.role === 'both') return 'Both Stations';
-    if (member.role === 'bar') return 'Bar';
+    // For both role, show Both Stations
+    if (member.role === 'both') return '📋 Both Stations';
+    // For bar role, always show Bar
+    if (member.role === 'bar') return '🍺 Bar';
+    // For order_taker, show Order Taker
+    if (member.role === 'order_taker') return '📝 Order Taker';  // ✅ ADDED
+    // For kitchen role, show their station type
     if (member.role === 'kitchen') {
       const stationMap = {
-        kitchen: 'Kitchen Only',
-        bar: 'Bar Only',
-        both: 'Both Stations'
+        kitchen: '🍳 Kitchen Only',
+        bar: '🍺 Bar Only',
+        both: '📋 Both Stations'
       };
-      return stationMap[member.station_type] || 'Kitchen Only';
+      return stationMap[member.station_type] || '🍳 Kitchen Only';
     }
     return '-';
   };
 
   const getStatusBadge = (status, isActive) => {
     if (status === 'pending') {
-      return React.createElement('span', { className: 'ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs' }, t('pending'));
+      return <span className="ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs">{t('pending')}</span>;
     }
     if (isActive === false || status === 'inactive') {
-      return React.createElement('span', { className: 'ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs' }, t('inactive'));
+      return <span className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs">{t('inactive')}</span>;
     }
-    return React.createElement('span', { className: 'ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs' }, t('active'));
+    return <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs">{t('active')}</span>;
   };
 
-  const filteredStaff = staff.filter(function(s) {
-    return s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.role?.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredStaff = staff.filter(s =>
+    s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.role?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
-    return React.createElement('div', { className: 'flex justify-center items-center h-full' },
-      React.createElement(Loader2, { className: 'animate-spin text-blue-500', size: 40 })
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="animate-spin text-blue-500" size={40} />
+      </div>
     );
   }
 
@@ -214,15 +223,15 @@ const Staff = () => {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('active')}</p>
-          <p className="text-xl font-bold text-green-600 dark:text-green-400">{staff.filter(function(s) { return s.status === 'active' || s.is_active === true; }).length}</p>
+          <p className="text-xl font-bold text-green-600 dark:text-green-400">{staff.filter(s => s.status === 'active' || s.is_active === true).length}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('pending')}</p>
-          <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{staff.filter(function(s) { return s.status === 'pending'; }).length}</p>
+          <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{staff.filter(s => s.status === 'pending').length}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('roles')}</p>
-          <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{new Set(staff.map(function(s) { return s.role; })).size}</p>
+          <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{new Set(staff.map(s => s.role)).size}</p>
         </div>
       </div>
 
@@ -230,13 +239,13 @@ const Staff = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
         <input
           type="text"
-          placeholder={t('search') + ' ' + t('staff') + '...'}
+          placeholder={`${t('search')} ${t('staff')}...`}
           value={searchTerm}
-          onChange={function(e) { setSearchTerm(e.target.value); }}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {searchTerm && (
-          <button onClick={function() { setSearchTerm(''); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+          <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
             <X size={18} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
           </button>
         )}
@@ -266,60 +275,58 @@ const Staff = () => {
                   </td>
                 </tr>
               ) : (
-                filteredStaff.map(function(member) {
-                  return (
-                    <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                      <td className="px-6 py-4">
-                        <span className="text-gray-900 dark:text-white font-medium">{member.name}</span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.email}</td>
-                      <td className="px-6 py-4">
-                        <span className={'px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 ' + getRoleColor(member.role)}>
-                          {getRoleIcon(member.role)}
-                          {member.role === 'both' ? 'Both Stations' : t(member.role)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs">
-                          {getStationDisplay(member)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.phone || '-'}</td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(member.status, member.is_active)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={function() {
-                              setEditingStaff(member);
-                              setFormData({
-                                name: member.name,
-                                email: member.email,
-                                password: '',
-                                role: member.role,
-                                phone: member.phone || '',
-                                station_type: member.station_type || 'kitchen'
-                              });
-                              setShowModal(true);
-                            }}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition"
-                            title={t('edit')}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={function() { handleDelete(member.id); }}
-                            className="text-red-600 dark:text-red-400 hover:text-red-700 transition"
-                            title={t('delete')}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                filteredStaff.map(member => (
+                  <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                    <td className="px-6 py-4">
+                      <span className="text-gray-900 dark:text-white font-medium">{member.name}</span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 ${getRoleColor(member.role)}`}>
+                        {getRoleIcon(member.role)}
+                        {member.role === 'both' ? 'Both Stations' : member.role === 'order_taker' ? 'Order Taker' : t(member.role)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs">
+                        {getStationDisplay(member)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">{member.phone || '-'}</td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(member.status, member.is_active)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingStaff(member);
+                            setFormData({
+                              name: member.name,
+                              email: member.email,
+                              password: '',
+                              role: member.role,
+                              phone: member.phone || '',
+                              station_type: member.station_type || 'kitchen'
+                            });
+                            setShowModal(true);
+                          }}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition"
+                          title={t('edit')}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(member.id)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 transition"
+                          title={t('delete')}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -353,7 +360,7 @@ const Staff = () => {
                     type="text"
                     placeholder={t('enterFullName')}
                     value={formData.name}
-                    onChange={function(e) { setFormData({ ...formData, name: e.target.value }); }}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -365,7 +372,7 @@ const Staff = () => {
                     type="email"
                     placeholder={t('enterEmailAddress')}
                     value={formData.email}
-                    onChange={function(e) { setFormData({ ...formData, email: e.target.value }); }}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -378,7 +385,7 @@ const Staff = () => {
                       type="password"
                       placeholder={t('minimum6Characters')}
                       value={formData.password}
-                      onChange={function(e) { setFormData({ ...formData, password: e.target.value }); }}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
@@ -390,7 +397,7 @@ const Staff = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('role')} *</label>
                   <select
                     value={formData.role}
-                    onChange={function(e) {
+                    onChange={(e) => {
                       const newRole = e.target.value;
                       setFormData({ 
                         ...formData, 
@@ -403,10 +410,11 @@ const Staff = () => {
                     <option value="owner">{t('owner')} ({t('fullAccess')})</option>
                     <option value="manager">{t('manager')} ({t('operationalAccess')})</option>
                     <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
+                    <option value="order_taker">📝 Order Taker (Take Orders Only)</option>  {/* ✅ ADDED */}
                     <option value="waiter">{t('waiter')} ({t('orderTaking')})</option>
-                    <option value="kitchen">Kitchen (Food Prep)</option>
-                    <option value="bar">Bar (Drinks Only)</option>
-                    <option value="both">Both Stations (Food and Drinks)</option>
+                    <option value="kitchen">🍳 {t('kitchen')} (Food Prep)</option>
+                    <option value="bar">🍺 Bar (Drinks Only)</option>
+                    <option value="both">📋 Both Stations (Food & Drinks)</option>
                   </select>
                 </div>
 
@@ -417,17 +425,45 @@ const Staff = () => {
                     </label>
                     <select
                       value={formData.station_type}
-                      onChange={function(e) { setFormData({ ...formData, station_type: e.target.value }); }}
+                      onChange={(e) => setFormData({ ...formData, station_type: e.target.value })}
                       className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="kitchen">Kitchen Only (Food orders only)</option>
-                      <option value="bar">Bar Only (Drink orders only)</option>
-                      <option value="both">Both Stations (Food and Drink orders)</option>
+                      <option value="kitchen">🍳 Kitchen Only (Food orders only)</option>
+                      <option value="bar">🍺 Bar Only (Drink orders only)</option>
+                      <option value="both">📋 Both Stations (Food & Drink orders)</option>
                     </select>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {formData.station_type === 'kitchen' && 'This staff member will only see food orders'}
                       {formData.station_type === 'bar' && 'This staff member will only see drink orders'}
                       {formData.station_type === 'both' && 'This staff member will see both food and drink orders'}
+                    </p>
+                  </div>
+                )}
+
+                {formData.role === 'bar' && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                    <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
+                      <Wine size={16} />
+                      Bar staff will only see drink orders in their dashboard
+                    </p>
+                  </div>
+                )}
+
+                {formData.role === 'both' && (
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                    <p className="text-purple-700 dark:text-purple-400 text-sm flex items-center gap-2">
+                      <Layers size={16} />
+                      Both Stations staff can see and manage ALL orders (Food + Drinks)
+                    </p>
+                  </div>
+                )}
+
+                {/* ✅ ADDED: Order Taker info message */}
+                {formData.role === 'order_taker' && (
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+                    <p className="text-indigo-700 dark:text-indigo-400 text-sm flex items-center gap-2">
+                      <Users size={16} />
+                      Order Taker can take orders for all tables from a central station. No payment processing.
                     </p>
                   </div>
                 )}
@@ -438,7 +474,7 @@ const Staff = () => {
                     type="tel"
                     placeholder={t('optional')}
                     value={formData.phone}
-                    onChange={function(e) { setFormData({ ...formData, phone: e.target.value }); }}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

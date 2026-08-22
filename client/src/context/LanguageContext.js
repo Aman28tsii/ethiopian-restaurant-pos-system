@@ -591,6 +591,7 @@ const translations = {
     unpaid: 'Unpaid',
     pendingPayment: 'Pending Payment',
     itemsCount: 'Items Count',
+      order_taker: 'Order Taker',
 
     // ---------- AUTHENTICATION / LOGIN ----------
     restaurantManagementSystem: 'Restaurant Management System',
@@ -1218,6 +1219,7 @@ const translations = {
     activeEmployees: 'ንቁ ሰራተኞች',
     totalOrders: 'ጠቅላላ ትዕዛዞች',
     monthNetProfit: 'የወር የተጣራ ትርፍ',
+    order_taker: 'ትዕዛዝ መቀበያ',
 
     // ---------- MANAGER DASHBOARD (የአስተዳዳሪ ዳሽቦርድ) ----------
     managerDashboard: 'የአስተዳዳሪ ዳሽቦርድ',

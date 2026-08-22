@@ -151,10 +151,11 @@ router.post('/qr-order', async (req, res) => {
 });
 
 // ============================================
-// WAITER ROUTES
+// WAITER / ORDER TAKER ROUTES
 // ============================================
 
-router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+// ✅ UPDATED: Added order_taker to restrictTo
+router.post('/', protect, restrictTo('order_taker', 'waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   try {
     const { items, customer_name, customer_phone, table_id, order_type = 'dine_in', notes, source = 'waiter' } = req.body;
     const userId = req.user.id;
@@ -256,10 +257,8 @@ router.post('/', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'a
   }
 });
 
-// ============================================
-// ADD ITEMS TO ORDER
-// ============================================
-router.post('/:orderId/add-items', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+// ✅ UPDATED: Added order_taker to restrictTo
+router.post('/:orderId/add-items', protect, restrictTo('order_taker', 'waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
   
@@ -534,10 +533,11 @@ router.put('/kitchen/:orderId/status', protect, restrictTo('kitchen', 'manager',
 });
 
 // ============================================
-// WAITER CONFIRMATION ROUTES
+// WAITER / ORDER TAKER CONFIRMATION ROUTES
 // ============================================
 
-router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+// ✅ UPDATED: Added order_taker to restrictTo
+router.get('/pending-confirmation', protect, restrictTo('waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const waiterId = req.user.id;
   
   try {
@@ -565,7 +565,8 @@ router.get('/pending-confirmation', protect, restrictTo('waiter', 'cashier', 'ma
   }
 });
 
-router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+// ✅ UPDATED: Added order_taker to restrictTo
+router.put('/confirm/:orderId', protect, restrictTo('waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user.id;
   
@@ -669,10 +670,8 @@ router.put('/confirm/:orderId', protect, restrictTo('waiter', 'cashier', 'manage
   }
 });
 
-// ============================================
-// WAITER'S MY ORDERS - FIXED: Exclude paid orders
-// ============================================
-router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+// ✅ UPDATED: Added order_taker to restrictTo
+router.get('/my-orders', protect, restrictTo('waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const userId = req.user.id;
   
   try {
@@ -707,9 +706,11 @@ router.get('/my-orders', protect, restrictTo('waiter', 'cashier', 'manager', 'ow
 });
 
 // ============================================
-// CANCEL ORDER - FIXED: Better error handling
+// CANCEL ORDER - UPDATED with order_taker
 // ============================================
-router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+
+// ✅ UPDATED: Added order_taker to restrictTo
+router.put('/:orderId/cancel', protect, restrictTo('order_taker', 'waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   const { reason } = req.body;
   const userId = req.user.id;
@@ -809,9 +810,10 @@ router.put('/:orderId/cancel', protect, restrictTo('waiter', 'cashier', 'manager
 });
 
 // ============================================
-// ACTIVE ORDER FOR TABLE - FIXED: Exclude paid orders
+// ACTIVE ORDER FOR TABLE
 // ============================================
-router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+
+router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   const { tableId } = req.params;
   
   try {
@@ -830,6 +832,7 @@ router.get('/table/:tableId/active-order', protect, restrictTo('waiter', 'cashie
 // ============================================
 // CUSTOMER ADD ITEMS
 // ============================================
+
 router.post('/:orderId/customer-add-items', async (req, res) => {
   const { orderId } = req.params;
   const { items } = req.body;
@@ -902,6 +905,7 @@ router.post('/:orderId/customer-add-items', async (req, res) => {
 // ============================================
 // WASTAGE REPORT
 // ============================================
+
 router.get('/:orderId/wastage', protect, restrictTo('manager', 'owner', 'admin'), async (req, res) => {
   const { orderId } = req.params;
   
@@ -930,9 +934,10 @@ router.get('/:orderId/wastage', protect, restrictTo('manager', 'owner', 'admin')
 });
 
 // ============================================
-// TABLES ROUTE - FIXED: Add missing /tables/all endpoint
+// TABLES ROUTE
 // ============================================
-router.get('/tables/all', protect, restrictTo('waiter', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
+
+router.get('/tables/all', protect, restrictTo('waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin'), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT t.id, t.table_number, t.capacity, t.status, t.waiter_id,

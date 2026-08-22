@@ -5,7 +5,6 @@ import Signup from './pages/Signup';
 import { LanguageProvider } from './context/LanguageContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Categories from './pages/owner/Categories';
-import OrderTaker from './pages/OrderTaker';  // ✅ ADD THIS
 
 // Lazy load layouts
 const OwnerLayout = lazy(() => import('./layouts/OwnerLayout'));
@@ -61,7 +60,6 @@ const getDefaultRoute = (role) => {
     case 'cashier': return '/cashier/pos';
     case 'waiter': return '/waiter/tables';
     case 'kitchen': return '/kitchen/orders';
-    case 'order_taker': return '/order-taker';  // ✅ ADD THIS
     default: return '/login';
   }
 };

@@ -180,13 +180,6 @@ function App() {
                 </RoleRoute>
               } />
 
-              {/* ✅ ORDER TAKER ROUTE - SEPARATE */}
-              <Route path="/order-taker/*" element={
-                <RoleRoute allowedRoles={['order_taker', 'cashier', 'manager', 'owner', 'admin']} userRole={userRole}>
-                  <OrderTaker />
-                </RoleRoute>
-              } />
-
               {/* Cashier Routes */}
               <Route path="/cashier/*" element={
                 <RoleRoute allowedRoles={['cashier', 'manager', 'owner', 'admin']} userRole={userRole}>

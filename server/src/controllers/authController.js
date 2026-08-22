@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
-import { catchAsync } from '../middleware/errorHandler.js';
+import { AppError, catchAsync } from '../middleware/errorHandler.js';
+import { ALLOWED_ROLES } from '../middleware/auth.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_change_this';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 const generateToken = (user) => {
@@ -67,7 +68,7 @@ export const login = catchAsync(async (req, res) => {
 
 // Signup
 export const signup = catchAsync(async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password, phone, role } = req.body;
   
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, error: 'Name, email and password are required' });
@@ -75,6 +76,12 @@ export const signup = catchAsync(async (req, res) => {
   
   if (password.length < 6) {
     return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+  }
+  
+  // Validate role
+  const userRole = role || 'staff';
+  if (!ALLOWED_ROLES.includes(userRole) && userRole !== 'staff') {
+    return res.status(400).json({ success: false, error: `Invalid role: ${userRole}. Allowed roles: ${ALLOWED_ROLES.join(', ')}` });
   }
   
   const existingUser = await query('SELECT id, status FROM users WHERE email = $1', [email.toLowerCase().trim()]);
@@ -90,9 +97,9 @@ export const signup = catchAsync(async (req, res) => {
   
   const result = await query(
     `INSERT INTO users (business_id, name, email, password, role, phone, status, is_active)
-     VALUES (1, $1, $2, $3, 'staff', $4, 'pending', false)
+     VALUES (1, $1, $2, $3, $4, $5, 'pending', false)
      RETURNING id, name, email, role, status, created_at`,
-    [name.trim(), email.toLowerCase().trim(), hashedPassword, phone || null]
+    [name.trim(), email.toLowerCase().trim(), hashedPassword, userRole, phone || null]
   );
   
   res.status(201).json({
@@ -117,6 +124,11 @@ export const getPendingUsers = catchAsync(async (req, res) => {
 export const approveUser = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { role = 'staff' } = req.body;
+  
+  // Validate role
+  if (!ALLOWED_ROLES.includes(role)) {
+    return res.status(400).json({ success: false, error: `Invalid role: ${role}. Allowed roles: ${ALLOWED_ROLES.join(', ')}` });
+  }
   
   const result = await query(
     `UPDATE users 
@@ -204,6 +216,73 @@ export const verifyToken = catchAsync(async (req, res) => {
 // Logout
 export const logout = catchAsync(async (req, res) => {
   res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Update user
+export const updateUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { name, email, role, phone, station_type } = req.body;
+  
+  // Validate role
+  if (role && !ALLOWED_ROLES.includes(role)) {
+    return res.status(400).json({ success: false, error: `Invalid role: ${role}. Allowed roles: ${ALLOWED_ROLES.join(', ')}` });
+  }
+  
+  let queryStr = 'UPDATE users SET ';
+  const params = [];
+  let paramIndex = 1;
+  
+  if (name) {
+    queryStr += `name = $${paramIndex++}, `;
+    params.push(name.trim());
+  }
+  if (email) {
+    queryStr += `email = $${paramIndex++}, `;
+    params.push(email.toLowerCase().trim());
+  }
+  if (role) {
+    queryStr += `role = $${paramIndex++}, `;
+    params.push(role);
+  }
+  if (phone !== undefined) {
+    queryStr += `phone = $${paramIndex++}, `;
+    params.push(phone);
+  }
+  if (station_type) {
+    queryStr += `station_type = $${paramIndex++}, `;
+    params.push(station_type);
+  }
+  
+  queryStr += `updated_at = CURRENT_TIMESTAMP WHERE id = $${paramIndex} RETURNING *`;
+  params.push(id);
+  
+  const result = await query(queryStr, params);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('User not found', 404);
+  }
+  
+  res.json({
+    success: true,
+    message: 'User updated successfully',
+    user: result.rows[0]
+  });
+});
+
+// Delete user
+export const deleteUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  
+  const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+  
+  if (result.rows.length === 0) {
+    throw new AppError('User not found', 404);
+  }
+  
+  res.json({
+    success: true,
+    message: 'User deleted successfully'
+  });
 });
 
 // Get staff performance data

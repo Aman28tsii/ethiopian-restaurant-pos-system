@@ -1,5 +1,4 @@
-﻿// backend/src/routes/auth.js
-import express from 'express';
+﻿import express from 'express';
 import {
   login,
   signup,
@@ -10,7 +9,9 @@ import {
   rejectUser,
   verifyToken,
   getStaffPerformance,
-  logout
+  logout,
+  updateUser,
+  deleteUser
 } from '../controllers/authController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -21,16 +22,18 @@ router.post('/login', login);
 router.post('/signup', signup);
 router.post('/verify', verifyToken);
 
-// Protected routes
+// Protected routes (need login)
 router.use(protect);
 router.get('/me', getCurrentUser);
 router.post('/logout', logout);
 
-// Owner/Admin only routes
-router.get('/users', restrictTo('owner', 'admin'), getAllUsers);
-router.get('/users/pending', restrictTo('owner', 'admin'), getPendingUsers);
-router.put('/users/:id/approve', restrictTo('owner', 'admin'), approveUser);
-router.delete('/users/:id/reject', restrictTo('owner', 'admin'), rejectUser);
-router.get('/performance', restrictTo('owner', 'admin'), getStaffPerformance);
+// Admin/Owner only routes
+router.get('/users', restrictTo('admin', 'owner'), getAllUsers);
+router.get('/users/pending', restrictTo('admin', 'owner'), getPendingUsers);
+router.put('/users/:id/approve', restrictTo('admin', 'owner'), approveUser);
+router.delete('/users/:id/reject', restrictTo('admin', 'owner'), rejectUser);
+router.put('/users/:id', restrictTo('admin', 'owner'), updateUser);
+router.delete('/users/:id', restrictTo('admin', 'owner'), deleteUser);
+router.get('/performance', protect, restrictTo('admin', 'owner', 'manager'), getStaffPerformance);
 
 export default router;

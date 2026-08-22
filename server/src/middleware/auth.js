@@ -6,12 +6,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 const roleHierarchy = {
   'kitchen': 1,
   'waiter': 2,
-  'order_taker': 3,  // ✅ ADD THIS
+  'order_taker': 3,
   'cashier': 4,
   'manager': 5,
   'owner': 6,
-  'admin': 6  // admin same as owner
+  'admin': 6
 };
+
+// Allowed roles for validation
+export const ALLOWED_ROLES = ['kitchen', 'waiter', 'order_taker', 'cashier', 'manager', 'owner', 'admin', 'bar', 'both'];
 
 // Verify token and attach user to request
 export const protect = (req, res, next) => {
@@ -48,13 +51,13 @@ export const hasRole = (requiredRole) => {
   };
 };
 
-// Role-specific middleware (easy to use)
+// Role-specific middleware
 export const allowOwner = hasRole('owner');
 export const allowManager = hasRole('manager');
 export const allowCashier = hasRole('cashier');
 export const allowWaiter = hasRole('waiter');
 export const allowKitchen = hasRole('kitchen');
-export const allowOrderTaker = hasRole('order_taker');  // ✅ ADD THIS
+export const allowOrderTaker = hasRole('order_taker');
 
 // Check exact role (not hierarchy)
 export const restrictTo = (...roles) => {

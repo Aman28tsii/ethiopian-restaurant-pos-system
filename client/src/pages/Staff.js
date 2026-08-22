@@ -66,7 +66,6 @@ const Staff = () => {
           role: formData.role,
           phone: formData.phone
         };
-        // Only send station_type if role is kitchen
         if (formData.role === 'kitchen') {
           updateData.station_type = formData.station_type;
         }
@@ -125,7 +124,7 @@ const Staff = () => {
       manager: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
       cashier: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
       waiter: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-      order_taker: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',  // ✅ ADDED
+      order_taker: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
       kitchen: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
       bar: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
       both: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
@@ -138,18 +137,14 @@ const Staff = () => {
     if (role === 'kitchen') return <ChefHat size={14} className="inline mr-1" />;
     if (role === 'bar') return <Wine size={14} className="inline mr-1" />;
     if (role === 'both') return <Layers size={14} className="inline mr-1" />;
-    if (role === 'order_taker') return <Users size={14} className="inline mr-1" />;  // ✅ ADDED
+    if (role === 'order_taker') return <Users size={14} className="inline mr-1" />;
     return null;
   };
 
   const getStationDisplay = (member) => {
-    // For both role, show Both Stations
     if (member.role === 'both') return '📋 Both Stations';
-    // For bar role, always show Bar
     if (member.role === 'bar') return '🍺 Bar';
-    // For order_taker, show Order Taker
-    if (member.role === 'order_taker') return '📝 Order Taker';  // ✅ ADDED
-    // For kitchen role, show their station type
+    if (member.role === 'order_taker') return '📝 Order Taker';
     if (member.role === 'kitchen') {
       const stationMap = {
         kitchen: '🍳 Kitchen Only',
@@ -410,7 +405,7 @@ const Staff = () => {
                     <option value="owner">{t('owner')} ({t('fullAccess')})</option>
                     <option value="manager">{t('manager')} ({t('operationalAccess')})</option>
                     <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
-                    <option value="order_taker">📝 Order Taker (Take Orders Only)</option>  {/* ✅ ADDED */}
+                    <option value="order_taker">📝 Order Taker (Take Orders Only)</option>
                     <option value="waiter">{t('waiter')} ({t('orderTaking')})</option>
                     <option value="kitchen">🍳 {t('kitchen')} (Food Prep)</option>
                     <option value="bar">🍺 Bar (Drinks Only)</option>
@@ -458,7 +453,6 @@ const Staff = () => {
                   </div>
                 )}
 
-                {/* ✅ ADDED: Order Taker info message */}
                 {formData.role === 'order_taker' && (
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
                     <p className="text-indigo-700 dark:text-indigo-400 text-sm flex items-center gap-2">

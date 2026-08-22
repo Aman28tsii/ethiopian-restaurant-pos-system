@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../api/axios';
 import { Users, Plus, Edit2, Trash2, Search, X, Loader2, RefreshCw, ChefHat, Wine, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -124,7 +124,6 @@ const Staff = () => {
       manager: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
       cashier: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
       waiter: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-      order_taker: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
       kitchen: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
       bar: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
       both: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
@@ -137,21 +136,19 @@ const Staff = () => {
     if (role === 'kitchen') return <ChefHat size={14} className="inline mr-1" />;
     if (role === 'bar') return <Wine size={14} className="inline mr-1" />;
     if (role === 'both') return <Layers size={14} className="inline mr-1" />;
-    if (role === 'order_taker') return <Users size={14} className="inline mr-1" />;
     return null;
   };
 
   const getStationDisplay = (member) => {
-    if (member.role === 'both') return '📋 Both Stations';
-    if (member.role === 'bar') return '🍺 Bar';
-    if (member.role === 'order_taker') return '📝 Order Taker';
+    if (member.role === 'both') return '?? Both Stations';
+    if (member.role === 'bar') return '?? Bar';
     if (member.role === 'kitchen') {
       const stationMap = {
-        kitchen: '🍳 Kitchen Only',
-        bar: '🍺 Bar Only',
-        both: '📋 Both Stations'
+        kitchen: '?? Kitchen Only',
+        bar: '?? Bar Only',
+        both: '?? Both Stations'
       };
-      return stationMap[member.station_type] || '🍳 Kitchen Only';
+      return stationMap[member.station_type] || '?? Kitchen Only';
     }
     return '-';
   };
@@ -279,7 +276,6 @@ const Staff = () => {
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize flex items-center gap-1 ${getRoleColor(member.role)}`}>
                         {getRoleIcon(member.role)}
-                        {member.role === 'both' ? 'Both Stations' : member.role === 'order_taker' ? 'Order Taker' : t(member.role)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -405,11 +401,10 @@ const Staff = () => {
                     <option value="owner">{t('owner')} ({t('fullAccess')})</option>
                     <option value="manager">{t('manager')} ({t('operationalAccess')})</option>
                     <option value="cashier">{t('cashier')} ({t('paymentOnly')})</option>
-                    <option value="order_taker">📝 Order Taker (Take Orders Only)</option>
                     <option value="waiter">{t('waiter')} ({t('orderTaking')})</option>
-                    <option value="kitchen">🍳 {t('kitchen')} (Food Prep)</option>
-                    <option value="bar">🍺 Bar (Drinks Only)</option>
-                    <option value="both">📋 Both Stations (Food & Drinks)</option>
+                    <option value="kitchen">?? {t('kitchen')} (Food Prep)</option>
+                    <option value="bar">?? Bar (Drinks Only)</option>
+                    <option value="both">?? Both Stations (Food & Drinks)</option>
                   </select>
                 </div>
 
@@ -423,9 +418,9 @@ const Staff = () => {
                       onChange={(e) => setFormData({ ...formData, station_type: e.target.value })}
                       className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="kitchen">🍳 Kitchen Only (Food orders only)</option>
-                      <option value="bar">🍺 Bar Only (Drink orders only)</option>
-                      <option value="both">📋 Both Stations (Food & Drink orders)</option>
+                      <option value="kitchen">?? Kitchen Only (Food orders only)</option>
+                      <option value="bar">?? Bar Only (Drink orders only)</option>
+                      <option value="both">?? Both Stations (Food & Drink orders)</option>
                     </select>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {formData.station_type === 'kitchen' && 'This staff member will only see food orders'}
@@ -453,7 +448,6 @@ const Staff = () => {
                   </div>
                 )}
 
-                {formData.role === 'order_taker' && (
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
                     <p className="text-indigo-700 dark:text-indigo-400 text-sm flex items-center gap-2">
                       <Users size={16} />

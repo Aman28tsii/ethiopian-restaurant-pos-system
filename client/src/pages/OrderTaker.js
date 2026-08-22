@@ -5,48 +5,9 @@ import {
     Utensils, Send, Table as TableIcon,
     Plus, Minus, LogOut
 } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-const getProductEmoji = (category) => {
-    const emojis = {
-        'Main Course': '🍛',
-        'Beverage': '🥤',
-        'Drink': '🥤',
-        'Juice': '🧃',
-        'Coffee': '☕',
-        'Tea': '🍵',
-        'Dessert': '🍰',
-        'Appetizer': '🍢',
-        'Soup': '🍲',
-        'Salad': '🥗',
-        'Breakfast': '🍳',
-        'Traditional': '🇪🇹',
-        'Ethiopian': '🇪🇹',
-        'Side': '🥗',
-        'Main Dish': '🍛',
-        'Vegetarian': '🥬',
-        'Bread': '🍞'
-    };
-    return emojis[category] || '🍽️';
-};
-
-const formatCurrency = (value) => {
-    return `Br ${parseFloat(value || 0).toFixed(2)}`;
-};
-
-// ============================================
-// ORDER TAKER COMPONENT
-// ============================================
 const OrderTaker = () => {
-    const { t } = useLanguage();
     const [user, setUser] = useState(null);
-    
-    // ============================================
-    // STATE
-    // ============================================
     const [products, setProducts] = useState([]);
     const [tables, setTables] = useState([]);
     const [selectedTable, setSelectedTable] = useState('');
@@ -61,7 +22,6 @@ const OrderTaker = () => {
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [lastOrderNumber, setLastOrderNumber] = useState(null);
 
-    // Get user from localStorage
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
@@ -71,12 +31,6 @@ const OrderTaker = () => {
                 console.error('Failed to parse user');
             }
         }
-    }, []);
-
-    // ============================================
-    // FETCH DATA
-    // ============================================
-    useEffect(() => {
         fetchData();
     }, []);
 
@@ -96,18 +50,12 @@ const OrderTaker = () => {
         }
     };
 
-    // ============================================
-    // LOGOUT
-    // ============================================
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
     };
 
-    // ============================================
-    // CART OPERATIONS
-    // ============================================
     const addToCart = (product) => {
         const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
         setCart(prev => {
@@ -156,9 +104,6 @@ const OrderTaker = () => {
         }
     };
 
-    // ============================================
-    // PLACE ORDER
-    // ============================================
     const placeOrder = async () => {
         if (cart.length === 0) {
             alert('Please add items to the order');
@@ -190,12 +135,10 @@ const OrderTaker = () => {
                 const order = response.data.data;
                 setLastOrderNumber(order.order_number);
                 setOrderSuccess(true);
-                
                 setCart([]);
                 setCustomerName('');
                 setCustomerPhone('');
                 setNotes('');
-                
                 setTimeout(() => setOrderSuccess(false), 5000);
             }
         } catch (err) {
@@ -206,9 +149,33 @@ const OrderTaker = () => {
         }
     };
 
-    // ============================================
-    // CATEGORIES & FILTERS
-    // ============================================
+    const formatCurrency = (value) => {
+        return `Br ${parseFloat(value || 0).toFixed(2)}`;
+    };
+
+    const getProductEmoji = (category) => {
+        const emojis = {
+            'Main Course': '🍛',
+            'Beverage': '🥤',
+            'Drink': '🥤',
+            'Juice': '🧃',
+            'Coffee': '☕',
+            'Tea': '🍵',
+            'Dessert': '🍰',
+            'Appetizer': '🍢',
+            'Soup': '🍲',
+            'Salad': '🥗',
+            'Breakfast': '🍳',
+            'Traditional': '🇪🇹',
+            'Ethiopian': '🇪🇹',
+            'Side': '🥗',
+            'Main Dish': '🍛',
+            'Vegetarian': '🥬',
+            'Bread': '🍞'
+        };
+        return emojis[category] || '🍽️';
+    };
+
     const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
     
     const filteredProducts = products.filter(product => {
@@ -217,16 +184,10 @@ const OrderTaker = () => {
         return matchesCategory && matchesSearch;
     });
 
-    // ============================================
-    // TOTALS
-    // ============================================
     const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
     const tax = subtotal * 0.15;
     const total = subtotal + tax;
 
-    // ============================================
-    // LOADING
-    // ============================================
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
@@ -235,12 +196,9 @@ const OrderTaker = () => {
         );
     }
 
-    // ============================================
-    // RENDER
-    // ============================================
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {/* HEADER */}
+            {/* Header */}
             <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     <div className="flex items-center gap-3">
@@ -266,11 +224,8 @@ const OrderTaker = () => {
             <main className="max-w-7xl mx-auto p-4">
                 <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
                     
-                    {/* ============================================ */}
-                    {/* LEFT PANEL - PRODUCTS & FORM */}
-                    {/* ============================================ */}
+                    {/* LEFT PANEL */}
                     <div className="flex-1 min-w-0">
-                        {/* SUCCESS MESSAGE */}
                         {orderSuccess && (
                             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 mb-4 flex items-center gap-3">
                                 <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
@@ -281,7 +236,7 @@ const OrderTaker = () => {
                             </div>
                         )}
 
-                        {/* TABLE SELECTOR */}
+                        {/* Table Selector */}
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-4">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1">
@@ -331,7 +286,7 @@ const OrderTaker = () => {
                             <div className="mt-3">
                                 <input
                                     type="text"
-                                    placeholder="Special instructions (allergies, preferences, etc.)"
+                                    placeholder="Special instructions"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
                                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -339,7 +294,7 @@ const OrderTaker = () => {
                             </div>
                         </div>
 
-                        {/* SEARCH & CATEGORIES */}
+                        {/* Search */}
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-4">
                             <div className="relative mb-3">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
@@ -368,7 +323,7 @@ const OrderTaker = () => {
                             </div>
                         </div>
 
-                        {/* PRODUCTS GRID */}
+                        {/* Products Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {filteredProducts.map(product => (
                                 <button
@@ -383,7 +338,6 @@ const OrderTaker = () => {
                                 </button>
                             ))}
                         </div>
-                        
                         {filteredProducts.length === 0 && (
                             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <p className="text-gray-500 dark:text-gray-400">No products found</p>
@@ -391,12 +345,8 @@ const OrderTaker = () => {
                         )}
                     </div>
 
-                    {/* ============================================ */}
                     {/* RIGHT PANEL - CART */}
-                    {/* ============================================ */}
                     <div className="w-full lg:w-96 xl:w-[420px] bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)] sticky top-4 shadow-lg">
-                        
-                        {/* CART HEADER */}
                         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
@@ -407,10 +357,7 @@ const OrderTaker = () => {
                                     </span>
                                 </div>
                                 {cart.length > 0 && (
-                                    <button 
-                                        onClick={clearCart} 
-                                        className="text-red-500 hover:text-red-600 text-sm font-medium transition"
-                                    >
+                                    <button onClick={clearCart} className="text-red-500 hover:text-red-600 text-sm font-medium">
                                         Clear All
                                     </button>
                                 )}
@@ -423,7 +370,6 @@ const OrderTaker = () => {
                             )}
                         </div>
 
-                        {/* CART ITEMS */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {cart.length === 0 ? (
                                 <div className="text-center py-12">
@@ -440,10 +386,7 @@ const OrderTaker = () => {
                                                 <p className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</p>
                                                 <p className="text-blue-600 dark:text-blue-400 text-sm">{formatCurrency(item.price)}</p>
                                             </div>
-                                            <button 
-                                                onClick={() => removeFromCart(item.id)} 
-                                                className="text-red-400 hover:text-red-600 p-1 transition"
-                                            >
+                                            <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 p-1">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
@@ -451,14 +394,14 @@ const OrderTaker = () => {
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => updateQuantity(item.id, -1)}
-                                                    className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                                                    className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500"
                                                 >
                                                     <Minus size={14} className="text-gray-700 dark:text-gray-300" />
                                                 </button>
                                                 <span className="text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
                                                 <button
                                                     onClick={() => updateQuantity(item.id, 1)}
-                                                    className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                                                    className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500"
                                                 >
                                                     <Plus size={14} className="text-gray-700 dark:text-gray-300" />
                                                 </button>
@@ -470,7 +413,6 @@ const OrderTaker = () => {
                             )}
                         </div>
 
-                        {/* CART FOOTER */}
                         <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
                             <div className="space-y-1 mb-4">
                                 <div className="flex justify-between text-gray-600 dark:text-gray-400 text-sm">
@@ -503,10 +445,7 @@ const OrderTaker = () => {
                             {!selectedTable && cart.length > 0 && (
                                 <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center mt-2">⚠️ Please select a table</p>
                             )}
-                            
-                            <p className="text-xs text-gray-400 text-center mt-2">
-                                Order will be sent directly to kitchen
-                            </p>
+                            <p className="text-xs text-gray-400 text-center mt-2">Order will be sent directly to kitchen</p>
                         </div>
                     </div>
                 </div>

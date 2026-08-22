@@ -38,14 +38,13 @@ const formatCurrency = (value) => {
 };
 
 // ============================================
-// ORDER TAKER LAYOUT (Simple - No Sidebar)
+// ORDER TAKER LAYOUT
 // ============================================
 const OrderTakerLayout = ({ children, onLogout, user }) => {
     const { t } = useLanguage();
     
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Simple Header */}
             <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sticky top-0 z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -97,7 +96,6 @@ const OrderTaker = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [lastOrderNumber, setLastOrderNumber] = useState(null);
-    const [recentOrders, setRecentOrders] = useState([]);
 
     // Get user from localStorage
     useEffect(() => {
@@ -116,9 +114,6 @@ const OrderTaker = () => {
     // ============================================
     useEffect(() => {
         fetchData();
-        fetchRecentOrders();
-        const interval = setInterval(fetchRecentOrders, 30000);
-        return () => clearInterval(interval);
     }, []);
 
     const fetchData = async () => {
@@ -134,15 +129,6 @@ const OrderTaker = () => {
             console.error('Fetch error:', err);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchRecentOrders = async () => {
-        try {
-            const response = await API.get('/orders/my-orders');
-            setRecentOrders(response.data.data || []);
-        } catch (err) {
-            console.error('Fetch recent orders error:', err);
         }
     };
 
@@ -247,9 +233,6 @@ const OrderTaker = () => {
                 setCustomerPhone('');
                 setNotes('');
                 
-                // Refresh recent orders
-                fetchRecentOrders();
-                
                 setTimeout(() => setOrderSuccess(false), 5000);
             }
         } catch (err) {
@@ -326,7 +309,7 @@ const OrderTaker = () => {
                                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="">-- Select Table --</option>
-                                    {tables.filter(t => t.status === 'available' || t.status === 'occupied').map(table => (
+                                    {tables.map(table => (
                                         <option key={table.id} value={table.id}>
                                             Table {table.table_number} ({table.status}) - Cap: {table.capacity}
                                         </option>
@@ -520,7 +503,6 @@ const OrderTaker = () => {
                             </div>
                         </div>
 
-                        {/* SEND BUTTON */}
                         <button
                             onClick={placeOrder}
                             disabled={cart.length === 0 || !selectedTable || submitting}

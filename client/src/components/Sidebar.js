@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, Receipt, 
   ChefHat, Clock, LayoutDashboard, Settings, ClipboardList,
   Table as TableIcon, History, Menu, X, QrCode, Table,
-  Utensils  // ✅ ADD THIS
+  Utensils
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -28,7 +28,7 @@ const Sidebar = ({ user, onLogout }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Owner menu items
+  // Owner menu items - NO Order Taker
   const ownerMenu = [
     { path: '/owner/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/owner/reports', icon: TrendingUp, label: t('profitReports') },
@@ -40,17 +40,17 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/print-qr', icon: QrCode, label: 'Print QR Codes' },
     { path: '/owner/pending-approvals', icon: Clock, label: t('pendingApprovals') },
     { path: '/owner/settings', icon: Settings, label: t('settings') },
-    { path: '/order-taker', icon: Utensils, label: 'Order Taker' },  // ✅ ADD THIS
+    // ❌ REMOVED: Order Taker from Owner menu
   ];
 
-  // Manager menu items
+  // Manager menu items - NO Order Taker
   const managerMenu = [
     { path: '/manager/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/manager/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/manager/reports', icon: BarChart3, label: t('salesReports') },
     { path: '/manager/profit', icon: TrendingUp, label: t('profit') },
     { path: '/manager/tables', icon: Table, label: 'Manage Tables' },
-    { path: '/order-taker', icon: Utensils, label: 'Order Taker' },  // ✅ ADD THIS
+    // ❌ REMOVED: Order Taker from Manager menu
   ];
 
   // Cashier menu items
@@ -73,6 +73,11 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/kitchen/orders', icon: ChefHat, label: t('orders') },
   ];
 
+  // ✅ Order Taker menu - ONLY for order_taker role
+  const orderTakerMenu = [
+    { path: '/order-taker', icon: Utensils, label: 'Order Taker' },
+  ];
+
   const getMenuItems = () => {
     switch(userRole) {
       case 'owner':
@@ -87,7 +92,7 @@ const Sidebar = ({ user, onLogout }) => {
       case 'kitchen':
         return kitchenMenu;
       case 'order_taker':
-        return [{ path: '/order-taker', icon: Utensils, label: 'Order Taker' }];  // ✅ ADD THIS
+        return orderTakerMenu;  // ✅ Only shows Order Taker page
       default:
         return cashierMenu;
     }

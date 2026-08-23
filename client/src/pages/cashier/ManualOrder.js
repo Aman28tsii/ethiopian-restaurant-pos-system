@@ -2,7 +2,8 @@
 import API from '../../api/axios';
 import { 
     ShoppingCart, Trash2, CheckCircle, Search,
-    CreditCard, Smartphone, DollarSign, User, Phone, Send
+    CreditCard, Smartphone, DollarSign, User, Phone, Send,
+    Plus, Minus  // ✅ ADDED Plus and Minus
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -452,7 +453,6 @@ const ManualOrder = () => {
                         >
                             <div className="text-3xl text-center mb-2">{getProductEmoji(product.category)}</div>
                             <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">{product.name}</h3>
-                            {/* ✅ PRICE IS HERE - FIXED */}
                             <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-1">{formatCurrency(product.price)}</p>
                             <span className="text-xs text-green-600 dark:text-green-400 mt-1 inline-block">+ Add</span>
                         </button>

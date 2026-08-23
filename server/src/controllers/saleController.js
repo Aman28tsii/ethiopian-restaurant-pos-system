@@ -9,13 +9,13 @@ const generateSaleNumber = () => {
     return `SALE-${timestamp}${random}`;
 };
 
-// ✅ FIXED: Calculate cost of a product based on its recipe
+// ✅ FIXED: Calculate cost - handles multiple recipes
 const calculateProductCost = async (productId, quantity, client) => {
     const recipeResult = await client.query(
         `SELECT ri.quantity_required, i.unit_cost
          FROM recipe_ingredients ri
          JOIN ingredients i ON ri.ingredient_id = i.id
-         WHERE ri.recipe_id = (SELECT id FROM recipes WHERE product_id = $1)`,
+         WHERE ri.recipe_id IN (SELECT id FROM recipes WHERE product_id = $1)`,
         [productId]
     );
     
@@ -26,13 +26,13 @@ const calculateProductCost = async (productId, quantity, client) => {
     return totalCost;
 };
 
-// ✅ FIXED: Deduct ingredient stock when product is sold
+// ✅ FIXED: Deduct ingredients - handles multiple recipes
 const deductIngredients = async (productId, quantity, client) => {
     const recipeResult = await client.query(
         `SELECT ri.ingredient_id, ri.quantity_required, i.quantity as current_stock, i.name
          FROM recipe_ingredients ri
          JOIN ingredients i ON ri.ingredient_id = i.id
-         WHERE ri.recipe_id = (SELECT id FROM recipes WHERE product_id = $1)`,
+         WHERE ri.recipe_id IN (SELECT id FROM recipes WHERE product_id = $1)`,
         [productId]
     );
     

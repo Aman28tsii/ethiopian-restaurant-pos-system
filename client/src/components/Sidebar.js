@@ -56,7 +56,6 @@ const Sidebar = ({ user, onLogout }) => {
   // Cashier menu items
   const cashierMenu = [
     { path: '/cashier/pos', icon: ShoppingCart, label: t('posTerminal') },
-    { path: '/cashier/history', icon: History, label: t('salesHistory') },
     { path: '/cashier/manual-order', icon: ShoppingCart, label: 'Manual Order' },
   ];
 

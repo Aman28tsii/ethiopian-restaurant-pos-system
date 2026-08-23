@@ -754,6 +754,46 @@ const translations = {
     productUpdatedSuccessfully: 'Product updated successfully!',
     productCreatedSuccessfully: 'Product created successfully!',
     productDeletedSuccessfully: 'Product deleted successfully',
+
+    // ============================================
+// SIDEBAR MENU ITEMS
+// ============================================
+tableManagement: 'Table Management',
+myOrders: 'My Orders',
+confirmOrders: 'Confirm Orders',
+posTerminal: 'POS Terminal',
+manualOrder: 'Manual Order',
+tableStatus: 'Table Status',
+kitchenOrders: 'Orders',
+
+// ============================================
+// CASHIER PAGE
+// ============================================
+readyForPayment: 'Ready for Payment',
+salesHistory: 'Sales History',
+
+// ============================================
+// KITCHEN BUTTONS
+// ============================================
+startCooking: 'Start Cooking',
+markReady: 'Mark Ready',
+readyForPickup: 'Ready for Pickup',
+noOrdersToDisplay: 'No orders to display',
+ordersWillAppearHere: 'Orders will appear here when created',
+pending: 'Pending',
+preparing: 'Preparing',
+ready: 'Ready',
+active: 'Active',
+order: 'Order',
+items: 'Items',
+more: 'more',
+customer: 'Customer',
+table: 'Table',
+waitingTime: 'Waiting Time',
+kitchenStatus: 'Kitchen Status',
+failedToUpdateOrderStatus: 'Failed to update order status',
+newOrderReceived: 'New order received',
+orderSent: 'Order sent to kitchen',
   },
 
   // ==========================================================
@@ -1494,6 +1534,47 @@ const translations = {
     productUpdatedSuccessfully: 'ምርት በተሳካ ሁኔታ ዘምኗል!',
     productCreatedSuccessfully: 'ምርት በተሳካ ሁኔታ ተፈጥሯል!',
     productDeletedSuccessfully: 'ምርት በተሳካ ሁኔታ ተሰርዟል',
+
+
+    // ============================================
+// SIDEBAR MENU ITEMS (AMHARIC)
+// ============================================
+tableManagement: 'የጠረጴዛ አያያዝ',
+myOrders: 'የኔ ትዕዛዞች',
+confirmOrders: 'ትዕዛዞችን አረጋግጥ',
+posTerminal: 'የሽያጭ መዝገብ',
+manualOrder: 'በእጅ ትዕዛዝ',
+tableStatus: 'የጠረጴዛ ሁኔታ',
+kitchenOrders: 'ትዕዛዞች',
+
+// ============================================
+// CASHIER PAGE (AMHARIC)
+// ============================================
+readyForPayment: 'ለክፍያ ዝግጁ',
+salesHistory: 'የሽያጭ ታሪክ',
+
+// ============================================
+// KITCHEN BUTTONS (AMHARIC)
+// ============================================
+startCooking: 'ማብሰል ጀምር',
+markReady: 'ዝግጁ ምልክት አድርግ',
+readyForPickup: 'ለማንሳት ዝግጁ',
+noOrdersToDisplay: 'ለማሳየት ምንም ትዕዛዞች የሉም',
+ordersWillAppearHere: 'ትዕዛዞች ሲፈጠሩ እዚህ ይታያሉ',
+pending: 'በመጠባበቅ ላይ',
+preparing: 'በዝግጅት ላይ',
+ready: 'ዝግጁ',
+active: 'ንቁ',
+order: 'ትዕዛዝ',
+items: 'እቃዎች',
+more: 'ተጨማሪ',
+customer: 'ደንበኛ',
+table: 'ጠረጴዛ',
+waitingTime: 'የጥበቃ ጊዜ',
+kitchenStatus: 'የኩሽና ሁኔታ',
+failedToUpdateOrderStatus: 'የትዕዛዝ ሁኔታ ማዘመን አልተቻለም',
+newOrderReceived: 'አዲስ ትዕዛዝ ደርሷል',
+orderSent: 'ትዕዛዝ ወደ ኩሽና ተልኳል',
   },
 };
 

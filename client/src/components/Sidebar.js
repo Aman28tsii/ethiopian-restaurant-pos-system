@@ -28,7 +28,7 @@ const Sidebar = ({ user, onLogout }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Owner menu items - NO Order Taker
+  // Owner menu items
   const ownerMenu = [
     { path: '/owner/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/owner/reports', icon: TrendingUp, label: t('profitReports') },
@@ -36,45 +36,43 @@ const Sidebar = ({ user, onLogout }) => {
     { path: '/owner/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/owner/staff', icon: Users, label: t('staffManagement') },
     { path: '/owner/customers', icon: Users, label: t('customers') },
-    { path: '/owner/manage-tables', icon: Table, label: 'Manage Tables' },
-    { path: '/owner/print-qr', icon: QrCode, label: 'Print QR Codes' },
+    { path: '/owner/manage-tables', icon: Table, label: t('manageTables') },
+    { path: '/owner/print-qr', icon: QrCode, label: t('printQRCodes') },
     { path: '/owner/pending-approvals', icon: Clock, label: t('pendingApprovals') },
     { path: '/owner/settings', icon: Settings, label: t('settings') },
-    // ❌ REMOVED: Order Taker from Owner menu
   ];
 
-  // Manager menu items - NO Order Taker
+  // Manager menu items
   const managerMenu = [
     { path: '/manager/dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { path: '/manager/inventory', icon: Package, label: t('inventoryManagement') },
     { path: '/manager/reports', icon: BarChart3, label: t('salesReports') },
     { path: '/manager/profit', icon: TrendingUp, label: t('profit') },
-    { path: '/manager/tables', icon: Table, label: 'Manage Tables' },
-    // ❌ REMOVED: Order Taker from Manager menu
+    { path: '/manager/tables', icon: Table, label: t('manageTables') },
   ];
 
-  // Cashier menu items
+  // Cashier menu items - ✅ FULLY TRANSLATED
   const cashierMenu = [
     { path: '/cashier/pos', icon: ShoppingCart, label: t('posTerminal') },
-    { path: '/cashier/manual-order', icon: ShoppingCart, label: 'Manual Order' },
+    { path: '/cashier/manual-order', icon: ShoppingCart, label: t('manualOrder') },
   ];
 
-  // Waiter menu items
+  // Waiter menu items - ✅ FULLY TRANSLATED
   const waiterMenu = [
     { path: '/waiter/tables', icon: TableIcon, label: t('tableManagement') },
-    { path: '/waiter/my-orders', icon: ClipboardList, label: 'My Orders' },
-    { path: '/waiter/pending-confirmations', icon: Clock, label: 'Confirm Orders' },
-    { path: '/waiter/table-status', icon: TableIcon, label: 'Table Status' },
+    { path: '/waiter/my-orders', icon: ClipboardList, label: t('myOrders') },
+    { path: '/waiter/pending-confirmations', icon: Clock, label: t('confirmOrders') },
+    { path: '/waiter/table-status', icon: TableIcon, label: t('tableStatus') },
   ];
 
-  // Kitchen menu items
+  // Kitchen menu items - ✅ TRANSLATED
   const kitchenMenu = [
-    { path: '/kitchen/orders', icon: ChefHat, label: t('orders') },
+    { path: '/kitchen/orders', icon: ChefHat, label: t('kitchenOrders') },
   ];
 
-  // ✅ Order Taker menu - ONLY for order_taker role
+  // Order Taker menu
   const orderTakerMenu = [
-    { path: '/order-taker', icon: Utensils, label: 'Order Taker' },
+    { path: '/order-taker', icon: Utensils, label: t('orderTaker') },
   ];
 
   const getMenuItems = () => {
@@ -91,7 +89,7 @@ const Sidebar = ({ user, onLogout }) => {
       case 'kitchen':
         return kitchenMenu;
       case 'order_taker':
-        return orderTakerMenu;  // ✅ Only shows Order Taker page
+        return orderTakerMenu;
       default:
         return cashierMenu;
     }

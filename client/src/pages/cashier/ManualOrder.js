@@ -2,11 +2,13 @@
 import API from '../../api/axios';
 import { 
     ShoppingCart, Trash2, CheckCircle, Search,
-    CreditCard, Smartphone, DollarSign
+    CreditCard, Smartphone, DollarSign, User, Phone, Send
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
-// Helper function for product emojis
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 const getProductEmoji = (category) => {
     const emojis = {
         'Main Course': '🍛',
@@ -21,13 +23,28 @@ const getProductEmoji = (category) => {
         'Salad': '🥗',
         'Breakfast': '🍳',
         'Traditional': '🇪🇹',
-        'Ethiopian': '🇪🇹'
+        'Ethiopian': '🇪🇹',
+        'Side': '🥗',
+        'Main Dish': '🍛',
+        'Vegetarian': '🥬',
+        'Bread': '🍞'
     };
     return emojis[category] || '🍽️';
 };
 
+const formatCurrency = (value) => {
+    return `Br ${parseFloat(value || 0).toFixed(2)}`;
+};
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 const ManualOrder = () => {
     const { t } = useLanguage();
+    
+    // ============================================
+    // STATE
+    // ============================================
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -44,7 +61,11 @@ const ManualOrder = () => {
     const [orderNumber, setOrderNumber] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [orderError, setOrderError] = useState(null);
 
+    // ============================================
+    // FETCH DATA
+    // ============================================
     useEffect(() => {
         fetchProducts();
         fetchTables();
@@ -74,10 +95,9 @@ const ManualOrder = () => {
         }
     };
 
-    const formatCurrency = (value) => {
-        return `Br ${parseFloat(value || 0).toFixed(2)}`;
-    };
-
+    // ============================================
+    // CART OPERATIONS
+    // ============================================
     const addToCart = (product) => {
         const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
         setCart(prev => {
@@ -120,30 +140,36 @@ const ManualOrder = () => {
     };
 
     const clearCart = () => {
-        if (window.confirm(t('clearCart'))) {
+        if (cart.length === 0) return;
+        if (window.confirm('Clear all items from order?')) {
             setCart([]);
         }
     };
 
+    // ============================================
+    // PLACE ORDER
+    // ============================================
     const placeOrder = async () => {
         if (cart.length === 0) {
-            alert(t('pleaseAddItems'));
+            alert('Please add items to the order');
             return;
         }
 
         if (orderType === 'dine_in' && !selectedTableId) {
-            alert(t('pleaseSelectTable'));
+            alert('Please select a table');
             return;
         }
 
         setProcessing(true);
+        setOrderError(null);
+        
         try {
             const orderData = {
                 items: cart.map(item => ({
                     product_id: item.id,
                     quantity: item.quantity
                 })),
-                customer_name: customerName.trim() || t('walkInCustomer'),
+                customer_name: customerName.trim() || 'Walk-in Customer',
                 customer_phone: customerPhone || null,
                 table_id: selectedTableId || null,
                 order_type: orderType,
@@ -155,44 +181,60 @@ const ManualOrder = () => {
             const response = await API.post('/orders', orderData);
             
             if (response.data.success) {
-                setOrderNumber(response.data.data.order_number);
+                const order = response.data.data;
+                setOrderNumber(order.order_number);
                 setOrderComplete(true);
                 setCart([]);
+                setCustomerName('');
+                setCustomerPhone('');
+                setSpecialInstructions('');
+                if (orderType === 'dine_in') {
+                    setSelectedTableId('');
+                }
             }
         } catch (err) {
             console.error('Place order error:', err);
-            alert(err.response?.data?.error || t('failedToSubmitOrder'));
+            setOrderError(err.response?.data?.error || 'Failed to place order');
+            alert(err.response?.data?.error || 'Failed to place order');
         } finally {
             setProcessing(false);
         }
     };
 
-    const resetForm = () => {
+    // ============================================
+    // RESET
+    // ============================================
+    const startNewOrder = () => {
+        setOrderComplete(false);
+        setOrderNumber(null);
+        setCart([]);
         setCustomerName('');
         setCustomerPhone('');
         setSpecialInstructions('');
         setSelectedTableId('');
-        setOrderType('dine_in');
-        setPaymentMethod('cash');
         setSearchTerm('');
+        setOrderError(null);
     };
 
-    const startNewOrder = () => {
-        setOrderComplete(false);
-        setOrderNumber(null);
-        resetForm();
-    };
+    // ============================================
+    // TOTALS
+    // ============================================
+    const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+    const tax = subtotal * 0.15;
+    const total = subtotal + tax;
 
+    // ============================================
+    // FILTERS
+    // ============================================
     const filteredProducts = products.filter(product => {
         const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
         const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
-    const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.15;
-    const total = subtotal + tax;
-
+    // ============================================
+    // LOADING
+    // ============================================
     if (loading) {
         return (
             <div className="flex justify-center items-center h-full">
@@ -201,6 +243,9 @@ const ManualOrder = () => {
         );
     }
 
+    // ============================================
+    // ORDER COMPLETE
+    // ============================================
     if (orderComplete) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -208,7 +253,7 @@ const ManualOrder = () => {
                     <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle size={40} className="text-green-600 dark:text-green-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Order Complete!</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">✅ Order Complete!</h2>
                     <p className="text-gray-500 dark:text-gray-400 mb-4">Order sent to kitchen</p>
                     
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
@@ -221,28 +266,47 @@ const ManualOrder = () => {
                         onClick={startNewOrder}
                         className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition"
                     >
-                        New Order
+                        📝 New Order
                     </button>
                 </div>
             </div>
         );
     }
 
+    // ============================================
+    // RENDER
+    // ============================================
     return (
-        // ============================================
-        // ADD translate="no" HERE TO FIX GOOGLE TRANSLATE ERROR
-        // ============================================
-        <div translate="no" className="h-full flex flex-col lg:flex-row gap-6">
-            {/* Left Panel - Products */}
+        <div className="h-full flex flex-col lg:flex-row gap-4 md:gap-6 p-4 bg-gray-50 dark:bg-gray-900">
+            
+            {/* ============================================ */}
+            {/* LEFT PANEL - PRODUCTS & FORM */}
+            {/* ============================================ */}
             <div className="flex-1 min-w-0">
-                <div className="mb-4">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('manualOrder')}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Create manual orders for walk-in customers</p>
+                {/* HEADER */}
+                <div className="mb-4 flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <ShoppingCart size={24} className="text-blue-600" />
+                            Manual Order
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">Create orders for walk-in customers</p>
+                    </div>
+                    <div className="text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">
+                        {cart.length} items in cart
+                    </div>
                 </div>
 
-                {/* Order Type Selector */}
+                {/* ERROR MESSAGE */}
+                {orderError && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4 text-red-600 dark:text-red-400 text-sm">
+                        ❌ {orderError}
+                    </div>
+                )}
+
+                {/* ORDER TYPE SELECTOR */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-4">
-                    <div className="flex gap-4 mb-4">
+                    <div className="flex flex-wrap gap-4 mb-4">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="radio"
@@ -256,7 +320,7 @@ const ManualOrder = () => {
                                 }}
                                 className="w-4 h-4 text-blue-600"
                             />
-                            <span className="text-gray-700 dark:text-gray-300">{t('dineIn')}</span>
+                            <span className="text-gray-700 dark:text-gray-300">🏠 Dine In</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -271,31 +335,29 @@ const ManualOrder = () => {
                                 }}
                                 className="w-4 h-4 text-blue-600"
                             />
-                            <span className="text-gray-700 dark:text-gray-300">{t('takeaway')}</span>
+                            <span className="text-gray-700 dark:text-gray-300">📦 Takeaway</span>
                         </label>
                     </div>
 
                     {orderType === 'dine_in' && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {t('selectTable')} <span className="text-red-500">*</span>
+                                Select Table <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={selectedTableId}
                                 onChange={(e) => setSelectedTableId(e.target.value)}
                                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">-- {t('selectTable')} --</option>
-                                {tables.filter(t => t.status === 'available').map(table => (
+                                <option value="">-- Select Table --</option>
+                                {tables.filter(t => t.status === 'available' || t.status === 'occupied').map(table => (
                                     <option key={table.id} value={table.id}>
-                                        {t('table')} {table.table_number} ({t('capacity')}: {table.capacity}) - {t('available')}
+                                        Table {table.table_number} ({table.status}) - Capacity: {table.capacity}
                                     </option>
                                 ))}
                             </select>
                             {tables.filter(t => t.status === 'available').length === 0 && (
-                                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">
-                                    ⚠️ No available tables
-                                </p>
+                                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">⚠️ No available tables</p>
                             )}
                         </div>
                     )}
@@ -303,22 +365,64 @@ const ManualOrder = () => {
                     {orderType === 'takeaway' && (
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
                             <p className="text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
-                                <span>📦</span> Takeaway order - No table needed
+                                📦 Takeaway order - No table needed
                             </p>
                         </div>
                     )}
                 </div>
 
-                {/* Search and Categories */}
+                {/* CUSTOMER INFO */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-4">
-                    <div className="relative mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <User size={14} className="inline mr-1" /> Customer Name
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Walk-in Customer"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <Phone size={14} className="inline mr-1" /> Phone
+                            </label>
+                            <input
+                                type="tel"
+                                placeholder="Optional"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+                    <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Special Instructions
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Allergies, preferences, etc."
+                            value={specialInstructions}
+                            onChange={(e) => setSpecialInstructions(e.target.value)}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+
+                {/* SEARCH & CATEGORIES */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-4">
+                    <div className="relative mb-3">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
                         <input
                             type="text"
                             placeholder="Search products..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-4 py-3 pl-10 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-2 pl-10 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-2">
@@ -326,90 +430,116 @@ const ManualOrder = () => {
                             <button
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
-                                className={`px-4 py-2 rounded-full text-sm font-semibold transition whitespace-nowrap ${
+                                className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition ${
                                     selectedCategory === cat
-                                        ? 'bg-blue-600 text-white'
+                                        ? 'bg-blue-600 text-white shadow-lg'
                                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                 }`}
                             >
-                                {cat === 'all' ? t('allItems') : cat}
+                                {cat === 'all' ? 'All Items' : cat}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Products Grid with Emojis */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {/* PRODUCTS GRID */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {filteredProducts.map(product => (
                         <button
                             key={product.id}
                             onClick={() => addToCart(product)}
-                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 transition hover:shadow-md"
+                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-left hover:border-blue-500 hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
-                            <div className="text-4xl text-center mb-2">{getProductEmoji(product.category)}</div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-                            <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">{formatCurrency(product.price)}</p>
+                            <div className="text-3xl text-center mb-2">{getProductEmoji(product.category)}</div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">{product.name}</h3>
+                            {/* ✅ PRICE IS HERE - FIXED */}
+                            <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-1">{formatCurrency(product.price)}</p>
                             <span className="text-xs text-green-600 dark:text-green-400 mt-1 inline-block">+ Add</span>
                         </button>
                     ))}
                 </div>
                 
                 {filteredProducts.length === 0 && (
-                    <div className="text-center py-8">
+                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                         <p className="text-gray-500 dark:text-gray-400">No products found</p>
                     </div>
                 )}
             </div>
 
-            {/* Right Panel - Cart */}
-            <div className="w-full lg:w-96 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-120px)] sticky top-6 shadow-lg">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            {/* ============================================ */}
+            {/* RIGHT PANEL - CART */}
+            {/* ============================================ */}
+            <div className="w-full lg:w-96 xl:w-[420px] bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)] sticky top-4 shadow-lg">
+                
+                {/* CART HEADER */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <ShoppingCart size={24} className="text-blue-500 dark:text-blue-400" />
+                            <ShoppingCart size={22} className="text-blue-600 dark:text-blue-400" />
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Current Order</h2>
+                            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-500">
+                                {cart.reduce((sum, i) => sum + i.quantity, 0)} items
+                            </span>
                         </div>
                         {cart.length > 0 && (
-                            <button onClick={clearCart} className="text-red-500 dark:text-red-400 text-sm hover:text-red-600">
+                            <button 
+                                onClick={clearCart} 
+                                className="text-red-500 hover:text-red-600 text-sm font-medium transition"
+                            >
                                 Clear All
                             </button>
                         )}
                     </div>
+                    {selectedTableId && orderType === 'dine_in' && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Table: {tables.find(t => t.id === parseInt(selectedTableId))?.table_number || selectedTableId}
+                        </p>
+                    )}
+                    {orderType === 'takeaway' && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">📦 Takeaway</p>
+                    )}
                 </div>
 
+                {/* CART ITEMS */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {cart.length === 0 ? (
                         <div className="text-center py-12">
-                            <ShoppingCart size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-                            <p className="text-gray-500 dark:text-gray-400">Cart is empty</p>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Tap items to add</p>
+                            <ShoppingCart size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">Cart is empty</p>
+                            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Tap menu items to add</p>
+                            {orderType === 'dine_in' && !selectedTableId && (
+                                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">⚠️ Select a table first</p>
+                            )}
                         </div>
                     ) : (
                         cart.map(item => (
-                            <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
+                            <div key={item.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</p>
                                         <p className="text-blue-600 dark:text-blue-400 text-sm">{formatCurrency(item.price)}</p>
                                     </div>
-                                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 dark:text-red-400 hover:text-red-600">
+                                    <button 
+                                        onClick={() => removeFromCart(item.id)} 
+                                        className="text-red-400 hover:text-red-600 p-1 transition"
+                                    >
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => updateQuantity(item.id, -1)}
-                                            className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                                            className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
                                         >
-                                            -
+                                            <Minus size={14} className="text-gray-700 dark:text-gray-300" />
                                         </button>
                                         <span className="text-gray-900 dark:text-white font-semibold text-lg w-8 text-center">{item.quantity}</span>
                                         <button
                                             onClick={() => updateQuantity(item.id, 1)}
-                                            className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                                            className="w-7 h-7 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition"
                                         >
-                                            +
+                                            <Plus size={14} className="text-gray-700 dark:text-gray-300" />
                                         </button>
                                     </div>
                                     <span className="text-gray-900 dark:text-white font-bold">{formatCurrency(item.total)}</span>
@@ -419,30 +549,11 @@ const ManualOrder = () => {
                     )}
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
-                    <input
-                        type="text"
-                        placeholder="Customer name (optional)"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                        type="tel"
-                        placeholder="Customer phone (optional)"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                        placeholder="Special instructions"
-                        value={specialInstructions}
-                        onChange={(e) => setSpecialInstructions(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={2}
-                    />
-
-                    <div>
+                {/* CART FOOTER */}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
+                    
+                    {/* PAYMENT METHOD */}
+                    <div className="mb-4">
                         <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Payment Method</p>
                         <div className="grid grid-cols-3 gap-2">
                             <button
@@ -478,28 +589,43 @@ const ManualOrder = () => {
                         </div>
                     </div>
 
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    {/* TOTALS */}
+                    <div className="space-y-1 mb-4">
                         <div className="flex justify-between text-gray-600 dark:text-gray-400 text-sm">
-                            <span>{t('subtotal')}</span>
+                            <span>Subtotal</span>
                             <span>{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between text-gray-600 dark:text-gray-400 text-sm">
-                            <span>{t('vat')}</span>
+                            <span>VAT (15%)</span>
                             <span>{formatCurrency(tax)}</span>
                         </div>
-                        <div className="flex justify-between text-gray-900 dark:text-white font-bold text-lg pt-2">
-                            <span>{t('total')}</span>
+                        <div className="flex justify-between text-gray-900 dark:text-white font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <span>Total</span>
                             <span className="text-green-600 dark:text-green-400">{formatCurrency(total)}</span>
                         </div>
                     </div>
 
+                    {/* SEND BUTTON */}
                     <button
                         onClick={placeOrder}
-                        disabled={cart.length === 0 || processing}
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={cart.length === 0 || (orderType === 'dine_in' && !selectedTableId) || processing}
+                        className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        {processing ? 'Processing...' : 'Complete Order'}
+                        {processing ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        ) : (
+                            <Send size={18} />
+                        )}
+                        {processing ? 'Sending...' : 'Send to Kitchen'}
                     </button>
+                    
+                    {orderType === 'dine_in' && !selectedTableId && cart.length > 0 && (
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center mt-2">⚠️ Please select a table</p>
+                    )}
+                    
+                    <p className="text-xs text-gray-400 text-center mt-2">
+                        Order will be sent directly to kitchen
+                    </p>
                 </div>
             </div>
         </div>

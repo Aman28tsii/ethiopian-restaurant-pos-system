@@ -19,4 +19,4 @@ export const validatePagination = (req, res, next) => {
     const limit = parseInt(req.query.limit) || 20;
     req.pagination = { page, limit, offset: (page - 1) * limit };
     next();
-};s
+};

@@ -674,7 +674,7 @@ const translations = {
     recentOrders: 'Recent Orders',
     orderDetails: 'Order Details',
     viewDetails: 'View Details',
-  },
+
 // In the en: section, add:
 noData: 'No data available',
 date: 'Date',
@@ -747,7 +747,7 @@ milliliter: 'Milliliter (ml)',
 pieces: 'Pieces (pcs)',
 egVegetables: 'e.g., Vegetables',
 availableForSale: 'Available for sale',
-
+  },
   // ==========================================================
   // AMHARIC TRANSLATIONS (አማርኛ)
   // ==========================================================

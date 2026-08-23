@@ -9,13 +9,13 @@ const generateSaleNumber = () => {
     return `SALE-${timestamp}${random}`;
 };
 
-// Calculate cost of a product based on its recipe
+// ✅ FIXED: Calculate cost of a product based on its recipe
 const calculateProductCost = async (productId, quantity, client) => {
     const recipeResult = await client.query(
-        `SELECT r.quantity_required, i.unit_cost
-         FROM recipes r
-         JOIN ingredients i ON r.ingredient_id = i.id
-         WHERE r.product_id = $1`,
+        `SELECT ri.quantity_required, i.unit_cost
+         FROM recipe_ingredients ri
+         JOIN ingredients i ON ri.ingredient_id = i.id
+         WHERE ri.recipe_id = (SELECT id FROM recipes WHERE product_id = $1)`,
         [productId]
     );
     
@@ -26,13 +26,13 @@ const calculateProductCost = async (productId, quantity, client) => {
     return totalCost;
 };
 
-// Deduct ingredient stock when product is sold
+// ✅ FIXED: Deduct ingredient stock when product is sold
 const deductIngredients = async (productId, quantity, client) => {
     const recipeResult = await client.query(
-        `SELECT r.ingredient_id, r.quantity_required, i.quantity as current_stock, i.name
-         FROM recipes r
-         JOIN ingredients i ON r.ingredient_id = i.id
-         WHERE r.product_id = $1`,
+        `SELECT ri.ingredient_id, ri.quantity_required, i.quantity as current_stock, i.name
+         FROM recipe_ingredients ri
+         JOIN ingredients i ON ri.ingredient_id = i.id
+         WHERE ri.recipe_id = (SELECT id FROM recipes WHERE product_id = $1)`,
         [productId]
     );
     
@@ -60,7 +60,7 @@ const deductIngredients = async (productId, quantity, client) => {
 export const createSale = catchAsync(async (req, res) => {
     const { items, payment_method, customer_name, customer_phone } = req.body;
     const userId = req.user?.id || 1;
-    const businessId = 1;  // ✅ Added business_id
+    const businessId = 1;
     
     if (!items || items.length === 0) {
         throw new AppError('No items in sale', 400, 'EMPTY_SALE');
@@ -109,7 +109,6 @@ export const createSale = catchAsync(async (req, res) => {
         const profit = totalAmount - totalCost;
         const saleNumber = generateSaleNumber();
         
-        // ✅ Updated with business_id
         const saleResult = await client.query(
             `INSERT INTO sales (business_id, user_id, sale_number, total_amount, total_cost, profit, payment_method, customer_name, customer_phone, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed')

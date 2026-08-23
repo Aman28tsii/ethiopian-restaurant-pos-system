@@ -7,12 +7,11 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { useDebounce } from '../hooks/useDebounce';
 import RecipeManager from '../components/RecipeManager';
-import { formatCurrency } from '../utils/formatting';
 
 // ============================================
-// INGREDIENT ROW
+// INGREDIENT ROW COMPONENT
 // ============================================
-const IngredientRow = ({ ingredient, onEdit, onDelete }) => {
+const IngredientRow = ({ ingredient, onEdit, onDelete, formatCurrency }) => {
     const { t } = useLanguage();
     const isLowStock = ingredient.quantity <= ingredient.min_stock;
     
@@ -21,16 +20,19 @@ const IngredientRow = ({ ingredient, onEdit, onDelete }) => {
             <td className="px-6 py-4 text-gray-900 dark:text-white">{ingredient.name}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.unit}</td>
             <td className="px-6 py-4">
-                <span className={"font-semibold " + (isLowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')}>
+                <span className={`font-semibold ${isLowStock ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {ingredient.quantity}
                 </span>
+                {ingredient.safety_stock > 0 && (
+                    <span className="text-xs text-gray-500 ml-1">({t('safetyStock')}: {ingredient.safety_stock})</span>
+                )}
             </td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.min_stock}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{formatCurrency(ingredient.unit_cost)}</td>
             <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{ingredient.category || '-'}</td>
             <td className="px-6 py-4">
                 <div className="flex gap-2">
-                    <button onClick={() => onEdit(ingredient)} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
+                    <button onClick={() => onEdit(ingredient, 'ingredient')} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 transition">
                         <Edit2 size={16} />
                     </button>
                     <button onClick={() => onDelete(ingredient.id, 'ingredient')} className="text-red-600 dark:text-red-400 hover:text-red-700 transition">
@@ -43,9 +45,9 @@ const IngredientRow = ({ ingredient, onEdit, onDelete }) => {
 };
 
 // ============================================
-// PRODUCT CARD
+// PRODUCT CARD COMPONENT
 // ============================================
-const ProductCard = ({ product, onEdit, onDelete, onRecipe }) => {
+const ProductCard = ({ product, onEdit, onDelete, onRecipe, formatCurrency }) => {
     const { t } = useLanguage();
     
     const getCategoryEmoji = (category) => {
@@ -86,9 +88,13 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe }) => {
                     </div>
                     <button
                         onClick={() => onEdit(product)}
-                        className={"px-2 py-1 rounded-full text-xs font-semibold " + (product.is_available ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400')}
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            product.is_available 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        }`}
                     >
-                        {product.is_available ? 'Available' : 'Unavailable'}
+                        {product.is_available ? t('available') : t('unavailable')}
                     </button>
                 </div>
                 
@@ -98,24 +104,23 @@ const ProductCard = ({ product, onEdit, onDelete, onRecipe }) => {
                     <button
                         onClick={() => onRecipe(product)}
                         className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
-                        title="Manage Recipe"
                     >
                         <UtensilsCrossed size={14} />
-                        Recipe
+                        {t('recipe')}
                     </button>
                     <button
                         onClick={() => onEdit(product)}
                         className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
                     >
                         <Edit2 size={14} />
-                        Edit
+                        {t('edit')}
                     </button>
                     <button
                         onClick={() => onDelete(product.id, 'product')}
                         className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1"
                     >
                         <Trash2 size={14} />
-                        Delete
+                        {t('delete')}
                     </button>
                 </div>
             </div>
@@ -221,13 +226,13 @@ const Inventory = () => {
         try {
             if (editType === 'ingredient') {
                 if (editingItem) {
-                    await API.put(/ingredients/, ingredientForm);
+                    await API.put(`/ingredients/${editingItem.id}`, ingredientForm);
                 } else {
                     await API.post('/ingredients', ingredientForm);
                 }
             } else {
                 if (editingItem) {
-                    await API.put(/products/, productForm);
+                    await API.put(`/products/${editingItem.id}`, productForm);
                 } else {
                     await API.post('/products', productForm);
                 }
@@ -236,23 +241,23 @@ const Inventory = () => {
             fetchData();
         } catch (err) {
             console.error('Save error:', err);
-            alert(err.response?.data?.error || 'Failed to save');
+            alert(err.response?.data?.error || t('saveFailed'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id, type) => {
-        if (window.confirm('Are you sure you want to delete this?')) {
+        if (window.confirm(t('deleteConfirm'))) {
             try {
                 if (type === 'ingredient') {
-                    await API.delete(/ingredients/);
+                    await API.delete(`/ingredients/${id}`);
                 } else {
-                    await API.delete(/products/);
+                    await API.delete(`/products/${id}`);
                 }
                 fetchData();
             } catch (err) {
-                alert(err.response?.data?.error || 'Failed to delete');
+                alert(err.response?.data?.error || t('deleteFailed'));
             }
         }
     };
@@ -309,6 +314,11 @@ const Inventory = () => {
         setShowRecipeManager(true);
     };
 
+    const formatCurrency = (value) => {
+        const num = parseFloat(value || 0);
+        return `Br ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     // ============================================
     // LOADING
     // ============================================
@@ -329,10 +339,10 @@ const Inventory = () => {
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Inventory Management
+                        {t('inventoryManagement')}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Manage products and ingredients
+                        {t('manageProductsAndIngredients')}
                     </p>
                 </div>
                 <button
@@ -344,7 +354,7 @@ const Inventory = () => {
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition"
                 >
                     <Plus size={18} />
-                    {activeTab === 'ingredients' ? 'Add Ingredient' : 'Add Product'}
+                    {activeTab === 'ingredients' ? t('addIngredient') : t('addProduct')}
                 </button>
             </div>
 
@@ -354,9 +364,9 @@ const Inventory = () => {
                     <div className="flex items-center gap-3">
                         <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-500" />
                         <div>
-                            <p className="text-yellow-700 dark:text-yellow-400 font-semibold">Low Stock Alert</p>
+                            <p className="text-yellow-700 dark:text-yellow-400 font-semibold">{t('lowStockAlert')}</p>
                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                {lowStockItems.length} ingredients are below minimum stock level
+                                {lowStockItems.length} {t('ingredientsBelowMinStock')}
                             </p>
                         </div>
                     </div>
@@ -367,15 +377,23 @@ const Inventory = () => {
             <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
                 <button
                     onClick={() => setActiveTab('ingredients')}
-                    className={"px-6 py-3 font-semibold transition-all " + (activeTab === 'ingredients' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200')}
+                    className={`px-6 py-3 font-semibold transition-all ${
+                        activeTab === 'ingredients'
+                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                    }`}
                 >
-                    🧂 Ingredients
+                    🧂 {t('ingredients')}
                 </button>
                 <button
                     onClick={() => setActiveTab('products')}
-                    className={"px-6 py-3 font-semibold transition-all " + (activeTab === 'products' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200')}
+                    className={`px-6 py-3 font-semibold transition-all ${
+                        activeTab === 'products'
+                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                    }`}
                 >
-                    🛒 Products
+                    🛒 {t('products')}
                 </button>
             </div>
 
@@ -384,7 +402,7 @@ const Inventory = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" size={18} />
                 <input
                     type="text"
-                    placeholder={"Search " + (activeTab === 'ingredients' ? 'ingredients' : 'products') + "..."}
+                    placeholder={`${t('search')} ${activeTab === 'ingredients' ? t('ingredients') : t('products')}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -396,20 +414,22 @@ const Inventory = () => {
                 )}
             </div>
 
+            {/* ============================================ */}
             {/* INGREDIENTS TABLE */}
+            {/* ============================================ */}
             {activeTab === 'ingredients' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Name</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Unit</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Stock</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Min Stock</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Unit Cost</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Category</th>
-                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">Actions</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('name')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('unit')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('stock')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('minStock')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('unitCost')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('category')}</th>
+                                    <th className="px-6 py-3 text-gray-600 dark:text-gray-400 text-sm font-semibold">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -419,6 +439,7 @@ const Inventory = () => {
                                         ingredient={ing}
                                         onEdit={(item) => handleEdit(item, 'ingredient')}
                                         onDelete={handleDelete}
+                                        formatCurrency={formatCurrency}
                                     />
                                 ))}
                             </tbody>
@@ -427,13 +448,15 @@ const Inventory = () => {
                     {filteredIngredients.length === 0 && (
                         <div className="text-center py-12">
                             <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-                            <p className="text-gray-500 dark:text-gray-400">No ingredients found</p>
+                            <p className="text-gray-500 dark:text-gray-400">{t('noIngredientsFound')}</p>
                         </div>
                     )}
                 </div>
             )}
 
+            {/* ============================================ */}
             {/* PRODUCTS GRID */}
+            {/* ============================================ */}
             {activeTab === 'products' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredProducts.map(product => (
@@ -443,6 +466,7 @@ const Inventory = () => {
                             onEdit={(item) => handleEdit(item, 'product')}
                             onDelete={handleDelete}
                             onRecipe={openRecipeManager}
+                            formatCurrency={formatCurrency}
                         />
                     ))}
                 </div>
@@ -451,11 +475,13 @@ const Inventory = () => {
             {activeTab === 'products' && filteredProducts.length === 0 && (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                     <Package size={48} className="mx-auto text-gray-500 dark:text-gray-400 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">No products found</p>
+                    <p className="text-gray-500 dark:text-gray-400">{t('noProductsFound')}</p>
                 </div>
             )}
 
-            {/* RECIPE MANAGER */}
+            {/* ============================================ */}
+            {/* RECIPE MANAGER MODAL */}
+            {/* ============================================ */}
             {showRecipeManager && selectedProductForRecipe && (
                 <RecipeManager
                     productId={selectedProductForRecipe.id}
@@ -472,14 +498,16 @@ const Inventory = () => {
                 />
             )}
 
+            {/* ============================================ */}
             {/* ADD/EDIT MODAL */}
+            {/* ============================================ */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
                         <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {editingItem ? "Edit " + editType : "Add New " + editType}
+                                    {editingItem ? `${t('edit')} ${editType === 'ingredient' ? t('ingredient') : t('product')}` : `${t('addNew')} ${editType === 'ingredient' ? t('ingredient') : t('product')}`}
                                 </h2>
                                 <button onClick={resetModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                     <X size={24} />
@@ -489,9 +517,10 @@ const Inventory = () => {
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {editType === 'ingredient' ? (
+                                // INGREDIENT FORM
                                 <>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
                                         <input
                                             type="text"
                                             required
@@ -501,33 +530,34 @@ const Inventory = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
                                         <input
                                             type="text"
                                             value={ingredientForm.category}
                                             onChange={(e) => setIngredientForm({ ...ingredientForm, category: e.target.value })}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder={t('egVegetables')}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit *</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('unit')} *</label>
                                         <select
                                             required
                                             value={ingredientForm.unit}
                                             onChange={(e) => setIngredientForm({ ...ingredientForm, unit: e.target.value })}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="">Select unit</option>
-                                            <option value="kg">Kilogram (kg)</option>
-                                            <option value="g">Gram (g)</option>
-                                            <option value="L">Liter (L)</option>
-                                            <option value="ml">Milliliter (ml)</option>
-                                            <option value="pcs">Pieces (pcs)</option>
+                                            <option value="">{t('selectUnit')}</option>
+                                            <option value="kg">{t('kilogram')}</option>
+                                            <option value="g">{t('gram')}</option>
+                                            <option value="L">{t('liter')}</option>
+                                            <option value="ml">{t('milliliter')}</option>
+                                            <option value="pcs">{t('pieces')}</option>
                                         </select>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('quantity')}</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -537,7 +567,7 @@ const Inventory = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Stock</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('minStock')}</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -549,7 +579,7 @@ const Inventory = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Cost</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('unitCost')}</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -559,7 +589,7 @@ const Inventory = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('supplier')}</label>
                                             <input
                                                 type="text"
                                                 value={ingredientForm.supplier}
@@ -570,9 +600,10 @@ const Inventory = () => {
                                     </div>
                                 </>
                             ) : (
+                                // PRODUCT FORM
                                 <>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')} *</label>
                                         <input
                                             type="text"
                                             required
@@ -582,29 +613,29 @@ const Inventory = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
                                         <select
                                             value={productForm.category}
                                             onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="">Select category</option>
-                                            <option value="Main Course">Main Course</option>
-                                            <option value="Beverage">Beverage</option>
-                                            <option value="Coffee">Coffee</option>
-                                            <option value="Tea">Tea</option>
-                                            <option value="Dessert">Dessert</option>
-                                            <option value="Appetizer">Appetizer</option>
-                                            <option value="Soup">Soup</option>
-                                            <option value="Salad">Salad</option>
-                                            <option value="Breakfast">Breakfast</option>
-                                            <option value="Traditional">Traditional</option>
-                                            <option value="Side">Side</option>
-                                            <option value="Vegetarian">Vegetarian</option>
+                                            <option value="">{t('selectCategory')}</option>
+                                            <option value="Main Course">🍛 Main Course</option>
+                                            <option value="Beverage">🥤 Beverage</option>
+                                            <option value="Coffee">☕ Coffee</option>
+                                            <option value="Tea">🍵 Tea</option>
+                                            <option value="Dessert">🍰 Dessert</option>
+                                            <option value="Appetizer">🍢 Appetizer</option>
+                                            <option value="Soup">🍲 Soup</option>
+                                            <option value="Salad">🥗 Salad</option>
+                                            <option value="Breakfast">🍳 Breakfast</option>
+                                            <option value="Traditional">🇪🇹 Traditional</option>
+                                            <option value="Side">🥗 Side</option>
+                                            <option value="Vegetarian">🥬 Vegetarian</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('price')} *</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -615,7 +646,7 @@ const Inventory = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('description')}</label>
                                         <textarea
                                             rows="2"
                                             value={productForm.description}
@@ -632,7 +663,7 @@ const Inventory = () => {
                                             className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                                         />
                                         <label htmlFor="is_available" className="text-sm text-gray-700 dark:text-gray-300">
-                                            Available for sale
+                                            {t('availableForSale')}
                                         </label>
                                     </div>
                                 </>
@@ -641,10 +672,10 @@ const Inventory = () => {
                             <div className="flex gap-3 pt-4">
                                 <button type="submit" disabled={isSubmitting} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2">
                                     {isSubmitting && <Loader2 className="animate-spin" size={18} />}
-                                    {editingItem ? 'Update' : 'Create'}
+                                    {editingItem ? t('update') : t('create')}
                                 </button>
                                 <button type="button" onClick={resetModal} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition">
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             </div>
                         </form>
